@@ -164,7 +164,7 @@ const goToFram = () => {
       </div>
       
       <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. All rights reserved.
+        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under MIT/GNU GPL.
       </div>
     </footer>
 
