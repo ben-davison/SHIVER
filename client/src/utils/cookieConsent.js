@@ -1,8 +1,12 @@
 import * as CookieConsent from "vanilla-cookieconsent";
-import VueGtag from "vue-gtag"; // Import the default package (Works better with Vite)
+import "vanilla-cookieconsent/dist/cookieconsent.css";
 
-// We now accept 'app' and 'router' as arguments
-export const initCookieConsent = (app, router) => {
+// --- Safely import bootstrap ---
+// We import the whole module and try both locations to handle the build error
+import * as VueGtagModule from "vue-gtag";
+const bootstrap = VueGtagModule.bootstrap || VueGtagModule.default?.bootstrap;
+
+export const initCookieConsent = () => {
   CookieConsent.run({
     gui_options: {
       consent_modal: {
@@ -47,28 +51,21 @@ export const initCookieConsent = (app, router) => {
       },
     },
 
-    // Load analytics tool if cookies accepted
+    // --- ON CONSENT ---
     onConsent: ({ categories }) => {
       if (categories.includes("analytics")) {
-        console.log("? Consent granted. Installing Google Analytics...");
-        
-        // We manually install the plugin NOW. 
-        // This injects the script tag and starts processing events.
-        app.use(VueGtag, {
-          config: { id: "G-4YGWRB6RCZ" } // Your real ID
-        }, router);
+        console.log("? Consent granted. Bootstrapping GA4...");
+        // valid 'bootstrap' call (requires plugin to be installed in main.js)
+        if (bootstrap) bootstrap(); 
       }
     },
     
+    // --- ON CHANGE ---
     onChange: ({ changed_categories, categories }) => {
       if (changed_categories.includes("analytics")) {
         if (categories.includes("analytics")) {
-           // Enable if switched ON
-           app.use(VueGtag, {
-              config: { id: "G-4YGWRB6RCZ" }
-           }, router);
+           if (bootstrap) bootstrap(); 
         } else {
-           // Reload to clear cookies if switched OFF
            location.reload(); 
         }
       }

@@ -1,20 +1,22 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { initCookieConsent } from './utils/cookieConsent';
+import * as VueGtagModule from "vue-gtag";
+const VueGtag = VueGtagModule.default || VueGtagModule;
 import './style.css'
-import "vanilla-cookieconsent/dist/cookieconsent.css";
-import { initCookieConsent } from './utils/cookieConsent'; 
 
-// 1. Define a global dummy 'gtag' function immediately.
-// This prevents "gtag is not defined" errors if event() is called before consent.
-window.dataLayer = window.dataLayer || [];
-window.gtag = function() { window.dataLayer.push(arguments); };
 
 const app = createApp(App)
 
 app.use(router)
 
-// 2. Initialize the Cookie Banner (Passing app & router so we can start GA later)
-initCookieConsent(app, router);
+app.use(VueGtag, {
+  config: { id: "G-4YGWRB6RCZ" },
+  bootstrap: false
+}, router);
+
+// Initialize banner (no args needed now)
+initCookieConsent();
 
 app.mount('#app')
