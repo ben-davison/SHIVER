@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router'
 import LoginOverlay from './components/LoginOverlay.vue'; 
+import CookieBanner from './components/CookieBanner.vue'; // Import it here
 
 // 1. Check if user is already logged in (sessionStorage persists until tab close)
 const isAuthenticated = ref(sessionStorage.getItem('shiver_auth') === 'true');
@@ -36,6 +37,8 @@ const handleLogin = () => {
     </header>
 
     <RouterView />
+	
+	<CookieBanner />
   </div>
 </template>
 
