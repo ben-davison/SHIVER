@@ -412,7 +412,6 @@ import axios from 'axios';
 import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { event } from "vue-gtag";
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -427,6 +426,16 @@ const apiClient = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+// --- NATIVE GOOGLE ANALYTICS TRACKING ---
+const trackEvent = (eventName, params = {}) => {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', eventName, params);
+    console.log(`?? GA Event Sent: ${eventName}`, params);
+  } else {
+    console.log(`?? GA Event Skipped (Not loaded): ${eventName}`);
+  }
+};
 
 // --- CONSTANTS ---
 // Colors for selected points (cycles through this list)
@@ -654,11 +663,13 @@ const onMapClick = async (e) => {
   if (selectedPoints.value.length >= 10) return; 
   
   // Track clicks
-  event("map_click", {
-    event_category: "interaction",
-    event_label: "extract_timeseries",
-    region: currentRegion.value // Tracks 'Greenland' or 'Antarctica'
-  });
+  trackEvent("map_click", {
+	  event_category: "interaction",
+	  event_label: "extract_timeseries",
+	  region: currentRegion.value,
+	  lat: e.latlng.lat.toFixed(4),
+	  lon: e.latlng.lng.toFixed(4)
+	});
   
   const newId = Date.now();
   const color = COLORS[selectedPoints.value.length % COLORS.length];
@@ -863,12 +874,13 @@ const downloadChartImage = async () => {
   }
   
   // Track png downloads
-  event("download", {
-    event_category: "export",
-    event_label: "png_chart",
-    plot_type: currentPlotVar.value
-  });
-  
+  trackEvent("file_download", {
+	  event_category: "export",
+	  event_label: "png_chart",
+	  file_extension: "png",
+	  file_name: `velocity_plots_${currentRegion.value}`,
+	  plot_type: currentPlotVar.value
+	});
   
   statusMessage.value = "Generating image(s)...";
   
@@ -931,12 +943,14 @@ const handleDownload = async () => {
   if (selectedPoints.value.length === 0) return;
   
   // Track csv downloads
-  event("download", {
-    event_category: "export",
-    event_label: "csv_data",
-    region: currentRegion.value,
-    count: selectedPoints.value.length
-  });
+  trackEvent("file_download", {
+	  event_category: "export",
+	  event_label: "csv_data",
+	  file_extension: "zip", // or csv
+	  file_name: "velocity_data_batch",
+	  region: currentRegion.value,
+	  count: selectedPoints.value.length
+	});
   
   // Single File: Direct CSV download
   if (selectedPoints.value.length === 1) {

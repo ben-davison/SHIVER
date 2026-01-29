@@ -30,10 +30,16 @@ const loadGoogleAnalytics = () => {
   script.async = true;
   document.head.appendChild(script);
 
+  // We must attach dataLayer and gtag to 'window' explicitly
+  // so that MapView.vue can access them.
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', GA_MEASUREMENT_ID);
+  
+  window.gtag = function(){
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag('js', new Date());
+  window.gtag('config', GA_MEASUREMENT_ID);
   
   console.log("?? Google Analytics Loaded via Custom Component");
 };
