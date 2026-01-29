@@ -1,0 +1,76 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+env/
+*.log
+
+# --- Vue / Node.js ---
+web/client/node_modules/
+web/client/dist/
+web/client/.env.local
+web/client/.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+
+# --- Large Data Files (Protect your repo size) ---
+*.tif
+*.tiff
+*.nc
+*.zarr
+*.zip
+*.csv
+
+# --- misc files/notes ---
+uni_pc_catchup.txt
+quick_notes.txt
+ngrok_auth_token.txt
+conda_env_packages.txt
+ice_speed_env.yml
+IQ_shp_latlon_test.cpg
+IQ_shp_latlon_test.dbf
+IQ_shp_latlon_test.prj
+IQ_shp_latlon_test.qix
+IQ_shp_latlon_test.shp
+IQ_shp_latlon_test.shx
+IQ_shp_latlon_test.zip
+update_instructions.txt
