@@ -19,7 +19,6 @@ jobs:
         with:
           node-version: 20
 
-      # detailed logging to help debug if needed
       - name: Install and Build
         run: |
           cd client
@@ -29,7 +28,5 @@ jobs:
       - name: Deploy to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: client/dist # This pushes ONLY the built website, not the source code
+          folder: client/dist
           branch: gh-pages
-		  
-		  
