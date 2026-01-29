@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { RouterLink, RouterView } from 'vue-router'
 import LoginOverlay from './components/LoginOverlay.vue'; 
 import { initCookieConsent } from './utils/cookieConsent';
