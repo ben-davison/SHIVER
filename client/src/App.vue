@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 import { RouterLink, RouterView } from 'vue-router'
-import LoginOverlay from './components/LoginOverlay.vue'; // <--- NEW IMPORT
+import LoginOverlay from './components/LoginOverlay.vue'; 
+import { initCookieConsent } from './utils/cookieConsent';
 
 // 1. Check if user is already logged in (sessionStorage persists until tab close)
 const isAuthenticated = ref(sessionStorage.getItem('shiver_auth') === 'true');
@@ -11,6 +12,10 @@ const handleLogin = () => {
   isAuthenticated.value = true;
   sessionStorage.setItem('shiver_auth', 'true');
 };
+
+onMounted(() => {
+  initCookieConsent(); // Show the banner on load
+});
 </script>
 
 <template>

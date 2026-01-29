@@ -412,6 +412,7 @@ import axios from 'axios';
 import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { event } from "vue-gtag";
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -652,6 +653,13 @@ const onMapClick = async (e) => {
   if (!map.value) return;
   if (selectedPoints.value.length >= 10) return; 
   
+  // Track clicks
+  event("map_click", {
+    event_category: "interaction",
+    event_label: "extract_timeseries",
+    region: currentRegion.value // Tracks 'Greenland' or 'Antarctica'
+  });
+  
   const newId = Date.now();
   const color = COLORS[selectedPoints.value.length % COLORS.length];
   await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, color);
@@ -853,6 +861,15 @@ const downloadChartImage = async () => {
     statusMessage.value = "No chart to download.";
     return;
   }
+  
+  // Track png downloads
+  event("download", {
+    event_category: "export",
+    event_label: "png_chart",
+    plot_type: currentPlotVar.value
+  });
+  
+  
   statusMessage.value = "Generating image(s)...";
   
   const keysToDownload = plotOptions.value.map(o => o.val);
@@ -912,6 +929,14 @@ const getFilename = (p, index) => {
 // --- DATA DOWNLOAD HANDLER ---
 const handleDownload = async () => {
   if (selectedPoints.value.length === 0) return;
+  
+  // Track csv downloads
+  event("download", {
+    event_category: "export",
+    event_label: "csv_data",
+    region: currentRegion.value,
+    count: selectedPoints.value.length
+  });
   
   // Single File: Direct CSV download
   if (selectedPoints.value.length === 1) {
