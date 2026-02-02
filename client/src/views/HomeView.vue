@@ -115,8 +115,8 @@ const goToFram = () => {
 		   </a>
 		  <br>
 		  The FRAM project is funded by NSFGEO-NERC <br>
-		  Grant Number: # 2053169, "Investigating the <br> 
-		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics
+		  Grant Number: #2053169, "Investigating the <br> 
+		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
         </div>
 		
 		<div class="partner-group">

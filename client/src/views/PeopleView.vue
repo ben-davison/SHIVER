@@ -12,6 +12,7 @@ import LDEOLogo from '../assets/LDEO_logo/LDEO_logo_black.png';
 
 // --- 2. IMPORT TEAM PHOTOS ---
 import photoBenD from '../assets/people/BenDavison.jpg';
+import photoKateW from '../assets/people/Kate.jpg';
 
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
@@ -89,7 +90,7 @@ const teamMembers = [
     role: "Research Associate",
 	institution: "University of Sheffield",
     image: getPlaceholderUrl("Sian+Thorpe"),
-    bio: "Sian is an expert in subglacial lake dynamics and glacial fieldwork. They support the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
+    bio: "Sian specializes in subglacial lake dynamics and glacial fieldwork. They support the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
   },
   {
     id: 10,
@@ -104,8 +105,8 @@ const teamMembers = [
     name: "Dr. Kate Winter",
     role: "Co-Investigator",
 	institution: "Northumbria University",
-    image: getPlaceholderUrl("Kate+Winter"),
-    bio: "Kate is a glacial geophysics expert. They deployed GNSS and ApRES during the 2024 field season."
+    image: photoKateW,
+    bio: "Kate is a glacial geophysics expert. She led the campaign in 2024 and supported the deployment of GNSS and ApRES."
   }
 ];
 </script>
@@ -160,8 +161,8 @@ const teamMembers = [
 		   </a>
 		  <br>
 		  The FRAM project is funded by NSFGEO-NERC <br>
-		  Grant Number: # 2053169, "Investigating the <br> 
-		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics
+		  Grant Number: #2053169, "Investigating the <br> 
+		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
         </div>
         
         <div class="partner-group">

@@ -23,7 +23,9 @@ import deploymentImg from '../assets/images/deployments.png';
     <main class="content-wrapper">
       <div class="text-container">
         <h1>The FRAM Project</h1>
-        <p class="subtitle">Flow Response of Antarctica to Meltwater</p> <hr class="divider" />
+        <p class="subtitle">Flow Response of Antarctica to Meltwater</p> 
+		<p>SHIVER was developed as part of FRAM to allow researchers to explore how Antarctic glaciers are responding to changing environmental conditions. </p> 
+		<hr class="divider" />
 
         <section class="project-details">
           <h2>About the Project</h2>
@@ -117,8 +119,8 @@ import deploymentImg from '../assets/images/deployments.png';
 		   </a>
 		  <br>
 		  The FRAM project is funded by NSFGEO-NERC <br>
-		  Grant Number: # 2053169, "Investigating the <br> 
-		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics
+		  Grant Number: #2053169, "Investigating the <br> 
+		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
         </div>
         
         <div class="partner-group">

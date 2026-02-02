@@ -17,9 +17,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
-# --- NEW IMPORTS FOR TILING ---
+# --- IMPORTS FOR TILING ---
 from rio_tiler.io import Reader
 from rio_tiler.errors import TileOutsideBounds
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+import mercantile
 
 # --- BACKEND FUNCTIONS --- 
 from utils.extract_zarr_ts import get_glacier_timeseries
@@ -41,16 +45,19 @@ else:
 TIFF_PATHS = {
     "Greenland": {
         "speed": base_path_gr / "S_median_20141011_20250826_200m_timefiltered_cog.tif",
+        "u"    : base_path_gr / "U_median_20141011_20250826_200m_timefiltered_cog.tif",
+        "v"    : base_path_gr / "V_median_20141011_20250826_200m_timefiltered_cog.tif",
         "count": base_path_gr / "perc_finite_px_20141011_20250826_200m_timefiltered_cog.tif",
         "trend": base_path_gr.parent / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif"
     },
     "Antarctica": {
         "speed": base_path_ant / "S_median_20141125_20250805_200m_timefiltered_cog.tif",
+        "u":     base_path_ant / "U_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
+        "v":     base_path_ant / "V_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "count": base_path_ant / "perc_finite_px_20141125_20250805_200m_timefiltered_cog.tif",
         "trend": base_path_ant.parent / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif"
     }
 }
-
 
 # Get the directory where main.py is located
 current_dir = Path(__file__).resolve().parent
@@ -145,6 +152,134 @@ def health_check():
     """Simple check to see if server is running."""
     return {"status": "active", "engine": "FastAPI"}
 
+
+# --- VECTOR TILE ENDPOINT ---
+@app.get("/api/tiles/{region}/vectors/{z}/{x}/{y}.png")
+async def get_vector_tile(region: str, z: int, x: int, y: int):
+    try:
+        if region not in TIFF_PATHS:
+            raise HTTPException(status_code=404, detail=f"Region '{region}' not found")
+        
+        paths = TIFF_PATHS[region]
+
+        # 1. Read Data
+        try:
+            with Reader(paths["u"]) as src_u: u_data = src_u.tile(x, y, z)
+            with Reader(paths["v"]) as src_v: v_data = src_v.tile(x, y, z)
+            with Reader(paths["speed"]) as src_s: s_data = src_s.tile(x, y, z)
+        except TileOutsideBounds:
+            return _empty_tile()
+
+        # 2. Extract Arrays & Handle NaNs
+        U = np.nan_to_num(u_data.data[0], nan=0.0)
+        V = np.nan_to_num(v_data.data[0], nan=0.0)
+        S = np.nan_to_num(s_data.data[0], nan=0.0)
+        
+        # 3. Filter Logic (Speed >= 20 and not 0)
+        if region == "Greenland":
+            valid_pixels = (S >= 20) & (S != 0) & (U != -9999) & (V != -9999)
+        else:
+            valid_pixels = (S >= 20) & (S != 0) & (U != -9999) & (V != -9999) & (S <= 3000) & (abs(U) <= 3000) & (abs(V) <= 3000)
+        
+        # 4. Decimate (16x16 grid)
+        step = 16 
+        h, w = U.shape
+        
+        # Create Pixel Grid (0 to 256)
+        # We need the centers of the pixels for accurate rotation
+        xs = np.arange(0, w, step) + step / 2
+        ys = np.arange(0, h, step) + step / 2
+        X, Y = np.meshgrid(xs, ys)
+        
+        # Subsample data
+        U_sub = U[::step, ::step]
+        V_sub = V[::step, ::step]
+        mask_sub = valid_pixels[::step, ::step]
+
+        if not np.any(mask_sub):
+            return _empty_tile()
+
+        # --- 5. ROTATION (Grid North -> True North) ---
+        # Get the lat/lon bounds of this specific tile
+        bounds = mercantile.bounds(x, y, z)
+        
+        # Generate Longitude grid for the decimated pixels
+        # Linearly interpolate longitude from West to East edge of tile
+        lons_row = np.linspace(bounds.west, bounds.east, U_sub.shape[1])
+        # Broadcast to full grid (shape: 16x16)
+        Lons = np.tile(lons_row, (U_sub.shape[0], 1))
+
+        # Calculate Rotation Angle (Theta)
+        # EPSG:3413 (Greenland) Central Meridian is -45 degrees
+        # EPSG:3031 (Antarctica) Central Meridian is 0 degrees
+        if region == "Greenland":
+            central_meridian = -45.0
+            theta = (Lons - central_meridian) * (np.pi / 180.0)
+        else:
+            central_meridian = 0.0
+            theta = (Lons - central_meridian) * (np.pi / 180.0)
+
+        # Apply Rotation
+        # u_geo = u_grid * cos(theta) + v_grid * sin(theta)
+        # v_geo = -u_grid * sin(theta) + v_grid * cos(theta)
+        U_rot = U_sub * np.cos(theta) - V_sub * np.sin(theta)
+        V_rot = V_sub * np.cos(theta) + U_sub * np.sin(theta)
+
+        # 6. Masking
+        U_masked = np.ma.masked_where(~mask_sub, U_rot)
+        V_masked = np.ma.masked_where(~mask_sub, V_rot)
+
+        # 7. Plotting
+        dpi = 100
+        fig = Figure(figsize=(2.56, 2.56), dpi=dpi, facecolor=(0,0,0,0))
+        canvas = FigureCanvas(fig)
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_axis_off() 
+        ax.set_xlim(0, w)
+        ax.set_ylim(h, 0) # Invert Y
+
+        # STYLE SETTINGS
+        # scale=2000: 2000 m/yr = 1 unit length. Adjust this number to change global arrow size.
+        # width=0.010: Thinner shaft
+        # headlength=3: Shorter head (reveals more tail)
+        # headaxislength=2.5: Makes the back of the head less "swept back"
+        if region == "Greenland":
+            ax.quiver(X, Y, U_masked, V_masked, 
+                      color='black', 
+                      headlength=2, 
+                      headaxislength=2.5, 
+                      headwidth=3.0,
+                      pivot='middle',
+                      scale=2250,   
+                      width=0.0075)  # Thinner arrows
+        else:
+            ax.quiver(X, Y, U_masked, V_masked, 
+                      color='black', 
+                      headlength=2, 
+                      headaxislength=2.5, 
+                      headwidth=3.0,
+                      pivot='middle',
+                      scale=5000,   
+                      width=0.0075)  # Thinner arrows
+
+        buf = io.BytesIO()
+        canvas.print_png(buf)
+        plt.close(fig)
+        buf.seek(0)
+        return Response(content=buf.read(), media_type="image/png")
+
+    except Exception as e:
+        print(f"🔥 Vector Error: {e}")
+        return _empty_tile()
+
+def _empty_tile():
+    empty_img = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+    buf = io.BytesIO()
+    empty_img.save(buf, format="PNG")
+    buf.seek(0)
+    return Response(content=buf.read(), media_type="image/png")
+        
+        
 
 # 2D overlays
 @app.get("/api/tiles/{region}/{layer_type}/{z}/{x}/{y}.png")
@@ -281,9 +416,8 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
     except Exception as e:
         print(f"Tile Error: {e}")
         raise HTTPException(status_code=500, detail=f"Tile error: {str(e)}")
-        
-
-    
+               
+ 
 @app.post("/api/auth")
 def authenticate(payload: LoginRequest):
     """

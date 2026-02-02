@@ -43,11 +43,25 @@
           :visible="overlayLayer === 'trend'"
         ></l-tile-layer>
 		
+		<l-tile-layer
+			:url="vectorUrl"
+			layer-type="overlay"
+			name="Flow direction arrows"
+			:opacity="1.0"
+			:z-index="10" 
+			:visible="false"
+		  ></l-tile-layer>
+		
         <l-geo-json 
           v-if="currentRegion === 'Antarctica' && glacierData" 
           :geojson="glacierData"
-		  :options="glacierOptions"
 		  :options-style="outlineStyle"
+        ></l-geo-json>
+		
+		<l-geo-json 
+          v-if="currentRegion === 'Antarctica' && glacierNamesData" 
+          :geojson="glacierNamesData"
+          :options="glacierLabelOptions"
         ></l-geo-json>
 		
         <l-circle-marker 
@@ -412,6 +426,7 @@ import axios from 'axios';
 import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import L from 'leaflet';
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -459,6 +474,7 @@ const statusMessage = ref("");
 const isDownloading = ref(false);
 const selectedPoints = ref([]); 
 const glacierData = ref(null);
+const glacierNamesData = ref(null);
 const showHelp = ref(false); 
 const iceEdgeData = ref(null);
 const groundingLineData = ref(null);
@@ -478,6 +494,43 @@ const smoothingParams = ref({
     win_raw: 1,
     win_daily: 25,
     poly: 2
+});
+
+// Determine colour based on number of points
+const distributeColors = () => {
+  const n = selectedPoints.value.length;
+  if (n === 0) return;
+
+  // Map to a NEW array to ensure Vue detects the change deeply
+  selectedPoints.value = selectedPoints.value.map((point, index) => {
+    let newColor;
+    if (n === 1) {
+      newColor = COLORS[0];
+    } else {
+      const maxIndex = COLORS.length - 1;
+      const colorIndex = Math.round(index * (maxIndex / (n - 1)));
+      newColor = COLORS[colorIndex];
+    }
+    // Return a copy of the point with the new color
+    return { ...point, color: newColor };
+  });
+};
+
+// Add a timer variable outside the watch
+let colorDebounceTimer;
+// Watch to keep things in sync
+watch(() => selectedPoints.value.length, () => {
+  // 1. Immediate Update (Keeps it responsive)
+  distributeColors();
+  if (typeof updateChart === 'function') updateChart();
+
+  // 2. "Cleanup" Update (The Fix)
+  // This waits 200ms after the last change and forces one final color check.
+  // This often fixes the "stuck on the last color" bug.
+  clearTimeout(colorDebounceTimer);
+  colorDebounceTimer = setTimeout(() => {
+    distributeColors(); 
+  }, 200);
 });
 
 // Generate suffix string for filenames: e.g. _gf24_wr25_wd25_p2
@@ -522,6 +575,7 @@ const baseUrl = API_URL.replace(/\/$/, '');
 const speedUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/speed/{z}/{x}/{y}.png?t=${timestamp.value}`);
 const countUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/count/{z}/{x}/{y}.png?t=${timestamp.value}`);
 const trendUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/trend/{z}/{x}/{y}.png?t=${timestamp.value}`);
+const vectorUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/vectors/{z}/{x}/{y}.png?t=${timestamp.value}` );
 
 // --- LEGEND & LAYER LOGIC ---
 // Leaflet's <l-control-layers> handles the actual map toggling.
@@ -656,13 +710,18 @@ const refetchAllPoints = async () => {
 
 // --- MAP INTERACTION ---
 const onMapClick = async (e) => {
+// 1. Validation Checks 
   const target = e.originalEvent?.target;
   if (!target || !target.isConnected) return;
   if (target.closest('.leaflet-control-container') || target.closest('.leaflet-control')) return;
   if (!map.value) return;
-  if (selectedPoints.value.length >= 10) return; 
   
-  // Track clicks
+  if (selectedPoints.value.length >= 10) {
+    alert("Maximum of 10 points allowed.");
+    return;
+  }
+  
+  // 2. Track clicks
   trackEvent("map_click", {
 	  event_category: "interaction",
 	  event_label: "extract_timeseries",
@@ -670,11 +729,21 @@ const onMapClick = async (e) => {
 	  lat: e.latlng.lat.toFixed(4),
 	  lon: e.latlng.lng.toFixed(4)
 	});
-  
-  const newId = Date.now();
-  const color = COLORS[selectedPoints.value.length % COLORS.length];
-  await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, color);
+	
+   const newId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  //const color = COLORS[selectedPoints.value.length % COLORS.length];
+  //await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, color);
+  await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, COLORS[0]);
 };
+
+// Whenever points are added or removed, fix colors and update chart automatically.
+watch(() => selectedPoints.value.length, () => {
+  distributeColors();
+  if (typeof updateChart === 'function') {
+    updateChart();
+  }
+});
+
 
 // Load static GeoJSON for glacier outlines (only if needed)
 const loadGlacierOutlines = async () => {
@@ -689,15 +758,36 @@ const loadGlacierOutlines = async () => {
   }
 };
 
-// --- label antarctic glacier basins ---
-const glacierOptions = {
+// Load glacier name labels
+const loadGlacierNames = async () => {
+  // Prevent double-fetching if already loaded
+  if (glacierNamesData.value) return; 
+  
+  try {
+    const response = await apiClient.get('/static/apc_glaciers_wkt.geojson');
+    glacierNamesData.value = response.data;
+  } catch (e) {
+    console.error("Failed to load glacier names:", e);
+    statusMessage.value = "Failed to load glacier names.";
+  }
+};
+
+const glacierLabelOptions = {
+  // Render invisible circle markers so we don't see blue pins
+  pointToLayer: (feature, latlng) => {
+    return L.circleMarker(latlng, {
+      radius: 0,
+      opacity: 0,
+      fillOpacity: 0
+    });
+  },
+  // Bind the permanent tooltip using the 'feature' property from your new file
   onEachFeature: (feature, layer) => {
-    // Check if name exists and isn't "n/a"
-    if (feature.properties && feature.properties.name && feature.properties.name !== 'n/a') {
-      layer.bindTooltip(feature.properties.name, {
-        permanent: true,      // Always open (don't wait for hover)
-        direction: 'center',  // Place at center of polygon
-        className: 'glacier-label' // Custom CSS class for styling/hiding
+    if (feature.properties && feature.properties.feature) {
+      layer.bindTooltip(feature.properties.feature, {
+        permanent: true,
+        direction: 'center',
+        className: 'glacier-label'
       });
     }
   }
@@ -710,6 +800,7 @@ watch(currentRegion, (newVal) => {
   // The check (!glacierData.value) ensures we don't fetch it twice.
   if (newVal === 'Antarctica' && !glacierData.value) {
     loadGlacierOutlines();
+	loadGlacierNames();
   }
 });
 
@@ -808,8 +899,9 @@ const fetchSinglePoint = async (id, lat, lon, color) => {
 
 // Wrapper for updating a point when coords are manually edited
 const refreshPointData = async (point) => await fetchSinglePoint(point.id, point.lat, point.lon, point.color);
-const removePoint = (id) => { selectedPoints.value = selectedPoints.value.filter(p => p.id !== id); updateChart(); };
+const removePoint = (id) => { selectedPoints.value = selectedPoints.value.filter(p => p.id !== id); distributeColors(); updateChart(); };
 const clearAll = () => { selectedPoints.value = []; Plotly.purge('velocity-chart'); };
+
 
 
 // --- CHART PLOTTING (PLOTLY) ---
@@ -1017,26 +1109,32 @@ const generateCSV = (point) => {
   const availableKeys = Object.keys(rootData).filter(k => !['dates','error','dt','count'].includes(k));
   
   availableKeys.forEach(k => {
-      // e.g. Speed_s_filt_m_yr isn't great. Just use key name.
-      // If key is 's_filt' -> 'Speed_s_filt_m_yr'
-      // Cleaner: 's_filt'
       csv += `,${k}`; 
   });
   csv += "\n";
 
+  // Iterate through dates
   rootData.dates.forEach((date, i) => {
+	  // If NaN, skip it
+	  if (availableKeys.length > 0) {
+			const firstKey = availableKeys[0];
+			const checkVal = rootData[firstKey].raw[i];
+			// If the value is null, undefined, or NaN, skip this iteration
+			if (checkVal === null || checkVal === undefined || Number.isNaN(checkVal)) { return; }
+	}
+	// Build row
     const error = rootData.error ? rootData.error[i] : '';
     const dt = rootData.dt ? rootData.dt[i] : '';
     const count = rootData.count ? rootData.count[i] : 0;
     
     let row = `${date},${error},${dt},${count}`;
-    
     availableKeys.forEach(k => {
         const val = rootData[k].raw[i];
         row += `,${val !== null ? val : ''}`;
     });
     csv += row + "\n";
   });
+  
   return csv;
 };
 </script>

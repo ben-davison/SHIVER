@@ -1,7 +1,6 @@
 <script setup>
 /**
  * DOCUMENTATION VIEW
- * A text-heavy page with a sticky sidebar for easy navigation.
  */
 
 // --- IMPORT LOGOS FOR FOOTER ---
@@ -17,6 +16,22 @@ import S1IW from '../assets/documentation/S1IW.png';
 
 const publicPath = import.meta.env.BASE_URL;
 
+const scrollToSection = (sectionId) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    // 1. Get the position of the element
+    const headerOffset = 100; // Adjust this if your sticky header covers the title
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
+    // 2. Scroll to it smoothly
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth"
+    });
+  }
+};
+
 
 </script>
 
@@ -29,16 +44,16 @@ const publicPath = import.meta.env.BASE_URL;
         <nav>
           <h3>Contents</h3>
           <ul>
-            <li><a href="#introduction">Introduction</a></li>
-            <li><a href="#overview">1. Overview</a></li>
-            <li><a href="#data-sources">2. Data Sources</a></li>
-			<li><a href="#pre-processing">3. Pre-processing</a></li>
-			<li><a href="#algorithms">4. Measurement Algorithms</a></li>
-			<li><a href="#post-processing">5. Post-processing</a></li>
-			<li><a href="#mosaics">6. Mosaics</a></li>
-			<li><a href="#automation">7. Automation</a></li>
-            <li><a href="#how-to-use">8. SHIVER User Guide</a></li>
-            <li><a href="#citation">9. Citation & License</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('introduction')">Introduction</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('overview')">1. Overview</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('data-sources')">2. Data Sources</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('pre-processing')">3. Pre-processing</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('algorithms')">4. Measurement Algorithms</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('post-processing')">5. Post-processing</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('mosaics')">6. Mosaics</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('automation')">7. Automation</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('how-to-use')">8. SHIVER User Guide</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('citation')">9. Citation & License</a></li>
           </ul>
         </nav>
       </aside>
@@ -54,24 +69,27 @@ const publicPath = import.meta.env.BASE_URL;
           </p>
         </section>
 
-
         <section id="overview">
           <h2>1. Overview of approach</h2>
           <p>
-            The velocity fields are derived using intensity tracking algorithms applied to consecutive Sentinel-1 image pairs. 
-            Our processing pipeline is fully automated and involves:
+            The velocity fields are derived using <a href="#" @click.prevent="scrollToSection('algorithms')">intensity tracking algorithms</a> applied to consecutive 
+			<a href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">Sentinel-1</a>
+			image pairs. Our processing pipeline is fully automated and involves:
           </p>
           <ul>
             <li><strong>Metadata curation and data download:</strong> At least daily, our system collates information about all Sentinel-1 images that have 
 			been acquired over Greenland and Antarctica and identifies all potential image pairs. For each available image pair that hasn't yet been processed,
 			it downloads the images, orbital positioning information and digitial elevation models required to complete the processing. All data download and curation 
 			is completed 'on-the-fly' to minimise storage requirements.</li>
-            <li><strong>Pre-processing:</strong>We use the open-source software GMTSAR to prepare the raw radar images for feature tracking and generate the
-			information required to convert the images from radar to map coordinates. This process ingests the raw radar images, orbital data and elevation data.</li>
-            <li><strong>Feature/intensity/speckle tracking:</strong> 2D fields of ice velocity are estimated and posted at 150x150 m resolution using standard methods.</li>
+            <li><strong>Pre-processing:</strong> We use the open-source Generic Mapping Tools for Synthetic Aperture Radar 
+			<a href="https://topex.ucsd.edu/gmtsar/" target="_blank" rel="noopener" class="text-link">(GMTSAR)</a> imagery software 
+			to prepare the raw radar images for feature tracking and generate the information required to convert the images from radar to map coordinates. 
+			This process ingests the raw radar images, orbital data and elevation data.</li>
+            <li><strong>Feature/intensity/speckle tracking:</strong> 2D fields of ice velocity are estimated and posted at 150x150 m resolution using 
+			<a href="#" @click.prevent="scrollToSection('algorithms')">standard methods</a>.</li>
 			<li><strong>Post-processing:</strong> Individual velocity fields are filtered to remove outliers, which are defined using cross-correlation quality metrics and 
 			based on the characteristics of the retrieved flow field.</li>
-			<li><strong>Mosaic creation:</strong> The 'raw' velocity fields derived from Sentinel-1 swaths are warped to a common grid and further corrections 
+			<li><strong>Mosaic creation:</strong> The 'raw' velocity fields derived from Sentinel-1 swaths are geocoded to a common grid and further corrections 
 			and outlier removal routines are applied.</li>
           </ul>
         </section>
@@ -80,15 +98,17 @@ const publicPath = import.meta.env.BASE_URL;
         <section id="data-sources">
           <h2>2. Data Sources</h2>
           <p>
-            <strong>Sentinel-1:</strong> The European Space Agency (ESA) Sentinel-1 missions comprises a constellation of two sun-synchronous polar-orbiting satellites,
-			which operate  in the same orbital plane with 180 degree phasing difference. It performs C-band Synthetic Aperture Radar (SAR) imaging, enabling day and night 
+            <strong>Sentinel-1:</strong> The 
+			<a href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">European Space Agency (ESA) Sentinel-1 missions</a>
+			 comprise a constellation of two sun-synchronous polar-orbiting satellites,
+			which operate  in the same orbital plane with 180 degree phasing difference. They perform C-band Synthetic Aperture Radar (SAR) imaging, enabling day and night 
 			acquisitions regardless of weather. 
 		   </p>
 			
 			<figure style="text-align: center; margin: 20px 0;">
 			 <img src="../assets/documentation/S1cartoon.jpg" alt="Sentinel-1 radar vision" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
 			 <figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
-			   Fig. 2.1: Artistic impression of Sentinel-1 image acquisition.
+			   Fig. 2.1: Artistic impression of Sentinel-1 image acquisition. Credit: ESA/ATG medialab.
 			 </figcaption>
 		  </figure>
 		  			
@@ -97,7 +117,7 @@ const publicPath = import.meta.env.BASE_URL;
 				<strong>What is a radar image?</strong> 
 				Radar imaging is an "active" data collection technique where the satellite radar transmits its own pulses of energy and records the amount reflected back 
 				from the Earth's surface - surfaces that reflect more energy back appear brighter. Typically, rougher surfaces and surfaces oriented towards the incoming radar waves 
-				appear brighter than smooth surfaces or those that are in the 'radar shadow'. Surface properties also affect how much of the incoming radar signal is returned to the
+				appear brighter than smooth surfaces or those that are facing away from the sensor. Surface properties also affect how much of the incoming radar signal is returned to the
 				satellite: crucially for glaciers, a smooth wet surface (as might be expected on glaciers during summer), acts as a 'specular reflector', which causes the radar waves to
 				reflect away from the satellite and makes water appear dark in radar imagery. 
 				This all differs from optical imagery, which relies on passive light from the sun.
@@ -119,14 +139,14 @@ const publicPath = import.meta.env.BASE_URL;
 				  Your browser does not support the video tag.
 				</video>
 				<figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
-				  Fig. 2.2: A Sentinel-1 radar image animation, showing the retreat of Wilkinson Murphy Glacier, Antarctica.
+				  Fig. 2.2: A Sentinel-1 radar image animation, showing the retreat of Wilkinson Murphy Glacier, Antarctica. Contains modified Copernicus Sentinel data.
 				</figcaption>
 			  </figure>
 			  <p>
 				For our processing in SCADI, we use Sentinel-1 Level-1 Single Look Complex (SLC) images. SLC images represent the 'raw' radar returns from the ground surface,
 				processed into a 2D image, but before those radar returns have been projected onto the ground surface. Since it has not been projected, the raw SLC image is in 
 				'slant range' or 'line-of-sight' geometry, as if you are viewing the surface from the perspective of the satellite antenna without knowing anything about the 
-				ground topography.
+				ground topography. As part of our processing, we also produce ground-projected radar amplitude images (as shown in Fig. 2.2).
 			  </p>
 			</div>
 			
@@ -147,7 +167,7 @@ const publicPath = import.meta.env.BASE_URL;
 		</p>
 		   <ul>
               <li><strong>Stripmap:</strong> the standard mode.</li>
-              <li><strong>Interferometric Wide swath:</strong> where three 'swaths' of data are acquired using the <a href="https://ieeexplore.ieee.org/document/1677745" target="_blank" rel="noopener" class="text-link">TOPSAR</a> technique.</li>
+              <li><strong>Interferometric Wide (IW) swath:</strong> where three 'swaths' of data are acquired using the <a href="https://ieeexplore.ieee.org/document/1677745" target="_blank" rel="noopener" class="text-link">TOPSAR</a> technique.</li>
               <li><strong>Extra Wide swath:</strong> where five 'swaths' of data are acquired using the TOPSAR technique, but at lower resolution to the IW mode.</li>
 			  <li><strong>Wave:</strong> where small 'vignettes' of data are acquired at 100 km along-track intervals, alternating between near- and far-range incidence angles.</li>
           </ul>
@@ -193,7 +213,7 @@ const publicPath = import.meta.env.BASE_URL;
 		  </p>
 			<ul>
               <li><strong>Geometric alignment, deramping and burst stitching:</strong> We use information about the satellite position and the ground surface to align image2
-					  with image 1. Deramping removes the phase ramp inherent in TOPS (Terrain Observation with Progressive Scans) data, resulting from the steering of the antenna
+					  with image1. Deramping removes the phase ramp inherent in TOPS (Terrain Observation with Progressive Scans) data, resulting from the steering of the antenna
 					  beam during acquisition, to ensure phase continuity. Two levels of 
 					  <a href="https://documentation.dataspace.copernicus.eu/Data/SentinelMissions/Sentinel1.html" target="_blank" rel="noopener" class="text-link">orbital information</a> 
 					  are available: 'Precise' and 'Restituted'  orbits. Precise orbits are accurate to 5 cm but are only available 21 days after image acquisition. Restituted orbits are 
@@ -213,8 +233,10 @@ const publicPath = import.meta.env.BASE_URL;
 		<section id="algorithms">
           <h2>4. Measurement Algorithms</h2>
           <p>
-			Our core processing pipeline is adapted from <strong>PIVSuite</strong> 
-			(<a href="https://openresearchsoftware.metajnl.com/articles/10.5334/jors.334" target="_blank">Thielicke and Stamhuis, 2014</a>). 
+			Our core processing pipeline is adapted from, 
+			(<a href="https://uk.mathworks.com/matlabcentral/fileexchange/45028-pivsuite" target="_blank"><strong>PIVSuite</strong></a>)
+			which was inspired by
+			(<a href="https://openresearchsoftware.metajnl.com/articles/10.5334/jors.334" target="_blank">PIVLab</a>). 
 			We use fairly standard "feature tracking" approaches to measure the displacement of ice surface features between two co-registered SAR images.
 		  </p>
 
@@ -242,7 +264,7 @@ const publicPath = import.meta.env.BASE_URL;
 			  <strong>IA Size:</strong> The window size (e.g., 64x64 or 128x128 pixels). 
 			  Larger IAs contain more distinct features, typically providing a stronger correlation signal, but they effectively "average" the velocity over a larger area. 
 			  Smaller IAs measure displacement over smaller areas, but are more susceptible to noise or "loss of correlation". Since Sentinel-1 images have different
-			  resolutions in the range and azimuth directions (nominally 2.3 x 14.1 m), we use different IA lengths in each direction. 
+			  resolutions in the range (line-of-sight) and azimuth (along-flight or along-track) directions (nominally 2.3 x 14.1 m), we use different IA lengths in each direction. 
 			  In general, it is recommended that the dimensions of the IA should be at least four times the maximum expected displacement.
 			</li>
 			<li>
@@ -349,7 +371,7 @@ const publicPath = import.meta.env.BASE_URL;
 
 			  <h3>5.2. Stage 2: Ionospheric Destriping</h3>
 			  <p>
-				Velocity fields derived from Synthetic Aperture Radar data often suffers from 'striping' artifacts caused by ionospheric irregularities interfering with the radar signal. 
+				Velocity fields derived from Synthetic Aperture Radar data often suffer from 'striping' artifacts caused by ionospheric irregularities interfering with the radar signal. 
 			  </p>
 			  
 			  <p>
@@ -358,8 +380,9 @@ const publicPath = import.meta.env.BASE_URL;
 			  </p>
 			  <div class="info-box">
 				<strong>Conditional Application:</strong> 
-				Blindly filtering data can degrade valid high-resolution features. Therefore, our pipeline calculates noise metrics 
-				(using BRISQUE and other noise estimation functions) <em>before</em> and <em>after</em> the filter runs. 
+				Not all velocity fields contain stripes and attempts to destripe do not always reduce apparent striping in the retrieved 
+				velocities - results depend on the initial quality of the velocity field. Therefore, our pipeline calculates noise metrics 
+				(using BRISQUE and other noise estimation functions) <em>before</em> and <em>after</em> the destriping filter runs. 
 				The destriped result is only accepted if the algorithm detects a quantifiable reduction in noise levels. This is necessary
 				in part because stripes can only be clearly detected (and removed) if the velocity field is relatively complete - large gaps
 				or significant noise from other sources can hinder stripe detection.
@@ -368,13 +391,14 @@ const publicPath = import.meta.env.BASE_URL;
 			  <figure style="text-align: center; margin: 20px 0;">
 					 <img src="../assets/documentation/destripe.png" alt="Example destriping" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
 					 <figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
-					   Fig. 5.2: An illustration of striping in a velocity field and the effect of stripe removal.
+					   Fig. 5.2: An illustration of striping in a velocity field and the effect of stripe removal. Note the difference in colour scale range of the right-hand panel.
 					 </figcaption>
 			  </figure>
 
 			  <h3>5.3. Stage 3: Map Projection & Outlier Removal</h3>
 			  <p>
-				Once the data is cleaned in radar coordinates, it is projected onto the ground surface map geometry. This converts displacements from "pixels" into "meters" and corrects for topographic distortion.
+				Once the data are cleaned in radar coordinates, they are projected onto the ground surface map geometry. 
+				This converts displacements from "pixels" into "meters" and corrects for topographic distortion.
 			  </p>
 			  <p>
 				We then run a final suite of physical and statistical filters, always attempting to remove outliers whilst minimising loss of 'good' data:
@@ -417,21 +441,21 @@ const publicPath = import.meta.env.BASE_URL;
 			  </p>
 			  <p>
 				While these swaths share the same map projection, they exist on different pixel grids based on the satellite's specific track. 
-				To create an analysis-ready product, we must standardize these all swath-based velocity fields onto a common grid. 
+				To create an analysis-ready product, we must standardize all these swath-based velocity fields onto a common grid. 
 				We achieve this by generating <strong>date-pair Mosaics</strong>.
 			  </p>
 
 			  <h3>6.1. "Raw" Mosaics</h3>
 			  <p>
 				The "Raw" mosaic process aggregates all velocity data derived from any Sentinel-1 pair covering the same time window 
-				(e.g., all data measuring displacement between Date A and Date B). It also removed offsets in velocity estimates between
+				(e.g., all data measuring displacement between Date A and Date B). It also removes offsets in velocity estimates between
 				overlapping swaths and removed biases detected in bedrock areas (where zero motion is expected, but not always measured).
 			  </p>
 			  
 			  <h4>Step 1: Common Grid Projection</h4>
 			  <p>
 				We define a master 'Common Grid' that covers the entire study area (e.g., the full Antarctic Peninsula or West Greenland). 
-				Using <strong>GDAL</strong> (Geospatial Data Abstraction Library) tools, every individual swath is warped and interpolated 
+				Using <strong>GDAL</strong> (Geospatial Data Abstraction Library) tools, every individual swath is geocoded  
 				onto this fixed grid. This ensures that a pixel at index <em>(x, y)</em> in one mosaic corresponds exactly to the same 
 				geographic location in every other mosaic in the time series. This grid was defined based on the maximum extent of all 
 				available Sentinel-1 image pairs in the two study areas.
@@ -448,9 +472,10 @@ const publicPath = import.meta.env.BASE_URL;
 				<li><strong>Image Pair Merging:</strong> If multiple image pairs were acquired on the same day, they are merged. These may or may not overlap.</li>
 			  </ul>
 
+			  <section id="error">
 			  <h4>Step 3: Error and bias correction</h4>
 			  <p>
-				Errors in the resulting velocity fields may step from errors in the calculated satellite position, errors caused by ionospheric interference with the 
+				Errors in the resulting velocity fields may stem from errors in the calculated satellite position, errors caused by ionospheric interference with the 
 				radar wave, errors in the DEM used for projection of the radar image and conversion of displacement field to metres, errors in image co-registration, 
 				uncertainties associated with calculation of ice motion over 2D IAs, uncertainties in the calculation of the cross-correlation peak location. These errors
 				are hard to quantify on a pixel-by-pixel basis. 
@@ -462,11 +487,12 @@ const publicPath = import.meta.env.BASE_URL;
 				calculate the median velocity of bedrock areas and apply that as a bias correction to the mosaics and we retain that motion as a measure of the 
 				'global' error in each date-pair mosaic.
 			  </p>
+			  </section>
 
 			  <h4>Step 4: Spatial Filtering</h4>
 			  <p>
 				Once merged and bias-corrected, we apply a <strong>Hybrid Median Filter</strong> to the mosaic. This filter is specifically chosen because it effectively 
-				removes "salt-and-pepper" noise (random, high-frequency outliers) in the data, while preserving sharp edges—crucial for maintaining the distinct 
+				removes "salt-and-pepper" noise (random, high-frequency outliers) in the data, while preserving sharp edges - crucial for maintaining the distinct 
 				boundaries of shear margins in ice streams. We then fill small spatial gaps in each mosaic.
 			  </p>
 
@@ -555,6 +581,10 @@ const publicPath = import.meta.env.BASE_URL;
 		<section id="automation">
           <h2>7. Automation</h2>
 		  <p>
+			Our processing is automated and powered by the University of Sheffield High Performance Cluster 
+			<a href="https://docs.hpc.shef.ac.uk/en/latest/stanage/" target="_blank"><strong>Stanage</strong></a>.
+		  </p>
+		  <p>
 			Our complete automation workflow is available in the document below. We use a SpatioTemporal Asset Catalog (STAC)-like architecture
 			that defines all available image pairs and their processing status. This STAC is updated at least daily with new images as Sentinel-1
 			acquires them and as new image pairs are processed by our in-house HPC cluster. The beauty of the STAC is that it allows us to 
@@ -568,14 +598,14 @@ const publicPath = import.meta.env.BASE_URL;
 		  </p>
 		  <div class="pdf-container">
 			<object 
-			  data="/pdfs/SCADI_UserGuide.pdf" 
+			  :data="`${publicPath}pdfs/SCADI_UserGuide.pdf`"
 			  type="application/pdf" 
 			  width="100%" 
 			  height="800px"
 			>
 			  <div style="padding: 20px; text-align: center;">
 				<p>It appears you don't have a PDF plugin for this browser.</p>
-				<a href="/pdfs/SCADI_UserGuide.pdf" class="btn-download">
+				<a :href="`${publicPath}pdfs/SCADI_UserGuide.pdf`" class="btn-download">
 				  Click here to download the User Guide
 				</a>
 			  </div>
@@ -633,21 +663,35 @@ const publicPath = import.meta.env.BASE_URL;
 		  
 		  <h3>8.4 Output</h3>
           <p>
-            Download your timeseries as <strong>.csv</strong> files and/or the graph as a , 
+            Download your timeseries as <strong>.csv</strong> files and/or the graph(s) as a , 
             <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
-			downloaded as a <strong>.zip</strong> file containing multiple .csv files. Downloads will
+			downloaded as a .zip file containing multiple .csv files. If multiple variables 
+			or filtering levels are selected, images will be downloaded as a .zip file.
+			Downloads will
 			also include a geojson of your point locations.
+		  </p>
+		  <p>
+            <strong>CSV naming convention:</strong> <br>
+			SiteName_Buffer_Lat_Lon_SmoothingParams.csv <br>
+			e.g., Site_1_500m_67.123_-48.567_gf24_wr25_wd25_p2.csv <br>
+			where: gf24 means gap_fill=24 days, wr25 means raw window smoothing length of 25 days, wd25 means a daily window smoothing length of 25 days, and p2 means a second order polynomial in the savitzky-golay smoother was used.
 		  </p>
 		  <p>
             <strong>CSV output variables:</strong>
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed</li>
-            <li><strong>Speed_m_yr:</strong> Horizontal surface ice speed in metres per year. If a buffer is used, the median speed within the resulted area is used.</li>
-            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Error_m_yr:</strong> An estimate of the <a href="#" @click.prevent="scrollToSection('error')">global uncertainty in ice speed or velocity</a>
+			at this time period. Defined as the median speed over bedrock regions at that time.</li>
 			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
 			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
-		  </ul>
+			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+          </ul>
 		
         </section>
 
@@ -668,6 +712,8 @@ const publicPath = import.meta.env.BASE_URL;
 		  <blockquote class="citation-block">
 		  Kingslake/Sole : Flow Response of Antarctic Ice to Meltwater/Sheffield Ice Velocity ExploreR
 		  </blockquote>
+		  <br>
+		  FRAM, SCADI and SHIVER were funded by NSFGEO-NERC grant #2053169.
         </section>
 
       </main>
@@ -698,8 +744,8 @@ const publicPath = import.meta.env.BASE_URL;
 		   </a>
 		  <br>
 		  The FRAM project is funded by NSFGEO-NERC <br>
-		  Grant Number: # 2053169, "Investigating the <br> 
-		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics
+		  Grant Number: #2053169, "Investigating the <br> 
+		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
         </div>
 		
 		<div class="partner-group">
