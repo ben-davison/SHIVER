@@ -15,6 +15,7 @@ import photoBenD from '../assets/people/BenDavison.jpg';
 import photoKateW from '../assets/people/Kate.jpg';
 import photoStephenL from '../assets/people/Stephen.png';
 import photoSianT from '../assets/people/SianThorpe.jpg';
+import photoAndrewS from '../assets/people/AndrewSole.jpg';
 
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
@@ -35,7 +36,7 @@ const teamMembers = [
     name: "Prof. Andrew Sole",
     role: "FRAM Co-Investigator (UK Lead)",
 	institution: "University of Sheffield",
-    image: getPlaceholderUrl("Andrew+Sole"),
+    image: photoAndrewS,
     bio: "Andrew leads the UK side of the FRAM project and led the development of SCADI. Andrew specialises in remote sensing of glacier dynamics and interactions between meltwater and ice motion."
   },
   {
