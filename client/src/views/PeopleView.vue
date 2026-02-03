@@ -13,6 +13,7 @@ import LDEOLogo from '../assets/LDEO_logo/LDEO_logo_black.png';
 // --- 2. IMPORT TEAM PHOTOS ---
 import photoBenD from '../assets/people/BenDavison.jpg';
 import photoKateW from '../assets/people/Kate.jpg';
+import photoStephenL from '../assets/people/Stephen.png';
 
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
@@ -26,7 +27,7 @@ const teamMembers = [
 	institution: "Lamont-Doherty Earth Observatory",
     // image: photoAlice, // <--- Use the imported variable here later
     image: getPlaceholderUrl("Jonny+Kingslake"), 
-    bio: "Jonny leads the FRAM project. They specialise in ApRES measurements and Antarctic surface hydrology."
+    bio: "Jonny leads the FRAM project. Jonny specialises in ApRES measurements and Antarctic surface hydrology."
   },
   {
     id: 2,
@@ -34,7 +35,7 @@ const teamMembers = [
     role: "FRAM Co-Investigator (UK Lead)",
 	institution: "University of Sheffield",
     image: getPlaceholderUrl("Andrew+Sole"),
-    bio: "Andrew leads the UK side of the FRAM project and led the development of SCADI. They specialise in remote sensing of glacier dynamics and interactions between meltwater and ice motion."
+    bio: "Andrew leads the UK side of the FRAM project and led the development of SCADI. Andrew specialises in remote sensing of glacier dynamics and interactions between meltwater and ice motion."
   },
   {
     id: 3,
@@ -46,19 +47,19 @@ const teamMembers = [
   },
   {
     id: 4,
-    name: "Dr. Ben Davison",
+    name: "Dr Ben Davison",
     role: "Postdoctoral Research Associate",
 	institution: "University of Sheffield",
     image: photoBenD,
-    bio: "Ben leads the remote sensing project work, including SCADI optimization and automation and SHIVER development. They deployed GNSS, ApRES and a passive seismometer during the 2024 field season."
+    bio: "Ben leads the remote sensing project work, including SCADI optimization and automation and SHIVER development. Ben deployed GNSS, ApRES and a passive seismometer during the 2024 field season."
   },
   {
     id: 5,
-    name: "Dr. Jeremy Ely",
+    name: "Dr Jeremy Ely",
     role: "Co-Investigator",
 	institution: "University of Sheffield",
     image: getPlaceholderUrl("Jeremy+Ely"),
-    bio: "Jeremy is an expert in glacial geomorphology and hydrology. They help us to interpret our field and satellite observations, and provide guidance on key science questions."
+    bio: "Jeremy is an expert in glacial geomorphology and hydrology. Jeremy helps us to interpret our field and satellite observations, and provides guidance on key science questions."
   },
   {
     id: 6,
@@ -70,19 +71,19 @@ const teamMembers = [
   },
   {
     id: 7,
-    name: "Dr. Andrew Hoffman",
+    name: "Dr Andrew Hoffman",
     role: "Postdoctoral Research Associate",
 	institution: "Lamont-Doherty Earth Observatory",
     image: getPlaceholderUrl("Andrew+Hoffman"),
-    bio: "Andrew is a glacial geophysics and fieldwork specialist. They deployed GNSS and ApRES during the 2025 field season."
+    bio: "Andrew is a glacial geophysics and fieldwork specialist. Andrew deployed GNSS and ApRES during the 2025 field season."
   },
   {
     id: 8,
     name: "Prof. Stephen Livingstone",
     role: "Co-Investigator",
 	institution: "University of Sheffield",
-    image: getPlaceholderUrl("Stephen+Livingstone"),
-    bio: "Stephen is an expert in subglacial lakes. They help us to interpret our field and satellite observations, and provide guidance on key science questions."
+    image: photoStephenL,
+    bio: "Stephen is an expert in ice sheet hydrology. He helps us to interpret our field and satellite observations, and provides guidance on key science questions."
   },
   {
     id: 9,
@@ -90,23 +91,23 @@ const teamMembers = [
     role: "Research Associate",
 	institution: "University of Sheffield",
     image: getPlaceholderUrl("Sian+Thorpe"),
-    bio: "Sian specializes in subglacial lake dynamics and glacial fieldwork. They support the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
+    bio: "Sian specializes in subglacial lake dynamics and glacial fieldwork. Sian supports the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
   },
   {
     id: 10,
-    name: "Dr. Rohi Muthyala",
+    name: "Dr Rohi Muthyala",
     role: "Postdoctoral Research Associate",
 	institution: "Lamont-Doherty Earth Observatory",
     image: getPlaceholderUrl("Rohi+Muthyala"),
-    bio: "Rohi is a hydrologist and field glaciologist. They deployed an AWS and piloted the UAV during the 2024 and 2025 field seasons."
+    bio: "Rohi is a hydrologist and field glaciologist. Rohi deployed an AWS and piloted the UAV during the 2024 and 2025 field seasons."
   },
   {
     id: 11,
-    name: "Dr. Kate Winter",
+    name: "Dr Kate Winter",
     role: "Co-Investigator",
 	institution: "Northumbria University",
     image: photoKateW,
-    bio: "Kate is a glacial geophysics expert. She led the campaign in 2024 and supported the deployment of GNSS and ApRES."
+    bio: "Kate is a glacial geophysics expert. Kate led the campaign in 2024 and supported the deployment of GNSS and ApRES."
   }
 ];
 </script>

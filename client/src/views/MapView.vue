@@ -1,7 +1,7 @@
 <template>
-  <div class="page-container">
+  <div class="page-container" :class="{ 'is-global-loading': isUploading }">
     
-    <div class="map-wrapper" :class="{ 'show-labels': zoom >= 9 }">
+    <div class="map-wrapper" :class="{ 'show-labels': zoom >= 9 }" :style="{ height: mapHeightPercent + '%' }">
       <l-map 
         ref="map" 
         v-model:zoom="zoom" 
@@ -12,11 +12,14 @@
         @overlayremove="onOverlayRemove"
       >
         <l-control-layers position="topleft"></l-control-layers>
+		
+		<l-control-scale position="bottomleft" :imperial="false" :metric="true"></l-control-scale>
         
         <l-tile-layer 
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" 
           layer-type="base" 
           name="Satellite Imagery"
+		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
 
         <l-tile-layer
@@ -25,6 +28,7 @@
           layer-type="overlay"
           name="Ice Speed"
           :visible="overlayLayer === 'speed'"
+		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
 
         <l-tile-layer
@@ -33,6 +37,7 @@
           layer-type="overlay"
           name="Measurement Count"
           :visible="overlayLayer === 'count'"
+		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
 		
         <l-tile-layer
@@ -41,6 +46,7 @@
           layer-type="overlay"
           name="Speed Trend"
           :visible="overlayLayer === 'trend'"
+		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
 		
 		<l-tile-layer
@@ -50,6 +56,7 @@
 			:opacity="1.0"
 			:z-index="10" 
 			:visible="false"
+			:options="{ crossOrigin: 'anonymous' }"
 		  ></l-tile-layer>
 		
         <l-geo-json 
@@ -89,38 +96,65 @@
 	  
       <div class="legend-container">
 
-        <div class="legend-box" v-if="overlayLayer !== 'none'">
+        <div class="legend-box" v-if="overlayLayer !== 'none' || isFlowActive">
         
-			<div v-if="overlayLayer === 'speed'">
-			  <h4>Ice Speed (Log Scale)</h4>
-			  <div class="legend-bar speed-gradient"></div>
-			  <div class="legend-labels">
-				<span>1</span>
-				<span>10</span>
-				<span>100</span>
-				<span>{{ maxSpeedLabel }}</span>
-			  </div>
-			</div>
+			<div v-if="overlayLayer !== 'none'" class="scalar-legend-group">
+				<div v-if="overlayLayer === 'speed'">
+				  <h4>Ice Speed (Log Scale)</h4>
+				  <div class="legend-bar speed-gradient"></div>
+				  <div class="legend-labels">
+					<span>1</span>
+					<span>10</span>
+					<span>100</span>
+					<span>{{ maxSpeedLabel }}</span>
+				  </div>
+				</div>
 
-			<div v-else-if="overlayLayer === 'count'">
-			  <h4>Percentage Valid Measurements</h4>
-			  <div class="legend-bar viridis-gradient"></div>
-			  <div class="legend-labels">
-				<span>0</span>
-				<span>30</span>
-				<span>60</span>
-				<span>90</span>
-			  </div>
-			</div>
+				<div v-else-if="overlayLayer === 'count'">
+				  <h4>Percentage Valid Measurements</h4>
+				  <div class="legend-bar viridis-gradient"></div>
+				  <div class="legend-labels">
+					<span>0</span>
+					<span>30</span>
+					<span>60</span>
+					<span>90</span>
+				  </div>
+				</div>
 		
-			<div v-else-if="overlayLayer === 'trend'">
-			  <h4>Speed Trend (m/yr<sup>2</sup>)</h4>
-			  <div class="legend-bar trend-gradient"></div>
-			  <div class="legend-labels">
-				<span>{{ minTrendLabel }}</span>
-				<span>0</span>
-				<span>{{ maxTrendLabel }}</span>
-			  </div>
+				<div v-else-if="overlayLayer === 'trend'">
+				  <h4>Speed Trend (m/yr<sup>2</sup>)</h4>
+				  <div class="legend-bar trend-gradient"></div>
+				  <div class="legend-labels">
+					<span>{{ minTrendLabel }}</span>
+					<span>0</span>
+					<span>{{ maxTrendLabel }}</span>
+				  </div>
+				</div>
+			</div>
+			
+			<div v-if="isFlowActive" class="vector-legend-group">
+				<div v-if="overlayLayer !== 'none'" class="legend-separator"></div>
+				<h4>Flow Vector Scale</h4>
+				
+				<div class="vector-row">
+				  <svg :width="arrowPixelWidth + 15" height="24" class="vector-arrow-svg">
+					 <defs>
+					   <marker id="arrowhead" markerWidth="8" markerHeight="6" 
+							   refX="7" refY="3" orient="auto">
+						 <polygon points="0 0, 8 3, 0 6" fill="#333" />
+					   </marker>
+					 </defs>
+					 
+					 <line 
+					   x1="0" y1="12" 
+					   :x2="arrowPixelWidth" y2="12" 
+					   stroke="#333" 
+					   stroke-width="2" 
+					   marker-end="url(#arrowhead)" 
+					 />
+				  </svg>
+				  <span class="vector-label">{{ vectorScaleLabel }}</span>
+				</div>
 			</div>
 			
 			<div v-if="showMargins" style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 5px;">			  
@@ -155,9 +189,16 @@
 		
 		<div v-if="showAdvanced" class="advanced-popup">
           <div class="popup-header">
-            <strong>Advanced Options</strong>
-            <button @click="showAdvanced = false" class="popup-close">&times;</button>
-          </div>
+			  <strong>Advanced Options</strong>
+			  
+			  <div class="header-actions">
+				<button @click="restoreDefaults" class="btn-restore-link">
+				  Restore defaults
+				</button>
+				
+				<button @click="showAdvanced = false" class="popup-close">&times;</button>
+			  </div>
+			</div>
           
 		  <div class="opt-section">
             <span class="opt-label">Variables:</span>
@@ -188,13 +229,13 @@
             </div>
 
             <div class="param-row">
-              <label>Window size days (Raw)</label>
+              <label>Window size days (Points)</label>
               <input type="range" v-model.number="smoothingParams.win_raw" min="1" max="121" step="2" class="param-slider">
               <input type="number" v-model.number="smoothingParams.win_raw" class="param-input" @change="debouncedRefetch">
             </div>
 
             <div class="param-row">
-              <label>Window size days (Daily)</label>
+              <label>Window size days (Line)</label>
               <input type="range" v-model.number="smoothingParams.win_daily" min="1" max="121" step="2" class="param-slider">
               <input type="number" v-model.number="smoothingParams.win_daily" class="param-input" @change="debouncedRefetch">
             </div>
@@ -216,12 +257,13 @@
           </select>
         </div>
 		
-        <div class="upload-section">
-          <label class="btn-upload">
-            Load Shapefile/Zip
-            <input type="file" @change="handleFileUpload" accept=".zip,.json,.geojson,.kml" hidden>
-          </label>
-        </div>
+		<div class="upload-section">
+		  <label class="btn-upload" :class="{ 'is-loading': isUploading }">
+			<span v-if="!isUploading">Load Zipped Shapefile</span>
+			<span v-else class="spinner"></span>
+			<input type="file" @change="handleFileUpload" accept=".zip,.json,.geojson,.kml" hidden :disabled="isUploading">
+		  </label>
+		</div>
 		
         <div class="list-toolbar" v-if="selectedPoints.length > 0">
           <button @click="clearAll" class="btn-clear">Clear All</button>
@@ -256,41 +298,64 @@
             @keyup.enter="$event.target.blur()"
           >
         </div>
-		
-		<div class="control-group" v-if="selectedPoints.length > 0">
-          <label>Graph View:</label>
-          <select v-model="currentPlotVar" @change="updateChart" style="width: 100%; padding: 5px;">
-             <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
-                 {{ opt.label }}
-             </option>
-          </select>
-        </div>
 
-        <button 
-          v-if="selectedPoints.length > 0" 
-          @click="handleDownload" 
-          class="btn-download" 
-          :disabled="isDownloading"
-        >
-          {{ isDownloading ? 'Zipping...' : downloadLabel }}
-        </button>
+        <div class="control-group" v-if="selectedPoints.length > 0">
+		  <label>Export Data:</label>
+		  <div class="export-buttons">
+			
+			<button 
+			  @click="handleDownload" 
+			  class="btn-download" 
+			  :disabled="isDownloading"
+			  style="margin-bottom: 10px;"
+			>
+			  <i class="fas" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-file-csv'"></i> 
+			  {{ isDownloading ? 'Zipping...' : downloadLabel }}
+			</button>
 
-        <button 
-          v-if="selectedPoints.length > 0" 
-          @click="downloadChartImage" 
-          class="btn-download" 
-          style="margin-top: 2px;"
-        >
-          Download timeseries graph (PNG)
-        </button>
+			<div class="button-row">
+			  <button 
+				@click="downloadChartImage" 
+				class="btn-download half-width"
+				:disabled="isDownloadingChart"
+			  >
+				<i class="fas" :class="isDownloadingChart ? 'fa-spinner fa-spin' : 'fa-chart-line'"></i>
+				{{ isDownloadingChart ? 'Processing...' : chartDownloadLabel }}
+			  </button>
+			  
+			  <button 
+				@click="downloadMapAndGraph" 
+				class="btn-download half-width"
+				:disabled="isDownloadingMap"
+			  >
+				<i class="fas" :class="isDownloadingMap ? 'fa-spinner fa-spin' : 'fa-map'"></i>
+				{{ isDownloadingMap ? 'Processing...' : mapDownloadLabel }}
+			  </button>
+			</div>
+			
+		  </div>
+		</div>
 
         <p class="status-text">{{ statusMessage }}</p>
       </div>
     </div>
+	
+	<div class="resize-handle" @mousedown.prevent="startDrag">
+       <div class="handle-grip"></div>
+    </div>
 
-    <div class="chart-wrapper">
+    <div class="chart-wrapper" :style="{ height: (100 - mapHeightPercent) + '%' }">
+		<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
+			<span class="overlay-label">Graph View:</span>
+			<select v-model="currentPlotVar" @change="updateChart" class="overlay-select">
+			   <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
+				   {{ opt.label }}
+			   </option>
+			</select>
+		  </div>
       <div id="velocity-chart" class="chart-container"></div>
     </div>
+	
   </div>
   
   <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
@@ -304,6 +369,10 @@
           <p>
             Click anywhere on the map or upload a shapefile containing a point or points to view 
 			time-series of ice velocity in those locations. You can select up to ten points to compare different locations.
+          </p>
+		  <p>
+            <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
+			Double click on the chart to reset the axes. Or use the zoom, pan and reset buttons in the top right of the chart to navigate.
           </p>
 		  
 		  <h3>2. About the data</h3>
@@ -334,11 +403,9 @@
 			Low-latency access to these data is enabled using cloud-optimized zarr stores. 
 		  </p>
 		  <p>
-			Read our <RouterLink to="/documentation" class="text-link"><strong>documentation</strong></RouterLink> page for more details.
+			Read our <AppLink to="/documentation" class="text-link"><strong>documentation</strong></AppLink> page for more details.
           </p>
 		  
-		  
-
           <h3>3. Uploading Shapefiles</h3>
           <p>
             <strong>Requirements:</strong>
@@ -355,11 +422,44 @@
             <li><strong>Buffer:</strong> Include 'buffer' as a shapefile field name, containing integer buffer values for each point.</li>
             <li><strong>Point names:</strong> Include 'name' as a shapefile field name to give your outputs a custom name.</li>
           </ul>
+		  
+		  <h3>4. Advanced Options</h3>
+          <p>
+		     The advanced options allow you to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
+			 timeseries smoothing parameters. 
+		   </p>
+		   <p>
+            <strong>Variables:</strong>
+          </p>
+          <ul>
+            <li><strong>S:</strong> Extract speed (horizontal ice surface velocity magnitude).</li>
+            <li><strong>U:</strong> Extract easting velocity (horizontal ice surface easting velocity). Values are positive towards polar stereographic east.</li>
+            <li><strong>V:</strong> Extract northing velocity (horizontal ice surface northing velocity). Values are positive towards polar stereographic north.</li>
+          </ul>
+		  <p>
+            <strong>Processing level:</strong>
+			See the <AppLink to="/documentation#mosaics" class="text-link">Mosaics section of our Documentation page</AppLink> for more details.
+          </p>
+          <ul>
+            <li><strong>raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
+            <li><strong>filt:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
+          </ul>
+		  <p>
+            <strong>Smoothing parameters:</strong>
+			All time-series extracted with SHIVER are smoothed using a Savitzky-Golay filter.
+			Use the slide bars or text boxes to modify how much smoothing is applied.
+          </p>
+          <ul>
+            <li><strong>Max gap fill length days:</strong> Small gaps in the point data are filled using linear interpolation. Use this option to control the maximum length of gap that is filled.</li>
+            <li><strong>Window size days (Points):</strong> Set the size of the moving window used to smooth the point data displayed on the time-series chart. A larger window increases smoothing.</li>
+			<li><strong>Window size days (Line):</strong> Set the size of the moving window used to smooth the line data displayed on the time-series chart. A larger window increases smoothing.</li>
+			<li><strong>Polynomial order:</strong> Set the degree of the local polynomial fitted to the data within each moving window. A lower order increases smoothing but may distort rapid changes; a higher order better preserved high-frequences features but reduces smoothing.</li>
+          </ul>
 		  <p>
 		    Note that the same variables and filtering level, using the same smoothing parameters, will be applied to all extraction locations.
 		  </p>
 
-          <h3>4. Interpreting the Map</h3>
+          <h3>5. Interpreting the Map</h3>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
             <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
@@ -380,15 +480,28 @@
 			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
 			</p>
           </ul>
+		  <p>
+		    When viewing Antarctica, the outlines of glacier basins are shown as grey lines (Cook et al. 2014). If you zoom in sufficiently, glacier names from the
+			<AppLink to="https://apc.antarctica.ac.uk/gazetteers/go-to-gazetteers/" target="_blank" rel="noopener" class="text-link">British Antarctic Territory gazetteer</AppLink> 
+			will be displayed. 
+		   </p>
+		   <p>
+		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
+		   </p>
+		     
 		  
-		  <h3>5. Output</h3>
+		  <h3>6. Output</h3>
+		  <p>
+		    Clicking the map will produce a timeseries showing point data and a smoothed line. 
+			The point data provide the measurements taken directly from our ice velocity dataset.
+			The line provides a smoothed representation of those measurements.
+		  </p>
           <p>
             Download your timeseries as <strong>.csv</strong> files and/or the graph(s) as a , 
             <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
 			downloaded as a .zip file containing multiple .csv files. If multiple variables 
 			or filtering levels are selected, images will be downloaded as a .zip file.
-			Downloads will
-			also include a geojson of your point locations.
+			Downloads will also include a geojson of your point locations.
 		  </p>
 		  <p>
             <strong>CSV naming convention:</strong> <br>
@@ -398,6 +511,9 @@
 		  </p>
 		  <p>
             <strong>CSV output variables:</strong>
+			<br>
+			<em>Note: Only "Date", "Error_m_yr", "Time_separation_days", "Pixel_Count" and "s_filt" are exported by default. 
+			Other variables can be enabled for download within the Advanced Options menu. </em>
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed</li>
@@ -421,12 +537,14 @@
 // --- IMPORTS ---
 import { ref, computed, nextTick, watch } from 'vue';
 import "leaflet/dist/leaflet.css";
-import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup } from "@vue-leaflet/vue-leaflet";
+import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
 import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import L from 'leaflet';
+import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -472,6 +590,9 @@ const center = ref([67.133129, -48.900752]);
 const bufferSize = ref(500); 
 const statusMessage = ref("");
 const isDownloading = ref(false);
+const isDownloadingChart = ref(false);
+const isDownloadingMap = ref(false);
+const isUploading = ref(false);
 const selectedPoints = ref([]); 
 const glacierData = ref(null);
 const glacierNamesData = ref(null);
@@ -479,6 +600,9 @@ const showHelp = ref(false);
 const iceEdgeData = ref(null);
 const groundingLineData = ref(null);
 const showMargins = ref(false);
+const mapHeightPercent = ref(60); // Default to 60%
+const isDragging = ref(false);
+const isFlowActive = ref(false);
 
 // --- ADVANCED OPTIONS ---
 const showAdvanced = ref(false);
@@ -495,6 +619,56 @@ const smoothingParams = ref({
     win_daily: 25,
     poly: 2
 });
+
+const restoreDefaults = () => {
+  selectedVars.value = ['s'];
+  selectedQuality.value = ['filt'];
+  smoothingParams.value = {
+    gap: 24,
+    win_raw: 1,
+    win_daily: 25,
+    poly: 2
+  };
+};
+
+// --- Drag Logic ---
+const startDrag = () => {
+  isDragging.value = true;
+  // Attach listeners to window so dragging continues even if mouse leaves the handle
+  window.addEventListener('mousemove', onDrag);
+  window.addEventListener('mouseup', stopDrag);
+};
+
+const onDrag = (e) => {
+  if (!isDragging.value) return;
+
+  const container = document.querySelector('.page-container');
+  if (!container) return;
+
+  // Calculate mouse Y position relative to the container top
+  const containerRect = container.getBoundingClientRect();
+  const relativeY = e.clientY - containerRect.top;
+  
+  // Convert to percentage
+  let newHeight = (relativeY / containerRect.height) * 100;
+
+  // Clamp limits (e.g., Map can't be smaller than 10% or larger than 90%)
+  newHeight = Math.min(Math.max(newHeight, 10), 90);
+
+  mapHeightPercent.value = newHeight;
+
+  // CRITICAL: Tell Leaflet and Plotly the window size changed so they redraw
+  window.dispatchEvent(new Event('resize'));
+};
+
+const stopDrag = () => {
+  isDragging.value = false;
+  window.removeEventListener('mousemove', onDrag);
+  window.removeEventListener('mouseup', stopDrag);
+  
+  // Final resize trigger to ensure crisp rendering
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+};
 
 // Determine colour based on number of points
 const distributeColors = () => {
@@ -561,8 +735,9 @@ watch(plotOptions, (newOpts) => {
 }, { deep: true });
 
 // Dynamic label for the download button
-const downloadLabel = computed(() => selectedPoints.value.length > 1 ? 'Download All (.zip)' : 'Download CSV');
-const imageDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'Download Graphs (.zip)' : 'Download Graph (PNG)');
+const downloadLabel = computed(() => selectedPoints.value.length > 1 ? 'All CSVs (.zip)' : 'CSV');
+const chartDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Graphs (.zip)' : 'Graph' );
+const mapDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Maps (.zip)' : 'Map & Graph' );
 
 // --- COMPUTED URLs FOR TILES ---
 // "timestamp" is used as a query parameter (?t=...) to force the browser 
@@ -585,12 +760,13 @@ const iceEdgeStyle = { color: "black", weight: 2 };
 const groundingLineStyle = { color: "magenta", weight: 2 };
 
 const onOverlayAdd = (e) => {  
-  const rasterLayers = ['Ice Speed', 'Measurement Count', 'Speed Trend'];
+  const rasterLayers = ['Ice Speed', 'Measurement Count', 'Speed Trend', 'Flow direction arrows'];
   if (rasterLayers.includes(e.name)) {
     // If clicking a raster layer, switch the active raster
 	if (e.name === 'Ice Speed') overlayLayer.value = 'speed';
     if (e.name === 'Measurement Count') overlayLayer.value = 'count';
     if (e.name === 'Speed Trend') overlayLayer.value = 'trend';
+	if (e.name === 'Flow direction arrows') isFlowActive.value = true;
   } 
   
   // Handle Ice Margin Selection
@@ -606,6 +782,7 @@ const onOverlayRemove = (e) => {
   if (e.name === "Ice Speed" && overlayLayer.value === 'speed') overlayLayer.value = 'none';
   if (e.name === "Measurement Count" && overlayLayer.value === 'count') overlayLayer.value = 'none';
   if (e.name === "Speed Trend" && overlayLayer.value === 'trend') overlayLayer.value = 'none'; 
+  if (e.name === "Flow direction arrows") isFlowActive.value = false; 
   
   // Margin data
   if (e.name === "Ice Margin") {
@@ -636,6 +813,29 @@ const loadMarginData = async () => {
 const maxSpeedLabel = computed(() => currentRegion.value === 'Greenland' ? '400 m/yr' : '800 m/yr');
 const maxTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '2.5' : '15');
 const minTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '-2.5' : '-15');
+const vectorScaleLabel = computed(() => currentRegion.value === 'Greenland' ? '250 m/yr' : '500 m/yr');
+
+// --- REFERENCE VECTOR CALCULATION --- //
+const arrowPixelWidth = computed(() => {
+  // Standard web map tiles are 256x256 pixels
+  const tileSize = 256; 
+  
+  // Define the variables relative to the region
+  let refSpeed;
+  let backendScale;
+
+  if (currentRegion.value === 'Greenland') {
+     refSpeed = 250;       // User desired reference
+     backendScale = 2250;  // Backend scale for Greenland
+  } else {
+     refSpeed = 500;       // User desired reference
+     backendScale = 5000;  // Backend scale for Antarctica
+  }
+
+  // Calculate: (Reference / BackendScale) * 256px
+  return (refSpeed / backendScale) * tileSize;
+});
+
 
 // --- REGION MANAGEMENT ---
 const switchRegion = () => {
@@ -819,7 +1019,10 @@ const outlineStyle = () => {
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  statusMessage.value = "Uploading...";
+  
+  // 1. Start loading state
+  isUploading.value = true;
+  statusMessage.value = "Uploading... 0%";
   
   const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
   const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
@@ -839,26 +1042,53 @@ const handleFileUpload = async (event) => {
 
   try {
     const response = await apiClient.post('/api/timeseries/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+	  // Track upload progress
+	  onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+		if (percentCompleted < 100) {
+           statusMessage.value = `Uploading... ${percentCompleted}%`;
+        } else {
+           // Once we hit 100% upload, we are waiting for the server
+           statusMessage.value = "Upload complete. Analyzing server response..."; }
+        }
     });
+	
     const results = response.data;
     if (results.status === 'error') throw new Error(results.message);
-
-    let added = 0;
-    for (const [siteName, data] of Object.entries(results)) {
+	
+	// Convert to entries so we can iterate with index
+    const entries = Object.entries(results);
+	
+	let added = 0;
+    for (let i = 0; i < entries.length; i++) {
       if (selectedPoints.value.length >= 10) break;
+      const [siteName, data] = entries[i];
+      // Update status for the specific site
+      statusMessage.value = `Processing site ${i + 1} of ${entries.length}...`;
+      // Force a short (10ms) to let Vue render the text update.
+      await new Promise(resolve => setTimeout(resolve, 2));
+      // Parse data
       const ptLat = data.meta?.lat || 0;
       const ptLon = data.meta?.lon || 0;
       const color = COLORS[selectedPoints.value.length % COLORS.length];
+      // Extract
       selectedPoints.value.push({
         id: Date.now() + added, lat: ptLat, lon: ptLon, color: color, data: data, name: siteName 
       });
       added++;
     }
+	
     statusMessage.value = `Loaded ${added} sites.`;
     updateChart();
+	
+	// Clear input in case of additional uploads
+	event.target.value = '';
+	
   } catch (error) {
     console.error(error); statusMessage.value = "Upload failed.";
+  } finally {
+    isUploading.value = false;
   }
 };
 
@@ -937,11 +1167,21 @@ const buildChartConfig = (plotKey) => {
       line: { color: point.color, width: 3 }
     });
   });
+  
+  // Determine y-axis label
+  let yAxisLabel = "Velocity (m/yr)"; // Default fallback
+  if (plotKey.startsWith('s')) {
+    yAxisLabel = "Speed (m/yr)";
+  } else if (plotKey.startsWith('u')) {
+    yAxisLabel = "Easting velocity (m/yr, positive eastwards)";
+  } else if (plotKey.startsWith('v')) {
+    yAxisLabel = "Northing velocity (m/yr, positive northwards)";
+  }
 
   const layout = {
     title: `Ice Velocity: ${plotKey.toUpperCase()}`,
     xaxis: { title: { text: 'Date', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
-    yaxis: { title: { text: 'Velocity (m/yr)', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
+    yaxis: { title: { text: yAxisLabel, standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
     margin: {t:40, r:20, l:80, b:60}, showlegend: true, legend: {orientation: 'h', y: 1.14, x: 0, xanchor: 'left'}, autosize: true
   };
 
@@ -954,7 +1194,38 @@ const updateChart = async () => {
   if (selectedPoints.value.length === 0) { Plotly.purge('velocity-chart'); return; }
   
   const { data, layout } = buildChartConfig(currentPlotVar.value);
-  Plotly.newPlot('velocity-chart', data, layout, {responsive: true});
+  
+  // Define the configuration
+  const config = {
+    responsive: true,
+    // Add the specific button names you want to hide here
+    modeBarButtonsToRemove: [
+      'lasso2d',       // Lasso Select
+      'select2d',      // Box Select
+	  'toImage',       // Remove plotly image download (we replace with our own button that looks the same but performs better)
+      'toggleSpikelines', // Toggle Spike Lines
+	  'autoScale2D',   // Remove autoscale button (reset scale works just as well)
+      'hoverClosestCartesian', // Often redundant if you use 'compare'
+      'hoverCompareCartesian'  // Keep this if you want shared tooltips
+    ],
+	// 2. Add your custom button
+    modeBarButtonsToAdd: [
+      {
+        name: 'custom_download', // Internal name
+        title: 'Download Plot (PNG)', // Tooltip text
+        icon: Plotly.Icons.camera,    // Use Plotly's default camera icon
+        click: function(gd) {
+          // 'gd' is the graph div, but downloadChartImage handles DOM retrieval itself.
+          downloadChartImage();
+        }
+      }
+    ],
+    // Optional: Set to false if you want the bar hidden entirely until hover
+    displayModeBar: 'hover', 
+  };
+  
+  // Make the plot
+  Plotly.newPlot('velocity-chart', data, layout, config);
 };
 
 
@@ -964,58 +1235,179 @@ const downloadChartImage = async () => {
     statusMessage.value = "No chart to download.";
     return;
   }
-  
-  // Track png downloads
-  trackEvent("file_download", {
-	  event_category: "export",
-	  event_label: "png_chart",
-	  file_extension: "png",
-	  file_name: `velocity_plots_${currentRegion.value}`,
-	  plot_type: currentPlotVar.value
-	});
-  
-  statusMessage.value = "Generating image(s)...";
-  
-  const keysToDownload = plotOptions.value.map(o => o.val);
-  
-  if (keysToDownload.length === 1) {
-      const graphDiv = document.getElementById('velocity-chart');
-      // Append params suffix
-      const fname = `velocity_${keysToDownload[0]}_timeseries${smoothingSuffix.value}`;
-      await Plotly.downloadImage(graphDiv, {
-          format: 'png', width: 1200, height: 500, filename: fname 
-      });
-      statusMessage.value = "Image downloaded.";
-      return;
-  }
 
-  try {
+  // --- Start Spinner ---
+  isDownloadingChart.value = true;
+
+  // Track png downloads (Left exactly as is)
+  trackEvent("file_download", {
+    event_category: "export",
+    event_label: "png_chart",
+    file_extension: "png",
+    file_name: `velocity_plots_${currentRegion.value}`,
+    plot_type: currentPlotVar.value
+  });
+
+  statusMessage.value = "Generating image(s)...";
+
+  // --- Wrap in setTimeout to allow UI update ---
+  setTimeout(async () => {
+    try {
+      const keysToDownload = plotOptions.value.map(o => o.val);
+
+      if (keysToDownload.length === 1) {
+        const graphDiv = document.getElementById('velocity-chart');
+        // Append params suffix
+        const fname = `velocity_${keysToDownload[0]}_timeseries${smoothingSuffix.value}`;
+        await Plotly.downloadImage(graphDiv, {
+          format: 'png', width: 1200, height: 500, filename: fname
+        });
+        statusMessage.value = "Image downloaded.";
+        return;
+      }
+
+      // Existing Zip Logic (Left exactly as is)
       const zip = new JSZip();
-      
+
       const getBlobForConfig = async (key) => {
-          const tempDiv = document.createElement('div');
-          tempDiv.style.width = '1200px'; tempDiv.style.height = '500px'; tempDiv.style.visibility = 'hidden';
-          document.body.appendChild(tempDiv);
-          const { data, layout } = buildChartConfig(key);
-          await Plotly.newPlot(tempDiv, data, layout);
-          const url = await Plotly.toImage(tempDiv, { format: 'png', width: 1200, height: 500 });
-          document.body.removeChild(tempDiv);
-          const res = await fetch(url);
-          return await res.blob();
+        const tempDiv = document.createElement('div');
+        tempDiv.style.width = '1200px'; tempDiv.style.height = '500px'; tempDiv.style.visibility = 'hidden';
+        document.body.appendChild(tempDiv);
+        const { data, layout } = buildChartConfig(key);
+        await Plotly.newPlot(tempDiv, data, layout);
+        const url = await Plotly.toImage(tempDiv, { format: 'png', width: 1200, height: 500 });
+        document.body.removeChild(tempDiv);
+        const res = await fetch(url);
+        return await res.blob();
       };
 
       for (const k of keysToDownload) {
-          const blob = await getBlobForConfig(k);
-          // Append params suffix
-          zip.file(`${currentRegion.value}_${k}_timeseries${smoothingSuffix.value}.png`, blob);
+        const blob = await getBlobForConfig(k);
+        // Append params suffix
+        zip.file(`${currentRegion.value}_${k}_timeseries${smoothingSuffix.value}.png`, blob);
       }
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "velocity_plots.zip");
       statusMessage.value = "Images zipped.";
-  } catch (e) {
-      console.error(e); statusMessage.value = "Error saving images.";
-  }
+    } catch (e) {
+      console.error(e);
+      statusMessage.value = "Error saving images.";
+    } finally {
+      // --- Stop Spinner (Runs on success OR error) ---
+      isDownloadingChart.value = false;
+    }
+  }, 50); // Short delay to let the browser paint the spinner
+};
+
+
+const downloadMapAndGraph = async () => {
+  if (selectedPoints.value.length === 0) return;
+
+  isDownloadingMap.value = true;
+  statusMessage.value = "Preparing high-res images...";
+  
+  setTimeout(async () => {
+    try {
+      // --- 1. Capture the Map (Visuals Only) ---
+      const mapElement = document.querySelector('.map-wrapper');
+      
+      // We use dom-to-image to capture the map EXACTLY as seen.
+      // No manual drawing, no coordinate math.
+      const mapImgUrl = await domtoimage.toPng(mapElement, {
+          width: mapElement.clientWidth * 2,
+          height: mapElement.clientHeight * 2,
+          style: {
+            transform: 'scale(2)',
+            transformOrigin: 'top left', 
+            width: `${mapElement.clientWidth}px`,
+            height: `${mapElement.clientHeight}px`
+          },
+          // Filter out the controls (Zoom, etc.)
+          filter: (node) => {
+			// 1. Check if node has a classList (avoids errors on text nodes)
+			if (node.classList) {
+				// 2. Return FALSE to REMOVE these elements
+				if (node.classList.contains('leaflet-control-container')) return false;
+				if (node.classList.contains('control-panel')) return false;
+				if (node.classList.contains('chart-controls-overlay')) return false;
+			}
+			// 3. Return TRUE to KEEP everything else
+			return true;
+		}
+      });
+
+      // Load Map Image
+      const mapImg = new Image();
+      mapImg.src = mapImgUrl;
+      await new Promise(resolve => mapImg.onload = resolve);
+
+      // --- 2. Zip & Loop (Standard Logic) ---
+      const zip = new JSZip();
+      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value}];
+      const filesToSave = [];
+
+      for (const opt of optionsProcess) {
+        statusMessage.value = `Processing ${opt.label}...`;
+
+        // Generate Chart
+        const { data, layout } = buildChartConfig(opt.val);
+        
+        // High-Res Chart Layout
+        const printLayout = { 
+          ...layout, 
+          title: { ...layout.title, font: { size: 24 } }, 
+          xaxis: { ...layout.xaxis, title: { ...layout.xaxis.title, font: { size: 18 } } },
+          yaxis: { ...layout.yaxis, title: { ...layout.yaxis.title, font: { size: 18 } } },
+        };
+
+        const chartImgUrl = await Plotly.toImage(
+          { data, layout: printLayout }, 
+          { format: 'png', width: 1400, height: 600, scale: 2 }
+        );
+
+        const chartImg = new Image();
+        chartImg.src = chartImgUrl;
+        await new Promise(resolve => chartImg.onload = resolve);
+
+        // Merge Canvas
+        const combinedCanvas = document.createElement('canvas');
+        const ctx = combinedCanvas.getContext('2d');
+        const finalWidth = Math.max(mapImg.width, chartImg.width);
+        const finalHeight = mapImg.height + chartImg.height;
+
+        combinedCanvas.width = finalWidth;
+        combinedCanvas.height = finalHeight;
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, finalWidth, finalHeight);
+        ctx.drawImage(mapImg, 0, 0);
+        ctx.drawImage(chartImg, 0, mapImg.height);
+
+        const blob = await new Promise(resolve => combinedCanvas.toBlob(resolve, 'image/png'));
+        const fname = `velocity_${opt.val}_timeseries${smoothingSuffix.value}_map.png`;
+        filesToSave.push({ name: fname, blob: blob });
+      }
+
+      // --- 3. Save ---
+      if (filesToSave.length === 1) {
+        saveAs(filesToSave[0].blob, filesToSave[0].name);
+        statusMessage.value = "Image downloaded.";
+      } else {
+        filesToSave.forEach(f => zip.file(f.name, f.blob));
+        statusMessage.value = "Compressing...";
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, `Map_Velocity_Export_${currentRegion.value}.zip`);
+        statusMessage.value = "All charts downloaded.";
+      }
+
+    } catch (error) {
+      console.error("Map Export Error:", error);
+      statusMessage.value = "Error generating images.";
+    } finally {
+      isDownloadingMap.value = false;
+    }
+  }, 100);
 };
 
 // Helper: Generates filenames for download
@@ -1141,10 +1533,36 @@ const generateCSV = (point) => {
 
 <style scoped>
 /* --- MAIN LAYOUT --- */
-.page-container { display: flex; flex-direction: column; height: calc(100vh - 60px); width: 100%; }
-.map-wrapper { flex: 3; position: relative; width: 100%; border-bottom: 2px solid #ccc; }
-.chart-wrapper { flex: 2; width: 100%; background: white; }
+.page-container { display: flex; flex-direction: column; height: calc(100vh - 60px); width: 100%; overflow: hidden; }
+.map-wrapper { position: relative; width: 100%; user-select: none; }
+.chart-wrapper { width: 100%; background: white; position: relative; overflow: hidden;}
 .chart-container { width: 100%; height: 100%; }
+.chart-controls-overlay {
+  position: absolute; top: 25px; right: 10px; z-index: 100;  display: flex; 
+  align-items: center; gap: 8px; background-color: rgba(255, 255, 255, 0.9); 
+  padding: 4px 8px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  font-size: 0.85rem;
+}
+.overlay-select { padding: 2px 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; background-color: white; }
+
+.resize-handle {
+  width: 100%;
+  height: 2px; /* Hit area height */
+  background-color: #f1f1f1;
+  cursor: row-resize; /* The up/down arrow cursor */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  flex-shrink: 0; /* Prevent the handle itself from squishing */
+  z-index: 2000; /* Ensure it sits above map controls */
+}
+
+.resize-handle:hover { background-color: #e0e0e0; }
+
+/* The little visual "grip" lines in the middle */
+.handle-grip { width: 40px; height: 4px; border-top: 2px solid #999; border-bottom: 2px solid #999; }
 
 /* --- CONTROL PANEL (RIGHT SIDEBAR) --- */
 .control-panel {
@@ -1202,7 +1620,7 @@ const generateCSV = (point) => {
     margin-bottom: 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-.popup-header { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #0056b3; }
+.popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #0056b3; }
 .popup-close { border: none; background: none; font-size: 18px; cursor: pointer; color: #999; }
 .popup-close:hover { color: red; }
 .opt-section { margin-bottom: 8px; }
@@ -1213,6 +1631,43 @@ const generateCSV = (point) => {
 .param-row label { flex: 1; color: #555; }
 .param-slider { flex: 1; height: 4px; }
 .param-input { width: 40px; padding: 2px; text-align: right; border: 1px solid #ccc; border-radius: 3px; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between 'Restore defaults' and 'X' */
+}
+
+/* 3. Style the Restore button as a text link */
+.btn-restore-link {
+  background: transparent;
+  border: none;
+  color: #95a5a6; /* Subtle grey */
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+/* 4. Hover Effects: Red + Underline */
+.btn-restore-link:hover {
+  color: #c0392b;
+  text-decoration: underline;
+}
+
+/* (Make sure .popup-close doesn't have huge margins that break alignment) */
+.popup-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+}
+.popup-close:hover {
+  color: #c0392b;
+}
 
 /* --- HELP MODAL OVERLAY --- */
 .modal-overlay {
@@ -1242,6 +1697,31 @@ const generateCSV = (point) => {
 .list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 5px; }
 .btn-clear { background: none; border: none; color: #d9534f; cursor: pointer; font-size: 0.8rem; text-decoration: underline; padding: 0; }
 
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  vertical-align: middle; /* Aligns spinner with text baseline if needed */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-upload.is-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.page-container.is-global-loading,
+.page-container.is-global-loading * {
+  cursor: wait !important;
+}
+
 /* --- POINTS LIST --- */
 .points-list table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 15px; }
 .points-list th { text-align: left; padding: 4px; color: #555; }
@@ -1255,10 +1735,25 @@ const generateCSV = (point) => {
 .control-group { margin-bottom: 15px; }
 .control-group label { display: block; font-size: 0.9rem; margin-bottom: 4px; font-weight: 600; }
 .control-group input[type="number"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-.btn-download { width: 100%; background-color: #2c3e50; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-download:hover { background-color: #42b983; }
 .status-text { font-size: 0.8rem; color: #666; margin-top: 10px; text-align: center; min-height: 1.2em;}
 .empty-state { padding: 15px; text-align: center; color: #888; border: 1px dashed #ccc; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem;}
+.download-group { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; width: 100%; }
+/* Layout Container for the buttons */
+.export-buttons { width: 100%; display: flex; flex-direction: column; }
+
+/* Row container for the two side-by-side buttons */
+.button-row { display: flex; gap: 10px; width: 100%; }
+
+/* Helper to make buttons share width equally */
+.half-width { flex: 1; }
+
+/* Your existing button style (Confirmed from previous turn) */
+.btn-download { width: 100%; background-color: #2c3e50; color: white; 
+  border: none;  padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background-color 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+.btn-download:hover:not(:disabled) { background-color: #42b983; }
+.btn-download:disabled { background-color: #95a5a6; cursor: not-allowed; }
 
 /* --- MAP LEGEND --- */
 .map-legend {
@@ -1280,6 +1775,45 @@ const generateCSV = (point) => {
   align-items: flex-start;
   gap: 10px; /* Space between the two legends */
   pointer-events: none; /* Allow clicks to pass through empty space */
+  min-width: 120px;
+}
+
+.scalar-legend-group {
+  margin-bottom: 5px;
+}
+
+.legend-separator {
+  height: 1px;
+  background-color: #ddd;
+  margin: 8px 0;
+  width: 100%;
+}
+
+/* Vector Section Layout */
+.vector-legend-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.vector-row {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between arrow tip and text */
+  margin-top: 2px;
+}
+
+.vector-label {
+  font-size: 0.75rem;
+  color: #444;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Ensure the SVG handles overflow correctly */
+.vector-arrow-svg {
+  display: block; /* Removes weird inline spacing */
+  overflow: visible;
 }
 
 .legend-box {
@@ -1305,6 +1839,28 @@ const generateCSV = (point) => {
   height: 3px;
   margin-right: 10px;
   border-radius: 1px;
+}
+
+/* --- SCALE BAR --- */
+:deep(.leaflet-control-scale-line) {
+  /* 1. Semi-transparent white background */
+  background: rgba(255, 255, 255, 0.7) !important;
+  
+  /* 2. Black Borders */
+  border-color: black !important;
+  border-width: 2px !important;
+  
+  /* 3. Text Styling */
+  color: black !important;
+  font-weight: bold;
+  font-size: 12px;
+  
+  /* Optional: Adjust padding for a cleaner look */
+  padding: 2px 5px 0 5px !important;
+  
+  /* Ensure the 'ticks' (side borders) are visible */
+  border-top: none !important;
+  line-height: 1.1;
 }
 
 /* --- GLACIER LABELS --- */

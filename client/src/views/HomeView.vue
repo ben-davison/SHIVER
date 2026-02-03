@@ -84,7 +84,8 @@ const goToFram = () => {
           </div>
           <div class="feature-card" @click="goToDocs">
             <h3>Sentinel-1 Cross-correlation for Accurate Determination of Ice velocity (SCADI)</h3>
-            <p>Learn how ice motion is measured ~weekly, regardless of weather and during polar darkness.</p>
+            <p>SCADI is our processing system to generate the ice velocity measurements explored in SHIVER.
+			With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.</p>
           </div>
         </div>
       </div>

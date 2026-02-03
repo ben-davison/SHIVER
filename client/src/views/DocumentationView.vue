@@ -14,6 +14,11 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
 import S1cartoon from '../assets/documentation/S1cartoon.jpg';
 import S1IW from '../assets/documentation/S1IW.png';
 
+// Imports for scrolling with hash
+import { onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
 const publicPath = import.meta.env.BASE_URL;
 
 const scrollToSection = (sectionId) => {
@@ -31,6 +36,23 @@ const scrollToSection = (sectionId) => {
     });
   }
 };
+
+// Navigate to section if search bar has hash
+onMounted(() => {
+  // Check if the URL has a hash (e.g. #mosaics)
+  if (route.hash) {
+    // 1. Wait for Vue to finish rendering the DOM
+    nextTick(() => {
+      // 2. (Optional) Add a tiny delay to account for any layout shifts/animations
+      setTimeout(() => {
+        const element = document.getElementById(route.hash.slice(1)) // Remove the '#'
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100) // 100ms delay is usually plenty
+    })
+  }
+})
 
 
 </script>
@@ -73,7 +95,7 @@ const scrollToSection = (sectionId) => {
           <h2>1. Overview of approach</h2>
           <p>
             The velocity fields are derived using <a href="#" @click.prevent="scrollToSection('algorithms')">intensity tracking algorithms</a> applied to consecutive 
-			<a href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">Sentinel-1</a>
+			<AppLink to="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">Sentinel-1</AppLink>
 			image pairs. Our processing pipeline is fully automated and involves:
           </p>
           <ul>
@@ -82,7 +104,7 @@ const scrollToSection = (sectionId) => {
 			it downloads the images, orbital positioning information and digitial elevation models required to complete the processing. All data download and curation 
 			is completed 'on-the-fly' to minimise storage requirements.</li>
             <li><strong>Pre-processing:</strong> We use the open-source Generic Mapping Tools for Synthetic Aperture Radar 
-			<a href="https://topex.ucsd.edu/gmtsar/" target="_blank" rel="noopener" class="text-link">(GMTSAR)</a> imagery software 
+			<AppLink to="https://topex.ucsd.edu/gmtsar/" target="_blank" rel="noopener" class="text-link">(GMTSAR)</AppLink> imagery software 
 			to prepare the raw radar images for feature tracking and generate the information required to convert the images from radar to map coordinates. 
 			This process ingests the raw radar images, orbital data and elevation data.</li>
             <li><strong>Feature/intensity/speckle tracking:</strong> 2D fields of ice velocity are estimated and posted at 150x150 m resolution using 
@@ -99,7 +121,7 @@ const scrollToSection = (sectionId) => {
           <h2>2. Data Sources</h2>
           <p>
             <strong>Sentinel-1:</strong> The 
-			<a href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">European Space Agency (ESA) Sentinel-1 missions</a>
+			<AppLink to="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1" target="_blank" rel="noopener" class="text-link">European Space Agency (ESA) Sentinel-1 missions</AppLink>
 			 comprise a constellation of two sun-synchronous polar-orbiting satellites,
 			which operate  in the same orbital plane with 180 degree phasing difference. They perform C-band Synthetic Aperture Radar (SAR) imaging, enabling day and night 
 			acquisitions regardless of weather. 
@@ -154,7 +176,7 @@ const scrollToSection = (sectionId) => {
 		 <p>
 			Sentinel-1A was launched on 3 April 2014, Sentinel-1B was launched on 25 April 2016, Sentinel-1C was launched on 5 December 2024 and Sentinel-1D was 
 			launched on 4 November 2025. Sentinel-1B experienced a 
-			<a href="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1/Mission_ends_for_Copernicus_Sentinel-1B_satellite" target="_blank" rel="noopener" class="text-link">failure of the power supply</a>.
+			<AppLink to="https://www.esa.int/Applications/Observing_the_Earth/Copernicus/Sentinel-1/Mission_ends_for_Copernicus_Sentinel-1B_satellite" target="_blank" rel="noopener" class="text-link">failure of the power supply</AppLink>.
 			on 23 December 2021, leaving it unable to deliver images.
 			<br><br>
 			Each of these individual satellites orbits the Earth in a consistent pattern. This allows them to image the same location on the ground every 12-days (so-called 'repeat' imagery). 
@@ -163,11 +185,11 @@ const scrollToSection = (sectionId) => {
 			period means that our velocity measurements represent the average ice speed during the time period between image acquisitions (which must be a multiple of six days).
 					
 			The Sentinel-1 SAR instrument can acquire images in 
-		    <a href="https://sentiwiki.copernicus.eu/web/s1-products" target="_blank" rel="noopener" class="text-link">four exclusive modes</a>:
+		    <AppLink to="https://sentiwiki.copernicus.eu/web/s1-products" target="_blank" rel="noopener" class="text-link">four exclusive modes</AppLink>:
 		</p>
 		   <ul>
               <li><strong>Stripmap:</strong> the standard mode.</li>
-              <li><strong>Interferometric Wide (IW) swath:</strong> where three 'swaths' of data are acquired using the <a href="https://ieeexplore.ieee.org/document/1677745" target="_blank" rel="noopener" class="text-link">TOPSAR</a> technique.</li>
+              <li><strong>Interferometric Wide (IW) swath:</strong> where three 'swaths' of data are acquired using the <AppLink to="https://ieeexplore.ieee.org/document/1677745" target="_blank" rel="noopener" class="text-link">TOPSAR</AppLink> technique.</li>
               <li><strong>Extra Wide swath:</strong> where five 'swaths' of data are acquired using the TOPSAR technique, but at lower resolution to the IW mode.</li>
 			  <li><strong>Wave:</strong> where small 'vignettes' of data are acquired at 100 km along-track intervals, alternating between near- and far-range incidence angles.</li>
           </ul>
@@ -192,7 +214,7 @@ const scrollToSection = (sectionId) => {
 			   (over 4,000 meters long for C-band radar!). 
 			   SAR solves this by using the motion of the satellite to simulate a much larger antenna. By combining a sequence of signals received as the satellite moves along its flight 
 			   path, it creates a "synthetic aperture" that produces high-resolution data from a physically small antenna.
-			   You can read more about SAR <a href="https://www.earthdata.nasa.gov/learn/earth-observation-data-basics/sar" target="_blank" rel="noopener" class="text-link">here</a>.
+			   You can read more about SAR <AppLink to="https://www.earthdata.nasa.gov/learn/earth-observation-data-basics/sar" target="_blank" rel="noopener" class="text-link">here</AppLink>.
              </p>
 			</div>
 			
@@ -207,7 +229,7 @@ const scrollToSection = (sectionId) => {
 		<section id="pre-processing">
           <h2>3. Pre-processing</h2>
           <p>
-            We use <a href="https://topex.ucsd.edu/gmtsar/" target="_blank" rel="noopener" class="text-link">GMTSAR</a> to convert Sentinel-1 SLC IW 
+            We use <AppLink to="https://topex.ucsd.edu/gmtsar/" target="_blank" rel="noopener" class="text-link">GMTSAR</AppLink> to convert Sentinel-1 SLC IW 
 			image pairs to co-registered, geocoded amplitude images suitable for feature tracking. In the following, the first and second image in the image pair is referred to as image1
 			and image2, respectively.
 		  </p>
@@ -215,7 +237,7 @@ const scrollToSection = (sectionId) => {
               <li><strong>Geometric alignment, deramping and burst stitching:</strong> We use information about the satellite position and the ground surface to align image2
 					  with image1. Deramping removes the phase ramp inherent in TOPS (Terrain Observation with Progressive Scans) data, resulting from the steering of the antenna
 					  beam during acquisition, to ensure phase continuity. Two levels of 
-					  <a href="https://documentation.dataspace.copernicus.eu/Data/SentinelMissions/Sentinel1.html" target="_blank" rel="noopener" class="text-link">orbital information</a> 
+					  <AppLink to="https://documentation.dataspace.copernicus.eu/Data/SentinelMissions/Sentinel1.html" target="_blank" rel="noopener" class="text-link">orbital information</AppLink> 
 					  are available: 'Precise' and 'Restituted'  orbits. Precise orbits are accurate to 5 cm but are only available 21 days after image acquisition. Restituted orbits are 
 					  accurate to 10 cm and are available within 3 hours of image acquisition. Wherever possible, we use the precise orbits. In practice, the choice of orbit information has
 					  no discernable impact on the retrieved velocity field. We then stitch bursts together to form three sub-swaths per image pair. We use a fixed map of the ice surface
@@ -234,9 +256,9 @@ const scrollToSection = (sectionId) => {
           <h2>4. Measurement Algorithms</h2>
           <p>
 			Our core processing pipeline is adapted from, 
-			(<a href="https://uk.mathworks.com/matlabcentral/fileexchange/45028-pivsuite" target="_blank"><strong>PIVSuite</strong></a>)
+			(<AppLink to="https://uk.mathworks.com/matlabcentral/fileexchange/45028-pivsuite" target="_blank"><strong>PIVSuite</strong></AppLink>)
 			which was inspired by
-			(<a href="https://openresearchsoftware.metajnl.com/articles/10.5334/jors.334" target="_blank">PIVLab</a>). 
+			(<AppLink to="https://openresearchsoftware.metajnl.com/articles/10.5334/jors.334" target="_blank">PIVLab</AppLink>). 
 			We use fairly standard "feature tracking" approaches to measure the displacement of ice surface features between two co-registered SAR images.
 		  </p>
 
@@ -325,7 +347,7 @@ const scrollToSection = (sectionId) => {
 		  </p>
 		  <p>
 			To achieve sub-pixel accuracy, we implement the <strong>matrix-multiply DFT approach</strong> described by 
-			<a href="https://opg.optica.org/ol/fulltext.cfm?uri=ol-33-2-156" target="_blank">Guizar-Sicairos et al. (2008)</a>.
+			<AppLink to="https://opg.optica.org/ol/fulltext.cfm?uri=ol-33-2-156" target="_blank">Guizar-Sicairos et al. (2008)</AppLink>.
 		  </p>
 		  <p>
 			Rather than zero-padding the entire FFT (which is memory intensive), this algorithm computes the discrete Fourier transform (DFT) only in a small neighborhood around the initial integer peak. 
@@ -358,7 +380,7 @@ const scrollToSection = (sectionId) => {
 				This allows us to identify and remove small groups of pixels separated from the main velocity field by a sharp discontinuity (a 'cliff' in velocity values). The effect of 
 				this is to retain a smoothly varying velocity field comprised mostly of large contiguous pixel groups whilst retaining realitic areas of steep speed gradients (such as 
 				ice falls and shear margins). This approach adapts the segmentation method described by 
-				<a href="https://www.mdpi.com/2072-4292/9/10/1062" target="_blank">Luttig et al. (2017)</a>.
+				<AppLink to="https://www.mdpi.com/2072-4292/9/10/1062" target="_blank">Luttig et al. (2017)</AppLink>.
 			   </p>
 				
 				<figure style="text-align: center; margin: 20px 0;">
@@ -376,7 +398,7 @@ const scrollToSection = (sectionId) => {
 			  
 			  <p>
 				We conditonally apply a general destriping algorithm described by 
-				<a href="https://opg.optica.org/oe/fulltext.cfm?uri=oe-33-3-5800" target="_blank">Rottmayer et al. (2025)</a>. 
+				<AppLink to="https://opg.optica.org/oe/fulltext.cfm?uri=oe-33-3-5800" target="_blank">Rottmayer et al. (2025)</AppLink>. 
 			  </p>
 			  <div class="info-box">
 				<strong>Conditional Application:</strong> 
@@ -409,7 +431,7 @@ const scrollToSection = (sectionId) => {
 				  <strong>Signal-to-Noise Ratio (SNR):</strong> 
 				  We reject any vectors where the cross-correlation peak strength is low relative to the noise floor. We utilize a threshold of <strong>SNR > 5.8</strong>, 
 				  (i.e. velocity estimates with an SNR of less than 5.8 are removed). This threshold was established as a robust cutoff for feature tracking by 
-				  <a href="https://ieeexplore.ieee.org/document/4261046" target="_blank">de Lange et al. (2007)</a>.
+				  <AppLink to="https://ieeexplore.ieee.org/document/4261046" target="_blank">de Lange et al. (2007)</AppLink>.
 				</li>
 				<li>
 				  <strong>Flow Direction Filter:</strong> 
@@ -582,10 +604,14 @@ const scrollToSection = (sectionId) => {
           <h2>7. Automation</h2>
 		  <p>
 			Our processing is automated and powered by the University of Sheffield High Performance Cluster 
-			<a href="https://docs.hpc.shef.ac.uk/en/latest/stanage/" target="_blank"><strong>Stanage</strong></a>.
+			<AppLink to="https://docs.hpc.shef.ac.uk/en/latest/stanage/" target="_blank"><strong>Stanage</strong></AppLink>.
 		  </p>
 		  <p>
-			Our complete automation workflow is available in the document below. We use a SpatioTemporal Asset Catalog (STAC)-like architecture
+			Our complete automation workflow is available in the document below. Much of it is specific to the University of Sheffield
+            HPC cluster, so you won't be able to directly adopt our approach, but we have included it below to outline our approach.
+          </p>
+		  <p>
+		   We use a SpatioTemporal Asset Catalog (STAC)-like architecture
 			that defines all available image pairs and their processing status. This STAC is updated at least daily with new images as Sentinel-1
 			acquires them and as new image pairs are processed by our in-house HPC cluster. The beauty of the STAC is that it allows us to 
 			query our full catalogue of velocity swaths (or potential but unprocessed swaths) using any combination of spatial and temporal 
@@ -621,6 +647,10 @@ const scrollToSection = (sectionId) => {
             Click anywhere on the map to view a time-series of ice velocity at that point. 
             You can select up to ten points to compare different locations.
           </p>
+		  <p>
+            <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
+			Double click on the chart to reset the axes. Or use the zoom, pan and reset buttons in the top right of the chart to navigate.
+          </p>
 
           <h3>8.2 Uploading Shapefiles</h3>
           <p>
@@ -638,8 +668,44 @@ const scrollToSection = (sectionId) => {
             <li><strong>Buffer:</strong> Include 'buffer' as a shapefile field name, containing integer buffer values for each point.</li>
             <li><strong>Point names:</strong> Include 'name' as a shapefile field name to give your outputs a custom name.</li>
           </ul>
+		  
+		  <h3>8.3. Advanced Options</h3>
+          <p>
+		     The advanced options allow you to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
+			 timeseries smoothing parameters. 
+		   </p>
+		   <p>
+            <strong>Variables:</strong>
+          </p>
+          <ul>
+            <li><strong>S:</strong> Extract speed (horizontal ice surface velocity magnitude).</li>
+            <li><strong>U:</strong> Extract easting velocity (horizontal ice surface easting velocity). Values are positive towards polar stereographic east.</li>
+            <li><strong>V:</strong> Extract northing velocity (horizontal ice surface northing velocity). Values are positive towards polar stereographic north.</li>
+          </ul>
+		  <p>
+            <strong>Processing level:</strong>
+			See the Mosaics section of our Documentation page for more details.
+          </p>
+          <ul>
+            <li><strong>raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
+            <li><strong>filt:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
+          </ul>
+		  <p>
+            <strong>Smoothing parameters:</strong>
+			All time-series extracted with SHIVER are smoothed using a Savitzky-Golay filter.
+			Use the slide bars or text boxes to modify how much smoothing is applied.
+          </p>
+          <ul>
+            <li><strong>Max gap fill length days:</strong> Small gaps in the point data are filled using linear interpolation. Use this option to control the maximum length of gap that is filled.</li>
+            <li><strong>Window size days (Points):</strong> Set the size of the moving window used to smooth the point data displayed on the time-series chart. A larger window increases smoothing.</li>
+			<li><strong>Window size days (Line):</strong> Set the size of the moving window used to smooth the line data displayed on the time-series chart. A larger window increases smoothing.</li>
+			<li><strong>Polynomial order:</strong> Set the degree of the local polynomial fitted to the data within each moving window. A lower order increases smoothing but may distort rapid changes; a higher order better preserved high-frequences features but reduces smoothing.</li>
+          </ul>
+		  <p>
+		    Note that the same variables and filtering level, using the same smoothing parameters, will be applied to all extraction locations.
+		  </p>
 
-          <h3>8.3 Interpreting the Map</h3>
+          <h3>8.4 Interpreting the Map</h3>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
             <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
@@ -660,8 +726,16 @@ const scrollToSection = (sectionId) => {
 			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
 			</p>
 		  </ul>
+		  <p>
+		    When viewing Antarctica, the outlines of glacier basins are shown as grey lines (Cook et al. 2014). If you zoom in sufficiently, glacier names from the
+			<AppLink to="https://apc.antarctica.ac.uk/gazetteers/go-to-gazetteers/" target="_blank" rel="noopener" class="text-link">British Antarctic Territory gazetteer</AppLink> 
+			will be displayed. 
+		   </p>
+		   <p>
+		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
+		   </p>
 		  
-		  <h3>8.4 Output</h3>
+		  <h3>8.5 Output</h3>
           <p>
             Download your timeseries as <strong>.csv</strong> files and/or the graph(s) as a , 
             <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
@@ -678,6 +752,9 @@ const scrollToSection = (sectionId) => {
 		  </p>
 		  <p>
             <strong>CSV output variables:</strong>
+			<br>
+			<em>Note: Only "Date", "Error_m_yr", "Time_separation_days", "Pixel_Count" and "s_filt" are exported by default. 
+			Other variables can be enabled for download within the Advanced Options menu. </em>
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed</li>
@@ -724,24 +801,24 @@ const scrollToSection = (sectionId) => {
 	  
         <div class="partner-group">
           <h4>Lead Institutions</h4>
-		   <a href="https://sheffield.ac.uk/" target="_blank" rel="noopener noreferrer">
+		   <AppLink to="https://sheffield.ac.uk/" target="_blank" rel="noopener noreferrer">
 			  <img :src="sheffieldLogo" alt="University of Sheffield" class="partner-logo" />
-		   </a>
+		   </AppLink>
 		   <br>
-		   <a href="https://lamont.columbia.edu/" target="_blank" rel="noopener noreferrer">
+		   <AppLink to="https://lamont.columbia.edu/" target="_blank" rel="noopener noreferrer">
 			  <img :src="LDEOLogo" alt="LDEO" class="partner-logo" />
-		   </a>
+		   </AppLink>
         </div>
         
         <div class="partner-group">
           <h4>Funded By</h4>
-		  <a href="https://www.ukri.org/councils/nerc/" target="_blank" rel="noopener noreferrer">
+		  <AppLink to="https://www.ukri.org/councils/nerc/" target="_blank" rel="noopener noreferrer">
 			  <img :src="UKRILogo" alt="UKRI" class="partner-logo" />
-		   </a>
+		   </AppLink>
 		  <br>
-		  <a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2053169" target="_blank" rel="noopener noreferrer">
+		  <AppLink to="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2053169" target="_blank" rel="noopener noreferrer">
 			  <img :src="NSFLogo" alt="NSF" class="partner-logo" />
-		   </a>
+		   </AppLink>
 		  <br>
 		  The FRAM project is funded by NSFGEO-NERC <br>
 		  Grant Number: #2053169, "Investigating the <br> 
@@ -750,9 +827,9 @@ const scrollToSection = (sectionId) => {
 		
 		<div class="partner-group">
           <h4>Powered by</h4>
-		  <a href="https://docs.hpc.shef.ac.uk/en/latest/stanage" target="_blank" rel="noopener noreferrer">
+		  <AppLink to="https://docs.hpc.shef.ac.uk/en/latest/stanage" target="_blank" rel="noopener noreferrer">
 			  <img :src="StanageLogo" alt="Stanage" class="partner-logo" />
-		   </a>
+		   </AppLink>
 		  <br>
 		  SCADI and SHIVER are powered by the University of Sheffield HPC Stanage <br>
         </div>
