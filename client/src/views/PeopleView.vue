@@ -14,6 +14,7 @@ import LDEOLogo from '../assets/LDEO_logo/LDEO_logo_black.png';
 import photoBenD from '../assets/people/BenDavison.jpg';
 import photoKateW from '../assets/people/Kate.jpg';
 import photoStephenL from '../assets/people/Stephen.png';
+import photoSianT from '../assets/people/SianThorpe.jpg';
 
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
@@ -90,7 +91,7 @@ const teamMembers = [
     name: "Sian Thorpe",
     role: "Research Associate",
 	institution: "University of Sheffield",
-    image: getPlaceholderUrl("Sian+Thorpe"),
+    image: photoSianT,
     bio: "Sian specializes in subglacial lake dynamics and glacial fieldwork. Sian supports the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
   },
   {
