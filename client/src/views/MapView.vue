@@ -1,5 +1,5 @@
 <template>
-  <div class="page-container" :class="{ 'is-global-loading': isUploading }">
+  <div class="page-container" :class="{ 'is-global-loading': isUploading || isFetching || isRefreshing }">
     
     <div class="map-wrapper" :class="{ 'show-labels': zoom >= 9 }" :style="{ height: mapHeightPercent + '%' }">
       <l-map 
@@ -8,6 +8,7 @@
         v-model:center="center" 
         :use-global-leaflet="false" 
         @click="onMapClick"
+		@mousemove="onMapMouseMove"  @mouseup="onMapMouseUp"
         @overlayadd="onOverlayAdd"
         @overlayremove="onOverlayRemove"
       >
@@ -21,6 +22,33 @@
           name="Satellite Imagery"
 		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
+		
+		<transition name="fade">
+		  <div 
+			  v-if="showFeedbackPopup" 
+			  class="feedback-popup"
+			  @click.stop
+			  @mousedown.stop
+			  @dblclick.stop
+		  >
+          <div class="feedback-content">
+             Enjoying SHIVER? Please complete 
+             <a 
+               href="YOUR_GOOGLE_FORM_LINK_HERE" 
+               target="_blank" 
+               class="feedback-link"
+               @click="closeFeedbackPopup"
+             >
+               this short form
+             </a> 
+             to provide feedback.
+          </div>
+          
+          <button class="feedback-close" @click="closeFeedbackPopup">
+            &times;
+          </button>
+        </div>
+      </transition>
 
         <l-tile-layer
           :url="speedUrl"
@@ -71,10 +99,45 @@
           :options="glacierLabelOptions"
         ></l-geo-json>
 		
-        <l-circle-marker 
-          v-for="point in selectedPoints" :key="point.id" :lat-lng="[point.lat, point.lon]"
-          :radius="8" :color="point.color" :fill-color="point.color" :fill-opacity="0.6" :weight="2">
-        </l-circle-marker>
+		<l-geo-json 
+			  v-if="globalMaskData" 
+			  :geojson="globalMaskData"
+			  :options-style="() => ({ fillColor: '#ffffff', fillOpacity: 0.65, weight: 0, stroke: false })"
+			  :options="{ interactive: false }"
+	    ></l-geo-json>
+
+		<l-geo-json 
+			  v-if="globalOutlineData" 
+			  :geojson="globalOutlineData"
+			  :options-style="() => ({ color: 'black', weight: 2, fill: false, dashArray: '5, 5' })"
+		></l-geo-json>
+				
+        <template v-for="(point, index) in selectedPoints" :key="point.id">
+			<l-rectangle
+			   :bounds="getSquareBounds( point.lat, point.lon, point.buffer !== undefined ? point.buffer : bufferSize )"
+			   :color="point.color"
+			   :fill-color="point.color"
+			   :fill-opacity="0.3"
+			   :weight="1"
+			   :interactive="true" 
+			   class-name="draggable-feature"
+			   @mousedown="startPointDrag($event, point)"
+			   @click="stopPropagation"  
+			/>
+			<l-circle-marker 
+			   :lat-lng="[point.lat, point.lon]"
+			   :radius="3" 
+			   :color="point.color"
+			   :fill-color="point.color"
+			   :fill-opacity="1.0" 
+			   :weight="1"
+			   class-name="draggable-feature"
+			   @mousedown="startPointDrag($event, point)"
+			   @click="stopPropagation"
+			>
+			   <l-tooltip>{{ getSiteLabel(point, index) }}</l-tooltip>
+			</l-circle-marker>
+		</template>
 		
 		<l-layer-group layer-type="overlay" name="Ice Margin" :visible="showMargins">
   
@@ -204,7 +267,7 @@
             <span class="opt-label">Variables:</span>
             <div class="opt-checks">
                <label v-for="v in availableVars" :key="v">
-                 <input type="checkbox" :value="v" v-model="selectedVars" @change="debouncedRefetch"> {{ v.toUpperCase() }}
+                 <input type="checkbox" :value="v" v-model="pendingVars"> {{ v.toUpperCase() }}
                </label>
             </div>
           </div>
@@ -213,7 +276,7 @@
             <span class="opt-label">Processing level:</span>
             <div class="opt-checks">
                <label v-for="q in availableQuality" :key="q">
-                 <input type="checkbox" :value="q" v-model="selectedQuality" @change="debouncedRefetch"> {{ q }}
+                 <input type="checkbox" :value="q" v-model="pendingQuality"> {{ q }}
                </label>
             </div>
           </div>
@@ -224,26 +287,33 @@
             
             <div class="param-row">
               <label>Max gap fill length days</label>
-              <input type="range" v-model.number="smoothingParams.gap" min="1" max="120" class="param-slider">
-              <input type="number" v-model.number="smoothingParams.gap" class="param-input" @change="debouncedRefetch">
+              <input type="range" v-model.number="pendingSmoothingParams.gap" min="1" max="120" class="param-slider">
+              <input type="number" v-model.number="pendingSmoothingParams.gap" class="param-input">
             </div>
 
             <div class="param-row">
               <label>Window size days (Points)</label>
-              <input type="range" v-model.number="smoothingParams.win_raw" min="1" max="121" step="2" class="param-slider">
-              <input type="number" v-model.number="smoothingParams.win_raw" class="param-input" @change="debouncedRefetch">
+              <input type="range" v-model.number="pendingSmoothingParams.win_raw" min="1" max="121" step="2" class="param-slider">
+              <input type="number" v-model.number="pendingSmoothingParams.win_raw" class="param-input">
             </div>
 
             <div class="param-row">
               <label>Window size days (Line)</label>
-              <input type="range" v-model.number="smoothingParams.win_daily" min="1" max="121" step="2" class="param-slider">
-              <input type="number" v-model.number="smoothingParams.win_daily" class="param-input" @change="debouncedRefetch">
+              <input type="range" v-model.number="pendingSmoothingParams.win_daily" min="1" max="121" step="2" class="param-slider">
+              <input type="number" v-model.number="pendingSmoothingParams.win_daily" class="param-input">
             </div>
 
             <div class="param-row">
               <label>Polynomial order</label>
-              <input type="range" v-model.number="smoothingParams.poly" min="1" max="5" class="param-slider">
-              <input type="number" v-model.number="smoothingParams.poly" class="param-input" @change="debouncedRefetch">
+              <input type="range" v-model.number="pendingSmoothingParams.poly" min="1" max="5" class="param-slider">
+              <input type="number" v-model.number="pendingSmoothingParams.poly" class="param-input">
+            </div>
+			
+			<div class="action-row" style="margin-top: 15px; text-align: right;">
+                <button class="btn-download" @click="applyAdvancedOptions" :disabled="isFetching">
+                    <span v-if="isFetching" class="spinner"></span>
+                    <span v-else>Update Timeseries</span>
+                </button>
             </div>
           </div>
         </div>
@@ -259,9 +329,9 @@
 		
 		<div class="upload-section">
 		  <label class="btn-upload" :class="{ 'is-loading': isUploading }">
-			<span v-if="!isUploading">Load Zipped Shapefile</span>
+			<span v-if="!isUploading">Upload file</span>
 			<span v-else class="spinner"></span>
-			<input type="file" @change="handleFileUpload" accept=".zip,.json,.geojson,.kml" hidden :disabled="isUploading">
+			<input type="file" @change="handleFileUpload" accept=".zip,.geojson,.kml,.kmz" hidden :disabled="isUploading">
 		  </label>
 		</div>
 		
@@ -289,7 +359,7 @@
         <div v-else class="empty-state">Click map or upload file</div>
 
         <div class="control-group">
-          <label>Buffer Radius (m):</label>
+          <label>Buffer distance (m):</label>
           <input 
             type="number" 
             v-model.number.lazy="bufferSize" 
@@ -336,7 +406,7 @@
 		  </div>
 		</div>
 
-        <p class="status-text">{{ statusMessage }}</p>
+        <p class="status-text"><span v-if="isFetching" class="spinner"></span> {{ statusMessage }}</p>
       </div>
     </div>
 	
@@ -345,6 +415,7 @@
     </div>
 
     <div class="chart-wrapper" :style="{ height: (100 - mapHeightPercent) + '%' }">
+	
 		<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
 			<span class="overlay-label">Graph View:</span>
 			<select v-model="currentPlotVar" @change="updateChart" class="overlay-select">
@@ -352,11 +423,102 @@
 				   {{ opt.label }}
 			   </option>
 			</select>
+		</div>
+		
+		<div class="custom-legend" v-if="legendItems.length > 0">
+		
+			<div class="legend-global-key">
+			   <div class="key-item">
+				  <span class="symbol-dot"></span><span>Points</span>
+			   </div>
+			   <div class="key-item">
+				  <span class="symbol-line"></span><span>Daily</span>
+			   </div>
+			   <div class="key-item" v-if="showTrends">
+				  <span class="symbol-dash"></span><span>Trend</span>
+			   </div>
+			</div>
+			
+			<div 
+			   v-for="item in legendItems" 
+			   :key="item.id" 
+			   class="legend-item"
+			   :class="{ 'is-hidden': !item.isVisible }"
+			   @click="togglePointVisibility(item.id)"
+			>
+			   <span class="legend-label" :style="{ color: item.color }">
+				  {{ item.label }}
+			   </span>
+			   
+			   <span 
+					  v-if="item.trendText" 
+					  class="legend-trend" 
+					  :style="{ color: item.color }"
+					  v-html="item.trendText"
+				></span>
+			</div>
+		</div>
+		  
+        <div id="velocity-chart" class="chart-container"></div>
+	  
+	    <div class="axis-controls" v-if="selectedPoints.length > 0">
+		
+		  <div class="axis-group">
+			<label>Y-Min:</label>
+			<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
+			<label>Y-Max:</label>
+			<input type="number" step="any" v-model.lazy="yAxisMax" @change="updatePlotAxes" />
 		  </div>
-      <div id="velocity-chart" class="chart-container"></div>
-    </div>
+
+		  <div class="axis-group">
+			<label>Start:</label>
+			<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
+			<label>End:</label>
+			<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
+		  </div>
+		  <button @click="resetAxes" class="btn-reset-axes">Reset</button>
+		  
+		  <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+		  <div class="trend-group">
+			  <button 
+				  @click="toggleTrends" 
+				  class="btn-icon" 
+				  :class="{ 'active': showTrends }"
+				  title="Calculate Trend"
+				>
+				  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="2" y1="20" x2="22" y2="4" />
+					<circle cx="6" cy="15" r="2" fill="currentColor" stroke="none" />
+					<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+					<circle cx="18" cy="9" r="2" fill="currentColor" stroke="none" />
+				  </svg>
+				</button>
+
+			  <div v-if="showTrends" style="display:flex; gap:5px; align-items:center;">
+				  <label>Range:</label>
+				  <input 
+					 type="text" 
+					 v-model.lazy="trendStart" 
+					 @change="updateTrendCalc" 
+					 placeholder="Start" 
+					 class="trend-input"
+				  />
+				  <span>-</span>
+				  <input 
+					 type="text" 
+					 v-model.lazy="trendEnd" 
+					 @change="updateTrendCalc" 
+					 placeholder="End" 
+					 class="trend-input"
+				  />
+			  </div>
+		  </div>
+  
+		</div>
+		
+    </div> 
 	
-  </div>
+  </div> 
   
   <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
       <div class="modal-content">
@@ -365,10 +527,19 @@
         <h2>How to use SHIVER</h2>
         
         <div class="modal-body">
-          <h3>1. Selecting Data</h3>
+          <h3>1. Basic Usage</h3>
           <p>
             Click anywhere on the map or upload a shapefile containing a point or points to view 
-			time-series of ice velocity in those locations. You can select up to ten points to compare different locations.
+			time-series of ice velocity in those locations. 
+			After selecting a point, you can click-and-drag it to modify the position. 
+			You can select up to ten points to compare different locations.
+          </p>
+		  <p>
+            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
+			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
+			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). The value selected in this box
+			applies to <strong>all</strong> your points. If you change the value in this box, it will refresh the data for all selected points.
+			If you would prefer to have a different buffer distance for all points, then see Section 3: Uploading Files.
           </p>
 		  <p>
             <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
@@ -406,12 +577,12 @@
 			Read our <AppLink to="/documentation" class="text-link"><strong>documentation</strong></AppLink> page for more details.
           </p>
 		  
-          <h3>3. Uploading Shapefiles</h3>
+          <h3>3. Uploading Files</h3>
           <p>
             <strong>Requirements:</strong>
           </p>
           <ul>
-            <li><strong>Format:</strong> Zipped Shapefile (<code>.zip</code>) containing .shp, .shx, .dbf, and .prj files.</li>
+            <li><strong>Format:</strong> KMZ, KML, GeoJSON or a zipped shapefile (containing .shp, .shx, .dbf, and .prj files).</li>
             <li><strong>Projection:</strong> Must be in WGS84 (EPSG:4326) .</li>
             <li><strong>Type:</strong> Point or Multipoint geometries only. Maximum of ten points.</li>
           </ul>
@@ -419,8 +590,8 @@
             <strong>Optional:</strong>
           </p>
           <ul>
-            <li><strong>Buffer:</strong> Include 'buffer' as a shapefile field name, containing integer buffer values for each point.</li>
-            <li><strong>Point names:</strong> Include 'name' as a shapefile field name to give your outputs a custom name.</li>
+            <li><strong>Buffer:</strong> Include 'buffer' as a field name, containing integer buffer values in metres for each point.</li>
+            <li><strong>Point names:</strong> Include 'name' as a field name to give your outputs a custom name.</li>
           </ul>
 		  
 		  <h3>4. Advanced Options</h3>
@@ -460,6 +631,11 @@
 		  </p>
 
           <h3>5. Interpreting the Map</h3>
+		  <p>
+			When you click a point on the map an icon will appear showing the extraction location or region. 
+			If you have used a buffer around your extraction location (recommended), the icon will be a square, 
+			otherwise it will just be a point.
+		  </p>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
             <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
@@ -488,38 +664,91 @@
 		   <p>
 		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
 		   </p>
-		     
+		   
+		   
+		  <h3>6. Interpreting the Chart</h3>
+		  <p>
+			The retrieved data are displayed as both points and a line. 
+			Each point represents the average velocity in the selected location over a 6- or 12-day period centred on that time. 
+			The corresponding error in that velocity estimate is displayed on the point as a vertical line (indicating the range of potential velocity estimates at that time). 
+			The error is defined as the median velocity over bedrock regions at the time.
+			A smoothed, daily velocity time-series is also plotted - this is linearly interpolated from the point data and then smoothed using a Savitzky-Golay filter. 
+		  </p>
+		  <p>
+			You can optionally add a linear trend line to each of the selected time-series by clicking the 
+			<svg style="width:1.2em;vertical-align:text-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="20" x2="22" y2="4"/><g stroke="none" fill="currentColor"><circle cx="6" cy="15" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="9" r="2"/></g></svg>
+			button below the chart. This will add a dashed line to the chart and the retrieved trends and their 
+			significance level will be displayed in the legend. 
+			You can use the text boxes to adjust the time period over which the linear trend is calculated. 
+			Four levels of trend significance may be displayed in the legend:
+		  </p>
+		  <ul>
+            <li><strong>ns</strong> Not significant.</li>
+			<li><strong>*</strong> Significant at the 0.05 level (i.e. p<0.05).</li>
+			<li><strong>**</strong> Significant at the 0.01 level (i.e. p<0.01).</li>
+			<li><strong>***</strong> Significant at the 0.001 level (i.e. p<0.001).</li>
+		  </ul>
+		  <p>
+			Use the text boxes below the chart to adjust the x- and y-axis limits. 
+			This will also change the .png image exports, however the .xslx will always contain the full time-series.
+		  </p>
 		  
-		  <h3>6. Output</h3>
+		  <h3>7. Output</h3>
 		  <p>
 		    Clicking the map will produce a timeseries showing point data and a smoothed line. 
 			The point data provide the measurements taken directly from our ice velocity dataset.
 			The line provides a smoothed representation of those measurements.
 		  </p>
           <p>
-            Download your timeseries as <strong>.csv</strong> files and/or the graph(s) as a , 
+            Download your timeseries as <strong>.xlsx</strong> files and/or the graph(s) as a , 
             <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
-			downloaded as a .zip file containing multiple .csv files. If multiple variables 
+			downloaded as a .zip file containing multiple .xslx files. If multiple variables 
 			or filtering levels are selected, images will be downloaded as a .zip file.
 			Downloads will also include a geojson of your point locations.
 		  </p>
 		  <p>
-            <strong>CSV naming convention:</strong> <br>
-			SiteName_Buffer_Lat_Lon_SmoothingParams.csv <br>
-			e.g., Site_1_500m_67.123_-48.567_gf24_wr25_wd25_p2.csv <br>
+			<strong>Map downloads take a while! Be patient :-)</strong>
+		  </p>
+		  <p>
+            <strong>XLSX naming convention:</strong> <br>
+			SiteName_Buffer_Lat_Lon_SmoothingParams.xslx <br>
+			e.g., Site_1_500m_67.123_-48.567_gf24_wr25_wd25_p2.xslx <br>
 			where: gf24 means gap_fill=24 days, wr25 means raw window smoothing length of 25 days, wd25 means a daily window smoothing length of 25 days, and p2 means a second order polynomial in the savitzky-golay smoother was used.
 		  </p>
 		  <p>
-            <strong>CSV output variables:</strong>
+			Each .xlsx file will contain three sheets:
+		  </p>
+		  <ul>
+            <li><strong>Point Data:</strong> A timeseries of each velocity variable, velocity error, image pair time separation (days) and the number of finite values within the extraction area at each epoch. These form the points and whiskers plotted on the chart</li>
+			<li><strong>Daily Data:</strong> A timeseries of each velocity variable interpolated to daily values. This forms the smooth line on the chart.</li>
+			<li><strong>Metadata:</strong> A table containing the site details.</li>
+		  </ul>
+		  <p>
+            <strong>Point data output variables:</strong>
 			<br>
 			<em>Note: Only "Date", "Error_m_yr", "Time_separation_days", "Pixel_Count" and "s_filt" are exported by default. 
 			Other variables can be enabled for download within the Advanced Options menu. </em>
 		  </p>
           <ul>
-            <li><strong>Date:</strong> The central date of the two images used to estimate ice speed</li>
+            <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
             <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed or velocity at this time period. Defined as the median speed over bedrock regions at that time.</li>
 			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
 			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
+			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+          </ul>
+		  <p>
+            <strong>Daily data output variables:</strong>
+			<br>
+			<em>Note: Only "Date" and "s_filt" are exported by default. 
+			Other variables can be enabled for download within the Advanced Options menu. </em>
+		  </p>
+          <ul>
+            <li><strong>Date:</strong> The date of the interpolated velocity.</li>
 			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
 			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
 			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
@@ -535,9 +764,9 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import "leaflet/dist/leaflet.css";
-import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale } from "@vue-leaflet/vue-leaflet";
+import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LRectangle, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
 import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
@@ -545,6 +774,7 @@ import { saveAs } from 'file-saver';
 import L from 'leaflet';
 import html2canvas from 'html2canvas';
 import domtoimage from 'dom-to-image-more';
+import * as XLSX from 'xlsx';
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -569,6 +799,149 @@ const trackEvent = (eventName, params = {}) => {
     console.log(`?? GA Event Skipped (Not loaded): ${eventName}`);
   }
 };
+
+
+// --- POINT DRAGGING FUNCTIONS --- //
+// 1. Start Dragging (Attached to Rectangle AND Circle)
+const startPointDrag = (e, point) => {
+  // Prevent the click from bubbling to the map (prevents creating a new point)
+  L.DomEvent.stopPropagation(e);
+  L.DomEvent.preventDefault(e);
+
+  // Disable map panning so the map stays still while we move the box
+  if (map.value && map.value.leafletObject) {
+    map.value.leafletObject.dragging.disable();
+  }
+  
+  // Set the global cooldown flag immediately
+  isDragCooldown.value = true;
+
+  // Calculate the difference between the mouse cursor and the shape's center
+  // This ensures the shape moves smoothly relative to where you grabbed it
+  const mouseLat = e.latlng.lat;
+  const mouseLng = e.latlng.lng;
+
+  draggingState.value = {
+    active: true,
+    point: point, // Reference to the reactive point object
+    offsetLat: point.lat - mouseLat,
+    offsetLon: point.lon - mouseLng,
+	startLat: point.lat,
+    startLon: point.lon
+  };
+};
+
+// 2. Move (Attached to the MAP)
+const onMapMouseMove = (e) => {
+  if (!draggingState.value.active) return;
+  
+  const state = draggingState.value;
+  
+  // Update the point's coordinates in real-time
+  // Because 'state.point' is a reference to the item in 'selectedPoints',
+  // Vue will automatically re-render the Rectangle and Circle at the new spot!
+  state.point.lat = e.latlng.lat + state.offsetLat;
+  state.point.lon = e.latlng.lng + state.offsetLon;
+};
+
+// 3. End Drag (Attached to the MAP)
+const onMapMouseUp = async (e) => {
+  if (!draggingState.value.active) return;
+
+  // Re-enable map panning
+  if (map.value && map.value.leafletObject) {
+    map.value.leafletObject.dragging.enable();
+  }
+  
+  // 1. Extract values BEFORE resetting the state
+  const point = draggingState.value.point;
+  const startLat = draggingState.value.startLat;
+  const startLon = draggingState.value.startLon;
+
+  // 2. Full State Reset (Cleaner)
+  draggingState.value = { 
+    active: false, 
+    point: null, 
+    offsetLat: 0, 
+    offsetLon: 0,
+    startLat: 0,
+    startLon: 0
+  };
+  
+  // Only fetch if the point moved significantly
+  const hasMoved = Math.abs(point.lat - startLat) > 0.0001 || Math.abs(point.lon - startLon) > 0.0001;
+
+  if (hasMoved) {
+      await fetchSinglePoint(point.id, point.lat, point.lon, point.color);
+  }
+
+  // 2. Clear the cooldown flag after a short delay
+  // This ensures the subsequent 'click' event (which happens ~10ms later) 
+  // is still blocked by onMapClick
+  setTimeout(() => {
+      isDragCooldown.value = false;
+  }, 100);
+};
+
+// 4. Stops clicks on the feature from bubbling up to the map
+const stopPropagation = (e) => {
+  // L.DomEvent.stopPropagation works on the native event wrapped inside the Leaflet event
+  if (e.originalEvent) {
+    L.DomEvent.stopPropagation(e.originalEvent);
+  } else {
+    L.DomEvent.stopPropagation(e);
+  }
+};
+
+// --- FEEDBACK POPUP STATE ---
+// The main trigger function
+const triggerFeedbackPopup = () => {
+  const hasShown = sessionStorage.getItem(STORAGE_KEY);
+  if (!hasShown) {
+    showFeedbackPopup.value = true;
+    sessionStorage.setItem(STORAGE_KEY, 'true');
+    cleanupTriggers();  // Once triggered, we can stop listening for exit intent or time
+  }
+};
+
+// Exit Intent Handler
+const handleExitIntent = (event) => {
+  // We check if clientY <= 0. This detects if the mouse moves OUT 
+  // of the top of the viewport (towards tabs/address bar).
+  // This prevents the popup from showing if they just move the mouse 
+  // to a second monitor on the right/left.
+  if (event.clientY <= 0) {
+    triggerFeedbackPopup();
+  }
+};
+
+const closeFeedbackPopup = () => {
+  showFeedbackPopup.value = false;
+};
+
+// Clean up listeners to prevent memory leaks or errors
+const cleanupTriggers = () => {
+  if (timerInstance) clearTimeout(timerInstance);
+  document.removeEventListener('mouseleave', handleExitIntent);
+};
+
+onMounted(() => {
+  // Check immediately if we've already shown it this session (e.g. on page refresh)
+  // If yes, do nothing. If no, start the listeners.
+  if (!sessionStorage.getItem(STORAGE_KEY)) {
+    // 1. Set the time-based trigger
+    timerInstance = setTimeout(() => {
+      triggerFeedbackPopup();
+    }, TIME_DELAY_MS);
+    // 2. Set the exit-intent trigger
+    document.addEventListener('mouseleave', handleExitIntent);
+  }
+});
+
+onUnmounted(() => {
+  cleanupTriggers(); // Good practice to clean up when the component is destroyed
+});
+
 
 // --- CONSTANTS ---
 // Colors for selected points (cycles through this list)
@@ -600,9 +973,39 @@ const showHelp = ref(false);
 const iceEdgeData = ref(null);
 const groundingLineData = ref(null);
 const showMargins = ref(false);
-const mapHeightPercent = ref(60); // Default to 60%
+const mapHeightPercent = ref(60); 
 const isDragging = ref(false);
 const isFlowActive = ref(false);
+const globalMaskData = ref(null);
+const globalOutlineData = ref(null);
+const isFetching = ref(false);
+const isRefreshing = ref(false);
+const showTrends = ref(false);
+const trendStart = ref(''); // YYYY-MM-DD
+const trendEnd = ref('');   // YYYY-MM-DD
+const legendItems = ref([]);
+const isUserZoomed = ref(false);
+const TIME_DELAY_MS = 90000; // 1.5 Minutes 
+const STORAGE_KEY = 'shiver_feedback_shown';
+const showFeedbackPopup = ref(false);
+let timerInstance = null;
+
+// Drag features
+const isDragCooldown = ref(false);
+const draggingState = ref({
+  active: false,
+  point: null,
+  offsetLat: 0,
+  offsetLon: 0,
+  startLat: 0, 
+  startLon: 0
+});
+
+// Chart
+const xAxisMin = ref('');
+const xAxisMax = ref('');
+const yAxisMin = ref('');
+const yAxisMax = ref('');
 
 // --- ADVANCED OPTIONS ---
 const showAdvanced = ref(false);
@@ -613,22 +1016,135 @@ const selectedQuality = ref(['filt']);
 const currentPlotVar = ref('s_filt');    
 
 // Smoothing Parameters
-const smoothingParams = ref({
-    gap: 24,
-    win_raw: 1,
-    win_daily: 25,
-    poly: 2
-});
+const smoothingParams = ref({ gap: 24, win_raw: 1, win_daily: 25, poly: 2 });
+const pendingVars = ref(['S']); 
+const pendingQuality = ref(['filt']);
+const pendingSmoothingParams = ref({ gap: 24, win_raw: 25, win_daily: 25, poly: 2 });
 
 const restoreDefaults = () => {
   selectedVars.value = ['s'];
   selectedQuality.value = ['filt'];
-  smoothingParams.value = {
-    gap: 24,
-    win_raw: 1,
-    win_daily: 25,
-    poly: 2
-  };
+  smoothingParams.value = { gap: 24, win_raw: 1, win_daily: 25, poly: 2 };
+};
+
+// --- Good data mask --- //
+onMounted(async () => {
+  try {
+    const [maskRes, outlineRes] = await Promise.all([
+      apiClient.get('/static/global_data_mask.geojson'),
+      apiClient.get('/static/data_outlines.geojson')
+    ]);
+    // Axios puts the actual JSON content inside the .data property
+    globalMaskData.value = maskRes.data;
+    globalOutlineData.value = outlineRes.data;
+  } catch (e) { console.error("Data boundary loading failed.", e); }
+});
+
+// Helper: Ensure the "Pending" state matches "Real" state when the component loads
+onMounted(() => {
+    // ... any existing onMounted code ...
+    pendingVars.value = [...selectedVars.value];
+    pendingQuality.value = [...selectedQuality.value];
+    // Create a copy of the object to break reference
+    pendingSmoothingParams.value = { ...smoothingParams.value };
+});
+
+const getSiteLabel = (point, index) => {
+  // 1. Try Metadata Name (from Shapefile/Zarr) -> User Name -> Generic ID
+  // Use optional chaining (?.) because point.data might be loading
+  const meta = point.data?.meta || {};
+  let name = meta.site_name || point.name || `Site_${point.id}`;
+  // 2. If it is a generic name (e.g. Site_0, Site_99), force it to be sequential (Site_1, Site_2)
+  if (/^Site_\d+$/.test(name)) {
+    return `Site_${index + 1}`;
+  }
+  // 3. Otherwise return the custom name (e.g. "Jakobshavn")
+  return name;
+};
+
+// --- FUNCTION 1: HANDLE CHART ZOOM (Chart updates Text Boxes) ---
+const onPlotRelayout = (event) => {
+  // 1. Check if this is an Auto-Range event (Double click or Reset)
+  if (event['xaxis.autorange'] || event['yaxis.autorange']) {
+      isUserZoomed.value = false; // UNLOCK
+      // Clear variables logic (optional here as resetAxes handles it, but good for safety)
+      if (event['xaxis.autorange']) { xAxisMin.value = ''; xAxisMax.value = ''; }
+      if (event['yaxis.autorange']) { yAxisMin.value = ''; yAxisMax.value = ''; }
+  } 
+  // 2. Check if this is a Zoom event (User dragged box or axes)
+  else if (event['xaxis.range[0]'] || event['yaxis.range[0]']) {
+      isUserZoomed.value = true; // LOCK
+      
+      // Update X-Axis Variables
+      if (event['xaxis.range[0]']) {
+        xAxisMin.value = String(event['xaxis.range[0]']).split(' ')[0];
+        xAxisMax.value = String(event['xaxis.range[1]']).split(' ')[0];
+      }
+      
+      // Update Y-Axis Variables
+      if (event['yaxis.range[0]']) {
+        yAxisMin.value = Math.round(event['yaxis.range[0]'] * 100) / 100;
+        yAxisMax.value = Math.round(event['yaxis.range[1]'] * 100) / 100;
+      }
+  }
+};
+
+// --- FUNCTION 2: HANDLE USER INPUT (Text Boxes update Chart) ---
+const updatePlotAxes = () => {
+  const graphDiv = document.getElementById('velocity-chart');
+  if (!graphDiv) return;
+
+  const update = {};
+  isUserZoomed.value = true; // LOCK
+
+  if (xAxisMin.value && xAxisMax.value) {
+    update['xaxis.range'] = [xAxisMin.value, xAxisMax.value];
+    update['xaxis.autorange'] = false;
+  }
+
+  if (yAxisMin.value !== '' && yAxisMax.value !== '') {
+    update['yaxis.range'] = [parseFloat(yAxisMin.value), parseFloat(yAxisMax.value)];
+    update['yaxis.autorange'] = false;
+  }
+
+  Plotly.relayout(graphDiv, update);
+};
+
+// --- FUNCTION 3: RESET BUTTON ---
+const resetAxes = () => {
+  const graphDiv = document.getElementById('velocity-chart');
+  if (!graphDiv) return;
+
+  isUserZoomed.value = false; // UNLOCK
+  xAxisMin.value = ''; xAxisMax.value = '';
+  yAxisMin.value = ''; yAxisMax.value = '';
+
+  Plotly.relayout(graphDiv, {
+    'xaxis.autorange': true,
+    'yaxis.autorange': true
+  });
+};
+
+// Function to calculate square bounds from a center point and buffer in meters
+const getSquareBounds = (lat, lon, bufferMeters) => {
+  // If buffer is 0, return the point itself (rectangle will be invisible)
+  if (!bufferMeters || bufferMeters <= 0) return [[lat, lon], [lat, lon]];
+
+  // Earth's radius approx calculation
+  // 1 degree latitude is approx 111,111 meters
+  const metersPerDegreeLat = 111111;
+  
+  // 1 degree longitude depends on latitude
+  // Formula: 111,111 * cos(lat in radians)
+  const metersPerDegreeLon = 111111 * Math.cos(lat * (Math.PI / 180));
+
+  const deltaLat = bufferMeters / metersPerDegreeLat;
+  const deltaLon = bufferMeters / metersPerDegreeLon;
+
+  return [
+    [lat - deltaLat, lon - deltaLon], // South-West corner
+    [lat + deltaLat, lon + deltaLon]  // North-East corner
+  ];
 };
 
 // --- Drag Logic ---
@@ -735,7 +1251,7 @@ watch(plotOptions, (newOpts) => {
 }, { deep: true });
 
 // Dynamic label for the download button
-const downloadLabel = computed(() => selectedPoints.value.length > 1 ? 'All CSVs (.zip)' : 'CSV');
+const downloadLabel = computed(() => selectedPoints.value.length > 1 ? 'All .xslx (.zip)' : '.xslx');
 const chartDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Graphs (.zip)' : 'Graph' );
 const mapDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Maps (.zip)' : 'Map & Graph' );
 
@@ -858,12 +1374,7 @@ const debouncedRefetch = () => {
     debounceTimer = setTimeout(() => { refetchAllPoints(); }, 600);
 };
 
-// Also watch smoothingParams deeply for changes
-watch(smoothingParams, () => {
-    debouncedRefetch();
-}, { deep: true });
-
-// Also watch for changes to buffer size
+//  watch for changes to buffer size
 watch(bufferSize, (newValue) => {
   if (newValue === "" || newValue === null || newValue === undefined) {
     bufferSize.value = 500; return;
@@ -872,45 +1383,119 @@ watch(bufferSize, (newValue) => {
 });
 
 
+const applyAdvancedOptions = async () => {
+  // 1. VALIDATION: Ensure at least one variable and level is selected
+  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+      alert("Warning: You must select at least one Variable and one Processing Level.");
+      return; 
+  }
+
+  // 2. SMART CHECK: Do we need to fetch data?
+  
+  // Check if every NEW variable is present in the OLD list
+  const isVarSubset = pendingVars.value.every(v => selectedVars.value.includes(v));
+  
+  // Check if every NEW level is present in the OLD list
+  const isQualitySubset = pendingQuality.value.every(q => selectedQuality.value.includes(q));
+  
+  // Check if smoothing parameters changed (requires simple object comparison)
+  const isParamsChanged = JSON.stringify(pendingSmoothingParams.value) !== JSON.stringify(smoothingParams.value);
+
+  // We need to fetch if:
+  // - We are ADDING a variable (not a subset)
+  // - We are ADDING a quality level (not a subset)
+  // - We changed smoothing parameters (affects values)
+  const needsFetch = !isVarSubset || !isQualitySubset || isParamsChanged;
+
+  // 3. COMMIT CHANGES (Update the "Real" variables)
+  selectedVars.value = [...pendingVars.value];
+  selectedQuality.value = [...pendingQuality.value];
+  smoothingParams.value = { ...pendingSmoothingParams.value };
+
+  // 4. EXECUTE
+  if (needsFetch) {
+      // User added data or changed params -> Trigger Backend
+      await refetchAllPoints(); 
+  } else {
+      // User only removed data -> Just redraw the chart locally
+      updateChart(); 
+  }
+};
+
+
 // Refetch data for ALL points with the new buffer size and/or new filtering option
 const refetchAllPoints = async () => {
   if (selectedPoints.value.length === 0) return;
   
+  // 1. Setup State
+  isRefreshing.value = true;
+  const totalPoints = selectedPoints.value.length;
+  
   const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
   const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
+  
+  // Track refresh
+  trackEvent("data_refresh", {
+	  event_category: "interaction",
+	  event_label: "data_refresh",
+	  buffer: bufferSize.value,
+	  variables: reqVars,
+	  quality: reqQual,
+	  region: currentRegion.value,
+	});
 
-  statusMessage.value = `Refreshing...`;
   try {
-    const rois = selectedPoints.value.map(p => [p.lat, p.lon]);
-    
-    // Construct payload with all params
-    const payload = {
-      roi: rois, 
-      buffer: bufferSize.value,
-      variables: reqVars, 
-      quality: reqQual,
-      // Spread the smoothing params
-      gap_fill: smoothingParams.value.gap,
-      win_raw: smoothingParams.value.win_raw,
-      win_daily: smoothingParams.value.win_daily,
-      poly: smoothingParams.value.poly
-    };
+    // 2. Iterate through points one by one
+    for (let i = 0; i < totalPoints; i++) {
+      const point = selectedPoints.value[i];
+      
+      // UPDATE STATUS: "Refreshing point 1 / 10..."
+      statusMessage.value = `Refreshing point ${i + 1} / ${totalPoints}...`;
 
-    const response = await apiClient.post('/api/timeseries/json', payload);
-    const resultsArray = Object.values(response.data);
-    resultsArray.forEach((newData, index) => {
-      if (selectedPoints.value[index]) selectedPoints.value[index].data = newData;
-    });
+      // 3. Create Payload for THIS SPECIFIC POINT only
+      const payload = {
+        roi: [[point.lat, point.lon]], // Single ROI
+        buffer: bufferSize.value,
+        variables: reqVars, 
+        quality: reqQual,
+        gap_fill: smoothingParams.value.gap,
+        win_raw: smoothingParams.value.win_raw,
+        win_daily: smoothingParams.value.win_daily,
+        poly: smoothingParams.value.poly
+      };
+
+      // 4. Fetch Data (Waits here until this point is done)
+      const response = await apiClient.post('/api/timeseries/json', payload);
+      
+      // 5. Update the specific point in the array immediately
+      // The backend returns an object like { "lat_lon": { data... } }
+      // We grab the first (and only) value from the values array
+      const newData = Object.values(response.data)[0];
+      
+      if (newData) {
+        selectedPoints.value[i].data = newData;
+      }
+      
+      // Optional: Update chart incrementally (cool visual effect)
+      updateChart(); 
+    }
+
+    // 6. Finish
     updateChart(); 
     statusMessage.value = "Data updated.";
+
   } catch (error) {
-    console.error("Failed to update:", error); statusMessage.value = "Error updating data.";
+    console.error("Failed to update:", error);
+    statusMessage.value = "Error updating data.";
+  } finally {
+    isRefreshing.value = false;
   }
 };
 
 // --- MAP INTERACTION ---
 const onMapClick = async (e) => {
 // 1. Validation Checks 
+  if (draggingState.value.active || isDragCooldown.value) return;
   const target = e.originalEvent?.target;
   if (!target || !target.isConnected) return;
   if (target.closest('.leaflet-control-container') || target.closest('.leaflet-control')) return;
@@ -920,6 +1505,18 @@ const onMapClick = async (e) => {
     alert("Maximum of 10 points allowed.");
     return;
   }
+  
+  // Ensure we don't fetch if the user has deselected everything in the menu
+  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+      alert("Warning: Please select at least one Variable and Processing Level in Advanced Options.");
+      return;
+  }
+  
+  // Sync with advanced options
+  // Commit the "Pending" menu state to the "Real" application state
+  selectedVars.value = [...pendingVars.value];
+  selectedQuality.value = [...pendingQuality.value];
+  smoothingParams.value = { ...pendingSmoothingParams.value };
   
   // 2. Track clicks
   trackEvent("map_click", {
@@ -1020,7 +1617,20 @@ const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
   
-  // 1. Start loading state
+  // 1. VALIDATION: Ensure at least one variable/quality is selected (from Pending)
+  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+      alert("Warning: Please select at least one Variable and Processing Level in Advanced Options before uploading.");
+      event.target.value = ''; // Reset input
+      return;
+  }
+  
+  // 2. SYNC: Commit Pending Options to Real Options
+  // This ensures the upload uses exactly what the user sees in the menu
+  selectedVars.value = [...pendingVars.value];
+  selectedQuality.value = [...pendingQuality.value];
+  smoothingParams.value = { ...pendingSmoothingParams.value };
+  
+  // 3. Start loading state
   isUploading.value = true;
   statusMessage.value = "Uploading... 0%";
   
@@ -1029,7 +1639,7 @@ const handleFileUpload = async (event) => {
   
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("buffer", bufferSize.value); 
+  formData.append("buffer", bufferSize.value); // apply global buffer value in case shapefile does not specify it
   
   reqVars.forEach(v => formData.append("variables", v));
   reqQual.forEach(q => formData.append("quality", q));
@@ -1071,10 +1681,13 @@ const handleFileUpload = async (event) => {
       // Parse data
       const ptLat = data.meta?.lat || 0;
       const ptLon = data.meta?.lon || 0;
+	  const metaBuffer = data.meta?.buffer_used;
+	  const hasSpecificBuffer = metaBuffer !== undefined && metaBuffer !== null;
+	  const siteSpecificBuffer = hasSpecificBuffer ? Number(metaBuffer) : Number(bufferSize.value);
       const color = COLORS[selectedPoints.value.length % COLORS.length];
       // Extract
       selectedPoints.value.push({
-        id: Date.now() + added, lat: ptLat, lon: ptLon, color: color, data: data, name: siteName 
+        id: Date.now() + added, lat: ptLat, lon: ptLon, color: color, data: data, name: siteName, buffer: siteSpecificBuffer 
       });
       added++;
     }
@@ -1086,7 +1699,9 @@ const handleFileUpload = async (event) => {
 	event.target.value = '';
 	
   } catch (error) {
-    console.error(error); statusMessage.value = "Upload failed.";
+    console.error(error); 
+	statusMessage.value = "Upload failed.";
+	alert("Upload failed: " + (error.message || "Unknown error"));
   } finally {
     isUploading.value = false;
   }
@@ -1094,9 +1709,21 @@ const handleFileUpload = async (event) => {
 
 // Fetch data for a single point (used by Map Click)
 const fetchSinglePoint = async (id, lat, lon, color) => {
+  isFetching.value = true;
   statusMessage.value = "Fetching...";
   const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
   const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
+  // Track data fetching
+  trackEvent("data_fetch", {
+	  event_category: "interaction",
+	  event_label: "data_fetch",
+	  buffer: bufferSize.value,
+	  variables: reqVars,
+	  quality: reqQual,
+	  region: currentRegion.value,
+	  lat: lat,
+	  lon: lon
+	});
   try {
     const payload = { 
         roi: [[lat, lon]], 
@@ -1124,6 +1751,9 @@ const fetchSinglePoint = async (id, lat, lon, color) => {
     updateChart();
   } catch (error) {
     console.error(error); statusMessage.value = "Server Error.";
+  } finally {
+    // 2. STOP SPINNER (Runs regardless of success or failure)
+    isFetching.value = false;
   }
 };
 
@@ -1138,62 +1768,213 @@ const clearAll = () => { selectedPoints.value = []; Plotly.purge('velocity-chart
 // BUILD CHART DATA (Returns {data, layout} for a given quality level)
 const buildChartConfig = (plotKey) => {
   const traces = [];
-  // plotKey example: "s_filt", "u_raw"
+  
+  // Reset Legend Items
+  legendItems.value = [];
   
   selectedPoints.value.forEach((point, idx) => {
+    // Data validation
     if (point.data.status === 'error' || !point.data.data) return;
-    
-    // Data is now keyed directly: point.data.data['s_filt']
     const varData = point.data.data[plotKey];
-    const rootData = point.data.data; // for shared x-axis, error, etc
-    
+    const rootData = point.data.data;
     if (!varData) return;
-
+	
+	// Setup styles
     const pale = makePale(point.color);
-    const label = /^Site_\d+$/.test(point.name) ? `P${idx+1}` : point.name;
+    const label = /^Site_\d+$/.test(point.name) ? `Site${idx+1}` : point.name;
     const suffix = plotKey.includes('raw') ? ' (Raw)' : '';
-
+	
+	// Check visibility (Default to true if undefined)
+    const isVisible = point.visible !== false;
+	
+	// Select the correct error array based on the variable being plotted
+	let activeErrorArray = rootData.error; // Default to Speed (Magnitude)
+	if (plotKey.startsWith('u')) {
+		 activeErrorArray = rootData.error_u || rootData.error; // Fallback if missing
+	} else if (plotKey.startsWith('v')) {
+		 activeErrorArray = rootData.error_v || rootData.error; // Fallback if missing
+	}
+	
+	// --- PREPARE HOVER DATA ---
+    // Zip count and dt together so each point has its specific metadata
+    const customData = rootData.count.map((c, i) => [c, rootData.dt[i], activeErrorArray[i]]);
+	
+    // --- TRACE 1: MARKERS (Points) ---
     traces.push({
-      x: rootData.dates, y: varData.raw, mode: 'markers', type: 'scatter', 
-      name: `${label}${suffix}`, legendgroup: `g${point.id}`, 
+      x: rootData.dates, 
+      y: varData.raw, 
+      mode: 'markers', 
+      type: 'scatter', 
+      name: label, 
+      showlegend: false, 
+	  visible: isVisible,
+      legendgroup: `g${point.id}`, 
       marker: { color: pale, size: 5, line: {width:1, color: point.color} },
-      error_y: { type: 'data', array: rootData.error, visible: true, color: pale, thickness: 1, width: 0 },
-      error_x: { type: 'data', array: rootData.dt?.map(d=>d/2), visible: true, color: pale, thickness: 1, width: 0 }
+      error_y: { type: 'data', array: activeErrorArray, visible: true, color: pale, thickness: 1, width: 0 },
+      error_x: { type: 'data', array: rootData.dt?.map(d=>d/2), visible: true, color: pale, thickness: 1, width: 0 },
+	  customdata: customData,
+      hovertemplate: 
+        `<b>Date</b>: %{x|%Y-%m-%d}<br>` +
+        `<b>Value</b>: %{y:.1f} &plusmn; %{customdata[2]:.1f} m/yr<br>` + 
+        `<b>Pixels</b>: %{customdata[0]}<br>` +
+        `<b>dt</b>: %{customdata[1]} days` +
+        `<extra></extra>`
     });
     
+    // --- TRACE 2: LINES (Smoothed) ---
     traces.push({
-      x: rootData.dates, y: varData.smoothed, mode: 'lines', type: 'scatter', 
-      name: `${label}${suffix} Trend`, legendgroup: `g${point.id}`, 
+      x: rootData.dates, 
+      y: varData.smoothed, 
+      mode: 'lines', 
+      type: 'scatter', 
+      name: label,
+      showlegend: false,
+	  visible: isVisible,
+      legendgroup: `g${point.id}`, 
       line: { color: point.color, width: 3 }
     });
+	
+	// TREND LINE LOGIC
+	let trendText = null;
+    if (showTrends.value && trendStart.value && trendEnd.value) {
+        
+        // 1. Filter Data to the selected Trend Range
+        const tStart = new Date(trendStart.value).getTime();
+        const tEnd = new Date(trendEnd.value).getTime();
+        const filteredDates = [];
+        const filteredVals = [];
+        rootData.dates.forEach((d, i) => {
+            const t = new Date(d).getTime();
+            const val = varData.raw[i]; 
+            if (t >= tStart && t <= tEnd && val !== null && val !== undefined) {
+                filteredDates.push(d);
+                filteredVals.push(val);
+            }
+        });
+
+        // 2. Calculate Regression
+        const stats = calculateRegression(filteredDates, filteredVals);
+
+        if (stats) {
+			const x1 = tStart;
+			const x2 = tEnd;
+			const y1 = stats.slope * x1 + stats.intercept;
+			const y2 = stats.slope * x2 + stats.intercept;
+			
+			// Format trend values
+			const trendVal = stats.slopePerYear > 0 
+			   ? `+${stats.slopePerYear.toFixed(1)}` 
+			   : stats.slopePerYear.toFixed(1);
+
+			let sig = '';
+			if (stats.pValue < 0.001) sig = '***';
+			else if (stats.pValue < 0.01) sig = '**';
+			else if (stats.pValue < 0.05) sig = '*';
+			else sig = 'ns'; // not significant
+			
+			// Define trend text
+            trendText = `${trendVal} m/yr<sup>2</sup> (${sig})`;
+
+			// Define trend data
+			traces.push({
+				x: [trendStart.value, trendEnd.value],
+				y: [y1, y2],
+				mode: 'lines',
+				type: 'scatter',
+				legendgroup: `g${point.id}`,
+				showlegend: false,
+				visible: isVisible,
+				line: { color: point.color, width: 2, dash: 'dash' },
+				hoverinfo: 'skip' 
+			});
+		}
+    }
+	
+	// --- POPULATE CUSTOM LEGEND ---
+    // Instead of a dummy trace, we push to our Vue array
+    legendItems.value.push({
+        id: point.id,
+        label: `${label}${suffix}`,
+        color: point.color,
+        trendText: trendText,
+        isVisible: isVisible
+    });
+	
   });
   
-  // Determine y-axis label
-  let yAxisLabel = "Velocity (m/yr)"; // Default fallback
-  if (plotKey.startsWith('s')) {
-    yAxisLabel = "Speed (m/yr)";
-  } else if (plotKey.startsWith('u')) {
-    yAxisLabel = "Easting velocity (m/yr, positive eastwards)";
-  } else if (plotKey.startsWith('v')) {
-    yAxisLabel = "Northing velocity (m/yr, positive northwards)";
-  }
+  // Define axis labels
+  let yAxisLabel = "Velocity (m/yr)";
+  if (plotKey.startsWith('s')) yAxisLabel = "Speed (m/yr)";
+  else if (plotKey.startsWith('u')) yAxisLabel = "Easting velocity (m/yr)";
+  else if (plotKey.startsWith('v')) yAxisLabel = "Northing velocity (m/yr)";
 
   const layout = {
+	annotations: [
+      {
+        text: "S H I V E R",
+        x: 0.5, // Horizontal center
+        y: 0.5, // Vertical center
+        xref: "paper", // Position relative to the chart area (0-1)
+        yref: "paper",
+        showarrow: false,
+        font: {
+          family: "sans-serif",
+          size: 200, // Large font
+          color: "rgba(135, 206, 235, 0.15)", // Faint Sky Blue (low opacity)
+          weight: 600
+        },
+        textangle: 0, // Optional: slight rotation for style
+        layer: "below"  // Tries to put it behind data (though Plotly text often sits on top)
+      }
+    ],
     title: `Ice Velocity: ${plotKey.toUpperCase()}`,
     xaxis: { title: { text: 'Date', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
     yaxis: { title: { text: yAxisLabel, standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
-    margin: {t:40, r:20, l:80, b:60}, showlegend: true, legend: {orientation: 'h', y: 1.14, x: 0, xanchor: 'left'}, autosize: true
+    margin: {t:5, r:20, l:60, b:40}, 
+    showlegend: false, 
+    autosize: true
   };
 
   return { data: traces, layout };
 };
 
+// --- NEW HANDLER: Toggle Visibility ---
+const togglePointVisibility = (id) => {
+    const point = selectedPoints.value.find(p => p.id === id);
+    if (point) {
+        // Toggle property
+        point.visible = point.visible === false ? true : false;
+        // Trigger chart update
+        updateChart();
+    }
+};
+
 // PLOT CHART
 const updateChart = async () => {
   await nextTick(); 
-  if (selectedPoints.value.length === 0) { Plotly.purge('velocity-chart'); return; }
+  if (selectedPoints.value.length === 0) { 
+      Plotly.purge('velocity-chart'); 
+      legendItems.value = []; 
+      xAxisMin.value = ''; xAxisMax.value = '';
+      yAxisMin.value = ''; yAxisMax.value = '';
+      isUserZoomed.value = false;
+      return; 
+  }
   
   const { data, layout } = buildChartConfig(currentPlotVar.value);
+  
+  // Zoom if user interacted
+  if (isUserZoomed.value) {
+      if (xAxisMin.value && xAxisMax.value) {
+         layout.xaxis.range = [xAxisMin.value, xAxisMax.value];
+         layout.xaxis.autorange = false;
+      }
+      
+      if (yAxisMin.value !== '' && yAxisMax.value !== '') {
+         layout.yaxis.range = [parseFloat(yAxisMin.value), parseFloat(yAxisMax.value)];
+         layout.yaxis.autorange = false;
+      }
+  }
   
   // Define the configuration
   const config = {
@@ -1225,180 +2006,388 @@ const updateChart = async () => {
   };
   
   // Make the plot
-  Plotly.newPlot('velocity-chart', data, layout, config);
+  const graphDiv = await Plotly.newPlot('velocity-chart', data, layout, config);
+  
+  //Attach listener for axis updates
+  if (graphDiv) {
+    graphDiv.removeAllListeners && graphDiv.removeAllListeners('plotly_relayout');
+    graphDiv.on('plotly_relayout', onPlotRelayout);
+    
+    // 3. POPULATE INITIAL VALUES (New Code)
+    // We read the calculated range from the chart's internal layout
+    if (graphDiv.layout && graphDiv.layout.xaxis && graphDiv.layout.yaxis) {
+        const xRange = graphDiv.layout.xaxis.range;
+        const yRange = graphDiv.layout.yaxis.range;
+
+        if (xRange) {
+            xAxisMin.value = String(xRange[0]).split(' ')[0];
+            xAxisMax.value = String(xRange[1]).split(' ')[0];
+        }
+        if (yRange) {
+            yAxisMin.value = Math.round(yRange[0] * 100) / 100;
+            yAxisMax.value = Math.round(yRange[1] * 100) / 100;
+        }
+    }
+	// Force resize
+	window.requestAnimationFrame(() => {
+        Plotly.Plots.resize(graphDiv);
+    });
+  }
+};
+
+
+const calculateRegression = (xDates, yValues) => {
+  const n = xDates.length;
+  if (n < 2) return null;
+
+  // 1. Constants
+  const MS_PER_YEAR = 1000 * 60 * 60 * 24 * 365.25;
+
+  const x = xDates.map(d => new Date(d).getTime());
+  const y = yValues;
+
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumXX += x[i] * x[i];
+    sumYY += y[i] * y[i];
+  }
+
+  // 2. Calculate Raw Slope (Change per Millisecond)
+  const rawSlope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const intercept = (sumY - rawSlope * sumX) / n;
+
+  // 3. Convert to "Change per Year"
+  const slopePerYear = rawSlope * MS_PER_YEAR;
+
+  // 4. Stats (R2 and P)
+  const ssTot = sumYY - (sumY * sumY) / n;
+  const ssRes = sumYY - rawSlope * sumXY - intercept * sumY;
+  const r2 = 1 - (ssRes / ssTot);
+
+  const s2 = ssRes / (n - 2); 
+  const seSlope = Math.sqrt(s2 / (sumXX - (sumX * sumX) / n));
+  const tStat = rawSlope / seSlope;
+  const pValue = getPValueFromT(Math.abs(tStat), n - 2);
+
+  // Return both raw (for plotting) and converted (for display)
+  return { slope: rawSlope, intercept, slopePerYear, r2, pValue };
+};
+
+// --- HANDLER: Toggle Trends ---
+const toggleTrends = async () => {
+  showTrends.value = !showTrends.value;
+
+  if (showTrends.value) {
+    // 1. Default the Trend Range to the CURRENT visible chart range
+    // If user has zoomed, use that. If not, use global bounds.
+    if (xAxisMin.value && xAxisMax.value) {
+      trendStart.value = xAxisMin.value;
+      trendEnd.value = xAxisMax.value;
+    } else {
+      // Fallback: Use the very first and last date of the data
+      // (Simplified logic: grab from first point)
+      if (selectedPoints.value.length > 0) {
+        const dates = selectedPoints.value[0].data.data.dates;
+        trendStart.value = dates[0];
+        trendEnd.value = dates[dates.length - 1];
+      }
+    }
+  }
+
+  // 2. Refresh Chart
+  await updateChart();
+};
+
+// --- HANDLER: Update when Trend Dates change ---
+const updateTrendCalc = async () => {
+   if (showTrends.value) {
+     await updateChart();
+   }
+};
+
+// Approximate two-tailed p-value from t-stat (Abramowitz & Stegun approx)
+const getPValueFromT = (t, df) => {
+  const x = df / (df + t * t);
+  let p = 0; 
+  // Beta function approximation loop
+  // (Simplified for brevity: returns rough significance tiers if math is too heavy)
+  // For a robust implementation without libraries, simple thresholds are often used in UI:
+  if (Math.abs(t) > 3.291) return 0.001; // roughly p < 0.001
+  if (Math.abs(t) > 2.576) return 0.01;  // roughly p < 0.01
+  if (Math.abs(t) > 1.960) return 0.05;  // roughly p < 0.05
+  return 0.10; // Not significant
+};
+
+const setWaitCursor = (shouldWait) => {
+  if (shouldWait) {
+    const style = document.createElement('style');
+    style.id = 'global-wait-cursor';
+    style.innerHTML = '* { cursor: wait !important; }'; // The "Nuclear" override
+    document.head.appendChild(style);
+  } else {
+    const style = document.getElementById('global-wait-cursor');
+    if (style) style.remove();
+  }
 };
 
 
 // CHART IMAGE DOWNLOAD (MULTI-FILE SUPPORT) ---
 const downloadChartImage = async () => {
-  if (selectedPoints.value.length === 0) {
-    statusMessage.value = "No chart to download.";
-    return;
-  }
+  if (selectedPoints.value.length === 0) return;
 
-  // --- Start Spinner ---
-  isDownloadingChart.value = true;
+  statusMessage.value = "Processing charts...";
+  
+  // 1. Force Cursor (Nuclear Option)
+  setWaitCursor(true);
+  
+  const EXPORT_SCALE = 3; 
+  const originalPlotVar = currentPlotVar.value;
 
-  // Track png downloads (Left exactly as is)
-  trackEvent("file_download", {
-    event_category: "export",
-    event_label: "png_chart",
-    file_extension: "png",
-    file_name: `velocity_plots_${currentRegion.value}`,
-    plot_type: currentPlotVar.value
-  });
-
-  statusMessage.value = "Generating image(s)...";
-
-  // --- Wrap in setTimeout to allow UI update ---
+  // 2. Use setTimeout to allow the UI to paint the cursor change
   setTimeout(async () => {
     try {
-      const keysToDownload = plotOptions.value.map(o => o.val);
-
-      if (keysToDownload.length === 1) {
-        const graphDiv = document.getElementById('velocity-chart');
-        // Append params suffix
-        const fname = `velocity_${keysToDownload[0]}_timeseries${smoothingSuffix.value}`;
-        await Plotly.downloadImage(graphDiv, {
-          format: 'png', width: 1200, height: 500, filename: fname
-        });
-        statusMessage.value = "Image downloaded.";
-        return;
-      }
-
-      // Existing Zip Logic (Left exactly as is)
       const zip = new JSZip();
+      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value, label: 'Current'}];
+      const filesToSave = [];
 
-      const getBlobForConfig = async (key) => {
-        const tempDiv = document.createElement('div');
-        tempDiv.style.width = '1200px'; tempDiv.style.height = '500px'; tempDiv.style.visibility = 'hidden';
-        document.body.appendChild(tempDiv);
-        const { data, layout } = buildChartConfig(key);
-        await Plotly.newPlot(tempDiv, data, layout);
-        const url = await Plotly.toImage(tempDiv, { format: 'png', width: 1200, height: 500 });
-        document.body.removeChild(tempDiv);
-        const res = await fetch(url);
-        return await res.blob();
-      };
+      for (const opt of optionsProcess) {
+        statusMessage.value = `Capturing ${opt.label || opt.val}...`;
 
-      for (const k of keysToDownload) {
-        const blob = await getBlobForConfig(k);
-        // Append params suffix
-        zip.file(`${currentRegion.value}_${k}_timeseries${smoothingSuffix.value}.png`, blob);
+        // Update View
+        if (currentPlotVar.value !== opt.val) {
+            currentPlotVar.value = opt.val;
+            await nextTick();
+            // Give Plotly time to settle
+            await new Promise(r => setTimeout(r, 800)); 
+        }
+
+        const chartElement = document.querySelector('.chart-wrapper');
+        const width = chartElement.clientWidth;
+        const height = chartElement.clientHeight;
+
+        const imgUrl = await domtoimage.toPng(chartElement, {
+            bgcolor: '#FFFFFF', 
+            width: width * EXPORT_SCALE,
+            height: height * EXPORT_SCALE,
+            style: {
+              transform: `scale(${EXPORT_SCALE})`,
+              transformOrigin: 'top left',
+              width: `${width}px`,
+              height: `${height}px`
+            },
+            // Filter out UI elements (Toolbar & Text Inputs)
+            filter: (node) => {
+                if (node.classList) {
+                    if (node.classList.contains('modebar')) return false;
+                    if (node.classList.contains('axis-controls')) return false; 
+                    if (node.tagName === 'INPUT' || node.tagName === 'SELECT') return false;
+                }
+                return true;
+            }
+        });
+
+        const blob = await (await fetch(imgUrl)).blob();
+        const fname = `velocity_${opt.val}_timeseries${smoothingSuffix.value}.png`;
+        filesToSave.push({ name: fname, blob: blob });
       }
 
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "velocity_plots.zip");
-      statusMessage.value = "Images zipped.";
-    } catch (e) {
-      console.error(e);
-      statusMessage.value = "Error saving images.";
+      // Restore State
+      if (currentPlotVar.value !== originalPlotVar) {
+          currentPlotVar.value = originalPlotVar;
+      }
+
+      // Save & Track
+      if (filesToSave.length === 1) {
+        saveAs(filesToSave[0].blob, filesToSave[0].name);
+        statusMessage.value = "Chart downloaded.";
+        trackEvent("file_download", {
+             event_category: "export",
+             event_label: "png_chart",
+             file_extension: "png",
+             file_name: filesToSave[0].name,
+             plot_type: currentPlotVar.value
+        });
+      } else {
+        filesToSave.forEach(f => zip.file(f.name, f.blob));
+        statusMessage.value = "Compressing...";
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, `Velocity_Charts_${currentRegion.value}.zip`);
+        statusMessage.value = "All charts downloaded.";
+        trackEvent("file_download", {
+             event_category: "export",
+             event_label: "png_chart",
+             file_extension: "png",
+             file_name: "zipped_charts",
+             plot_type: currentPlotVar.value
+        });
+      }
+
+    } catch (error) {
+      console.error("Chart Export Error:", error);
+      statusMessage.value = "Error generating chart.";
     } finally {
-      // --- Stop Spinner (Runs on success OR error) ---
-      isDownloadingChart.value = false;
+      // 3. Remove Nuclear Cursor
+      setWaitCursor(false);
+      // Optional: clear status message after a moment
+      setTimeout(() => statusMessage.value = "", 2000);
     }
-  }, 50); // Short delay to let the browser paint the spinner
+  }, 100); // 100ms delay to ensure browser paints the cursor
 };
+
 
 
 const downloadMapAndGraph = async () => {
   if (selectedPoints.value.length === 0) return;
 
   isDownloadingMap.value = true;
-  statusMessage.value = "Preparing high-res images...";
+  statusMessage.value = "Processing images...";
   
+  // 1. Force "Nuclear" Wait Cursor
+  setWaitCursor(true);
+
+  // SETTINGS
+  const EXPORT_SCALE = 3; 
+  
+  // Store original selection to restore later
+  const originalPlotVar = currentPlotVar.value;
+
   setTimeout(async () => {
     try {
-      // --- 1. Capture the Map (Visuals Only) ---
+      // --- 1. Capture the Map (Once) ---
       const mapElement = document.querySelector('.map-wrapper');
-      
-      // We use dom-to-image to capture the map EXACTLY as seen.
-      // No manual drawing, no coordinate math.
+      const mapWidth = mapElement.clientWidth;
+      const mapHeight = mapElement.clientHeight;
+
       const mapImgUrl = await domtoimage.toPng(mapElement, {
-          width: mapElement.clientWidth * 2,
-          height: mapElement.clientHeight * 2,
+          width: mapWidth * EXPORT_SCALE,
+          height: mapHeight * EXPORT_SCALE,
           style: {
-            transform: 'scale(2)',
-            transformOrigin: 'top left', 
-            width: `${mapElement.clientWidth}px`,
-            height: `${mapElement.clientHeight}px`
+            transform: `scale(${EXPORT_SCALE})`,
+            transformOrigin: 'top left',
+            width: `${mapWidth}px`,
+            height: `${mapHeight}px`
           },
-          // Filter out the controls (Zoom, etc.)
+          // Filter out Map Controls
           filter: (node) => {
-			// 1. Check if node has a classList (avoids errors on text nodes)
-			if (node.classList) {
-				// 2. Return FALSE to REMOVE these elements
-				if (node.classList.contains('leaflet-control-container')) return false;
-				if (node.classList.contains('control-panel')) return false;
-				if (node.classList.contains('chart-controls-overlay')) return false;
-			}
-			// 3. Return TRUE to KEEP everything else
-			return true;
-		}
+            if (node.classList) {
+                if (node.classList.contains('control-panel')) return false;
+                if (node.classList.contains('leaflet-control-zoom')) return false;
+                if (node.classList.contains('leaflet-control-layers')) return false;
+                if (node.classList.contains('feedback-popup')) return false;
+            }
+            return true;
+          }
       });
 
-      // Load Map Image
       const mapImg = new Image();
       mapImg.src = mapImgUrl;
       await new Promise(resolve => mapImg.onload = resolve);
 
-      // --- 2. Zip & Loop (Standard Logic) ---
+      // --- 2. Loop Through Variables ---
       const zip = new JSZip();
-      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value}];
+      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value, label: 'Current'}];
       const filesToSave = [];
 
       for (const opt of optionsProcess) {
-        statusMessage.value = `Processing ${opt.label}...`;
+        statusMessage.value = `Capturing ${opt.label || opt.val}...`;
 
-        // Generate Chart
-        const { data, layout } = buildChartConfig(opt.val);
-        
-        // High-Res Chart Layout
-        const printLayout = { 
-          ...layout, 
-          title: { ...layout.title, font: { size: 24 } }, 
-          xaxis: { ...layout.xaxis, title: { ...layout.xaxis.title, font: { size: 18 } } },
-          yaxis: { ...layout.yaxis, title: { ...layout.yaxis.title, font: { size: 18 } } },
-        };
+        // A. Update the Chart View
+        if (currentPlotVar.value !== opt.val) {
+            currentPlotVar.value = opt.val;
+            await nextTick(); 
+            await new Promise(r => setTimeout(r, 800)); 
+        }
 
-        const chartImgUrl = await Plotly.toImage(
-          { data, layout: printLayout }, 
-          { format: 'png', width: 1400, height: 600, scale: 2 }
-        );
+        // B. Capture the Chart (Screenshot)
+        const chartElement = document.querySelector('.chart-wrapper');
+        const chartWidth = chartElement.clientWidth;
+        const chartHeight = chartElement.clientHeight;
+
+        const chartImgUrl = await domtoimage.toPng(chartElement, {
+            bgcolor: '#FFFFFF', 
+            width: chartWidth * EXPORT_SCALE,
+            height: chartHeight * EXPORT_SCALE,
+            style: {
+              transform: `scale(${EXPORT_SCALE})`,
+              transformOrigin: 'top left',
+              width: `${chartWidth}px`,
+              height: `${chartHeight}px`
+            },
+            // === NEW: Filter out Chart Controls/Inputs ===
+            filter: (node) => {
+                if (node.classList) {
+                    if (node.classList.contains('modebar')) return false; // Plotly Toolbar
+                    if (node.classList.contains('axis-controls')) return false; // Container for inputs (if class exists)
+                    // Generic catch-all for Inputs and Dropdowns
+                    if (node.tagName === 'INPUT' || node.tagName === 'SELECT') return false;
+                }
+                return true;
+            }
+        });
 
         const chartImg = new Image();
         chartImg.src = chartImgUrl;
         await new Promise(resolve => chartImg.onload = resolve);
 
-        // Merge Canvas
+        // C. Stitch Map + Chart
         const combinedCanvas = document.createElement('canvas');
         const ctx = combinedCanvas.getContext('2d');
-        const finalWidth = Math.max(mapImg.width, chartImg.width);
-        const finalHeight = mapImg.height + chartImg.height;
+        
+        const finalWidth = mapImg.naturalWidth;
+        const chartAspectRatio = chartImg.naturalWidth / chartImg.naturalHeight;
+        const finalChartHeight = finalWidth / chartAspectRatio;
+        const finalHeight = mapImg.naturalHeight + finalChartHeight;
 
         combinedCanvas.width = finalWidth;
         combinedCanvas.height = finalHeight;
 
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, finalWidth, finalHeight);
+        
         ctx.drawImage(mapImg, 0, 0);
-        ctx.drawImage(chartImg, 0, mapImg.height);
+        ctx.drawImage(chartImg, 0, mapImg.naturalHeight, finalWidth, finalChartHeight);
 
         const blob = await new Promise(resolve => combinedCanvas.toBlob(resolve, 'image/png'));
+        
+        // D. Create Filename
         const fname = `velocity_${opt.val}_timeseries${smoothingSuffix.value}_map.png`;
         filesToSave.push({ name: fname, blob: blob });
       }
 
-      // --- 3. Save ---
+      // Restore original view state
+      if (currentPlotVar.value !== originalPlotVar) {
+          currentPlotVar.value = originalPlotVar;
+      }
+
+      // --- 3. Save & Track ---
       if (filesToSave.length === 1) {
         saveAs(filesToSave[0].blob, filesToSave[0].name);
         statusMessage.value = "Image downloaded.";
+        
+        trackEvent("file_download", {
+            event_category: "export",
+            event_label: "png_map",
+            file_extension: "png",
+            file_name: filesToSave[0].name,
+            plot_type: currentPlotVar.value
+        });
       } else {
         filesToSave.forEach(f => zip.file(f.name, f.blob));
         statusMessage.value = "Compressing...";
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, `Map_Velocity_Export_${currentRegion.value}.zip`);
         statusMessage.value = "All charts downloaded.";
+        
+        trackEvent("file_download", {
+            event_category: "export",
+            event_label: "png_map",
+            file_extension: "png",
+            file_name: "zipped_maps",
+            plot_type: currentPlotVar.value
+        });
       }
 
     } catch (error) {
@@ -1406,9 +2395,13 @@ const downloadMapAndGraph = async () => {
       statusMessage.value = "Error generating images.";
     } finally {
       isDownloadingMap.value = false;
+      // 2. Remove "Nuclear" Cursor
+      setWaitCursor(false);
+      setTimeout(() => statusMessage.value = "", 2000);
     }
   }, 100);
 };
+
 
 // Helper: Generates filenames for download
 const getFilename = (p, index) => {
@@ -1419,42 +2412,46 @@ const getFilename = (p, index) => {
   // Use toFixed(3) for lat/lon as requested previously + params
   const lat = p.lat.toFixed(3);
   const lon = p.lon.toFixed(3);
-  return `${name}_${buf}m_${lat}_${lon}${smoothingSuffix.value}.csv`;
+  return `${name}_${buf}m_${lat}_${lon}${smoothingSuffix.value}.xlsx`;
 };
 
 // --- DATA DOWNLOAD HANDLER ---
 const handleDownload = async () => {
   if (selectedPoints.value.length === 0) return;
   
-  // Track csv downloads
+  // Track downloads (Metadata updated to reflect xlsx)
   trackEvent("file_download", {
-	  event_category: "export",
-	  event_label: "csv_data",
-	  file_extension: "zip", // or csv
-	  file_name: "velocity_data_batch",
-	  region: currentRegion.value,
-	  count: selectedPoints.value.length
-	});
+      event_category: "export",
+      event_label: "xlsx_data", 
+      file_extension: selectedPoints.value.length === 1 ? "xlsx" : "zip", 
+      file_name: selectedPoints.value.length === 1 ? getFilename(selectedPoints.value[0], 0) : "velocity_data_batch",
+      region: currentRegion.value,
+      count: selectedPoints.value.length
+  });
   
-  // Single File: Direct CSV download
+  // --- SINGLE FILE DOWNLOAD ---
   if (selectedPoints.value.length === 1) {
     const p = selectedPoints.value[0];
-    const blob = new Blob([generateCSV(p)], { type: "text/csv;charset=utf-8" });
-    saveAs(blob, getFilename(p, 0)); 
+    // Pass index 0 since it's a single file
+    const wb = generateXLSX(p, 0);
+    XLSX.writeFile(wb, getFilename(p, 0)); 
     return;
   }
 
-  // Multiple Files: Zip archive
+  // --- BATCH DOWNLOAD (ZIP) ---
   isDownloading.value = true;
   try {
     const zip = new JSZip();
     
-    // 1. Add CSVs
+    // 1. Add XLSX Files to Zip
     selectedPoints.value.forEach((p, index) => {
-      zip.file(getFilename(p, index), generateCSV(p));
+      const wb = generateXLSX(p, index);
+      // Generate binary buffer for the zip
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      zip.file(getFilename(p, index), wbout);
     });
 
-    // 2. Add GeoJSON Summary
+    // 2. Add GeoJSON Summary (Unchanged logic)
     const geojson = {
       type: "FeatureCollection",
       features: selectedPoints.value.map((p, index) => {
@@ -1489,54 +2486,114 @@ const handleDownload = async () => {
   }
 };
 
-// CSV Generator
-const generateCSV = (point) => {
+const generateXLSX = (point, index) => {
   const rootData = point.data.data; 
-  if (!rootData) return "";
-
-  // Fixed Headers
-  let csv = "Date,Error_m_yr,Time_Separation_days,Pixel_Count";
+  const wb = XLSX.utils.book_new();
   
-  // Find all available data keys (s_filt, u_raw, etc)
-  const availableKeys = Object.keys(rootData).filter(k => !['dates','error','dt','count'].includes(k));
-  
-  availableKeys.forEach(k => {
-      csv += `,${k}`; 
-  });
-  csv += "\n";
+  if (!rootData) return wb;
 
-  // Iterate through dates
+  // 1. IDENTIFY VARIABLES
+  // Find all velocity keys (s_filt, u_raw, etc), excluding meta keys
+  const availableKeys = Object.keys(rootData).filter(k => !['dates', 'dates_daily', 'error', 'error_u', 'error_v', 'dt', 'count'].includes(k));
+
+  // ==========================================
+  // SHEET 1: POINT DATA (Skips NaNs)
+  // ==========================================
+  const pointRows = [];
+  
+  // Create Headers
+  const pointHeaders = ["Date", "Error_m_yr","Error_U_m_yr","Error_V_m_yr", "Time_Separation_days", "Pixel_Count", ...availableKeys];
+  pointRows.push(pointHeaders);
+
   rootData.dates.forEach((date, i) => {
-	  // If NaN, skip it
-	  if (availableKeys.length > 0) {
-			const firstKey = availableKeys[0];
-			const checkVal = rootData[firstKey].raw[i];
-			// If the value is null, undefined, or NaN, skip this iteration
-			if (checkVal === null || checkVal === undefined || Number.isNaN(checkVal)) { return; }
-	}
-	// Build row
-    const error = rootData.error ? rootData.error[i] : '';
-    const dt = rootData.dt ? rootData.dt[i] : '';
-    const count = rootData.count ? rootData.count[i] : 0;
-    
-    let row = `${date},${error},${dt},${count}`;
-    availableKeys.forEach(k => {
-        const val = rootData[k].raw[i];
-        row += `,${val !== null ? val : ''}`;
-    });
-    csv += row + "\n";
+     // Check for NaN in the first available variable (usually 's')
+     if (availableKeys.length > 0) {
+        const firstKey = availableKeys[0];
+        // Note: Check both .raw (if exists) or direct value depending on your data structure
+        // Assuming your structure is rootData[key].raw[i] based on your previous code:
+        const checkVal = rootData[firstKey]?.raw ? rootData[firstKey].raw[i] : rootData[firstKey][i];
+        
+        if (checkVal === null || checkVal === undefined || Number.isNaN(checkVal)) { return; } // SKIP ROW
+     }
+
+     const errorMag = rootData.error ? rootData.error[i] : '';
+	 const errorU = rootData.error_u ? rootData.error_u[i] : '';
+     const errorV = rootData.error_v ? rootData.error_v[i] : '';
+     const dt = rootData.dt ? rootData.dt[i] : '';
+     const count = rootData.count ? rootData.count[i] : 0;
+
+     const row = [date, errorMag, errorU, errorV, dt, count];
+     availableKeys.forEach(k => {
+         const val = rootData[k]?.raw ? rootData[k].raw[i] : rootData[k][i];
+         row.push(val !== null ? val : '');
+     });
+     pointRows.push(row);
   });
+
+  const wsPoint = XLSX.utils.aoa_to_sheet(pointRows);
+  XLSX.utils.book_append_sheet(wb, wsPoint, "Point Data");
+
+  // ==========================================
+  // SHEET 2: DAILY DATA (Keeps NaNs)
+  // ==========================================
+  // Assuming 'dates_daily' exists in your data structure. 
+  // If not, fallback to 'dates' or an empty array.
+  const dailyDates = rootData.dates_daily || rootData.dates; 
   
-  return csv;
+  if (dailyDates && dailyDates.length > 0) {
+      const dailyRows = [];
+      const dailyHeaders = ["Date", ...availableKeys];
+      dailyRows.push(dailyHeaders);
+
+      dailyDates.forEach((date, i) => {
+          const row = [date];
+          availableKeys.forEach(k => {
+              // Assuming daily data is stored in .daily[i]
+              // Adjust this path if your data structure is different!
+              // e.g., rootData.s.daily[i]
+              const val = rootData[k]?.smoothed ? rootData[k].smoothed[i] : null;
+              row.push(val !== null && val !== undefined ? val : ''); 
+          });
+          dailyRows.push(row);
+      });
+
+      const wsDaily = XLSX.utils.aoa_to_sheet(dailyRows);
+      XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Data");
+  }
+
+  // ==========================================
+  // SHEET 3: METADATA
+  // ==========================================
+  const meta = point.data.meta || {};
+  let siteName = meta.site_name || point.name || `Site_${point.id}`;
+  if (/^Site_\d+$/.test(siteName)) { siteName = `Site_${index + 1}`; }
+  const metaRows = [
+      ["Property", "Value"], // Header
+      ["Site Name", siteName],
+      ["Latitude", point.lat],
+      ["Longitude", point.lon],
+      ["Buffer (m)", meta.buffer_used || bufferSize.value],
+      ["Region", currentRegion.value],
+      ["Smoothing Suffix", smoothingSuffix.value],
+      ["Export Date", new Date().toISOString()]
+  ];
+
+
+  const wsMeta = XLSX.utils.aoa_to_sheet(metaRows);
+  XLSX.utils.book_append_sheet(wb, wsMeta, "Metadata");
+
+  return wb;
 };
+
+
 </script>
 
 <style scoped>
 /* --- MAIN LAYOUT --- */
 .page-container { display: flex; flex-direction: column; height: calc(100vh - 60px); width: 100%; overflow: hidden; }
 .map-wrapper { position: relative; width: 100%; user-select: none; }
-.chart-wrapper { width: 100%; background: white; position: relative; overflow: hidden;}
-.chart-container { width: 100%; height: 100%; }
+.chart-wrapper { width: 100%; background: white; position: relative; overflow: hidden; display: flex; flex-direction: column;}
+.chart-container { width: 100%; flex: 1; min-height: 0;}
 .chart-controls-overlay {
   position: absolute; top: 25px; right: 10px; z-index: 100;  display: flex; 
   align-items: center; gap: 8px; background-color: rgba(255, 255, 255, 0.9); 
@@ -1563,6 +2620,7 @@ const generateCSV = (point) => {
 
 /* The little visual "grip" lines in the middle */
 .handle-grip { width: 40px; height: 4px; border-top: 2px solid #999; border-bottom: 2px solid #999; }
+
 
 /* --- CONTROL PANEL (RIGHT SIDEBAR) --- */
 .control-panel {
@@ -1706,6 +2764,9 @@ const generateCSV = (point) => {
   border-top-color: #fff;
   animation: spin 1s ease-in-out infinite;
   vertical-align: middle; /* Aligns spinner with text baseline if needed */
+  margin-right: 8px;
+  position: relative;
+  top: -1px;
 }
 
 @keyframes spin {
@@ -1931,6 +2992,283 @@ const generateCSV = (point) => {
     #548B8A 64.7%, #939E7D 66.9%, #D1B26F 69.2%, #C75D0F 76.0%, #D42C01 80.5%, #E20000 85.0%, 
     #C50000 87.3%, #990000 90.7%, #6F0000 95.2%, #4C0100 99.7%
   );
+}
+
+
+/* --- CHART --- */
+.axis-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-top: 1px solid #ddd;
+  font-size: 0.85rem;
+  position: relative; 
+  z-index: 10;
+  flex-shrink: 0; 
+}
+
+.axis-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.axis-group label {
+  font-weight: 600;
+  color: #555;
+  margin-right: 2px;
+}
+
+.axis-group input {
+  width: 70px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.btn-reset-axes {
+  background: white;
+  border: 1px solid #aaa;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+}
+
+.btn-reset-axes:hover {
+  background: #eee;
+  color: #d9534f;
+  border-color: #d9534f;
+}
+
+.btn-icon {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+.btn-icon.active {
+  background: #e6f7ff; 
+  color: #1890ff;    
+  border-color: #1890ff;
+}
+
+.trend-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trend-input {
+  width: 85px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.85rem;
+  background-color: #fffbe6; 
+}
+
+/* CUSTOM LEGEND STYLES */
+.custom-legend {
+  display: flex;
+  flex-wrap: wrap; 
+  gap: 15px;       
+  padding: 4px 10px 4px 65px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  min-height: 0px;
+  justify-content: flex-start; 
+  align-items: flex-start;
+  position: relative;
+  z-index: 20;
+}
+
+.legend-item {
+  cursor: pointer;
+  font-size: 0.85rem;
+  user-select: none;
+  display: flex;
+  flex-direction: column; 
+  align-items: flex-start;
+  line-height: 1.2;
+  gap: 0;
+  transition: opacity 0.2s;
+}
+
+.legend-item:hover {
+  opacity: 0.8;
+}
+
+/* Dim hidden items */
+.legend-item.is-hidden {
+  opacity: 0.4;
+  text-decoration: line-through; 
+}
+
+.legend-label {
+  font-weight: 700; 
+}
+
+.legend-trend {
+  font-weight: 400; /* Normal weight for stats */
+  font-size: 0.8em; /* Slightly smaller */
+  margin-top: -1px;
+}
+
+.legend-global-key {
+  position: absolute;
+  top: 100%; 
+  left: 65px; 
+  margin-top: 10px; 
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 15px;
+  color: #555;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.8); padding: 2px 5px; border-radius: 4px; 
+  pointer-events: none; 
+  z-index: 20;
+}
+
+.key-item {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Space between the Symbol and the Word */
+}
+
+.key-separator {
+  width: 1px;
+  height: 20px;
+  background: #ddd;
+  margin-left: 5px;
+}
+
+.symbol-dot, .symbol-line, .symbol-dash {
+  display: block;    
+  flex-shrink: 0;    
+}
+
+.symbol-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #777;
+  border-radius: 50%;
+  border: 1px solid #777; /* Mimic the chart point style */
+}
+
+.symbol-line {
+  width: 14px;
+  height: 3px;
+  background-color: #777;
+  border-radius: 1px;
+}
+
+.symbol-dash {
+  width: 14px;
+  height: 0;
+  border-top: 2px dashed #777;
+}
+
+
+/* --- FEEDBACK POPUP STYLES --- */
+.feedback-popup {
+  position: absolute;
+  top: 50px; /* Adjust based on where your Layer Control sits */
+  left: 70px;
+  z-index: 9999; /* High z-index to sit above map tiles */
+  background-color: white;
+  padding: 12px 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 4px solid #4CAF50; /* Nice green accent */
+  max-width: 300px;
+  font-family: 'Segoe UI', sans-serif;
+  animation: slideIn 0.5s ease-out;
+  cursor: default;
+}
+
+.feedback-content {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.feedback-link {
+  color: #2196F3;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.feedback-link:hover {
+  text-decoration: underline;
+}
+
+.feedback-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem; /* Made slightly larger for visibility */
+  color: #999;
+  cursor: pointer;
+  padding: 0 0 0 10px; /* added left padding for spacing */
+  line-height: 0.8;    /* tighter line height centers the X better */
+  font-family: Arial, sans-serif; /* Arial renders &times; reliably */
+}
+
+.feedback-close:hover {
+  color: #333;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Use 'deep' selector because these classes are inside Leaflet's SVG overlay */
+:deep(.draggable-feature) {
+  cursor: move;
+  pointer-events: auto; /* Ensures the rectangle captures mouse clicks */
+  transition: stroke-width 0.1s;
+}
+
+:deep(.draggable-feature:hover) {
+  stroke-width: 2px; /* Thicken the line slightly when hovering */
+  stroke-opacity: 0.8;
+}
+
+:deep(.draggable-feature:active) {
+  cursor: grabbing;
 }
 
 </style>

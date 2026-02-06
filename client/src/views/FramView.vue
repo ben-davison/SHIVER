@@ -127,7 +127,8 @@ import deploymentImg from '../assets/images/deployments.png';
           <h4>Contact</h4>
           <p>
 		  SHIVER Project Team<br>
-		  School of Geography and Planning, University of Sheffield, UK
+		  School of Geography and Planning, University of Sheffield, UK <br>
+		  Email: shiver@sheffield.ac.uk
 		  <br><br>
 		  FRAM Project Team<br>
 		  Lamont-Doherty Earth Observatory, Columbia University, USA
@@ -136,7 +137,7 @@ import deploymentImg from '../assets/images/deployments.png';
 		
       </div>
       <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under MIT/GNU GPL.
+        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under GNU GPL-3.0.
       </div>
     </footer>
 

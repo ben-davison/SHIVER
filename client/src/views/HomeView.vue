@@ -15,7 +15,7 @@ import { useRouter } from 'vue-router';
 // This prevents "missing image" errors when deploying the site.
 
 // 1. Hero Background (Check this path matches your folder structure exactly)
-import heroBg from '../assets/banner/hero-bg.jpg';
+import heroBg from '../assets/banner/hero-bg_v2.jpg';
 
 // 2. Partner Logos
 import sheffieldLogo from '../assets/UOS_logo/UOSLogo_Primary_MidnightBlack_RGB.png';
@@ -133,7 +133,8 @@ const goToFram = () => {
           <h4>Contact</h4>
           <p>
 		  SHIVER Project Team<br>
-		  School of Geography and Planning, University of Sheffield, UK
+		  School of Geography and Planning, University of Sheffield, UK <br>
+		  Email: shiver@sheffield.ac.uk
 		  <br><br>
 		  FRAM Project Team<br>
 		  Lamont-Doherty Earth Observatory, Columbia University, USA
@@ -157,15 +158,15 @@ const goToFram = () => {
 	  <div class="partner-group">
           <h4>Work with us</h4>
           <p>
-		  Find us on github: ...to do...
+			Find us on github: https://github.com/ben-davison/SHIVER
 		  <br>
-		  or get in touch for custom velocity products.
+			Get in touch for custom velocity products or if you find any bugs: shiver@sheffield.ac.uk
 		  </p>
         </div>
       </div>
       
       <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under MIT/GNU GPL.
+        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under GNU GPL-3.0.
       </div>
     </footer>
 

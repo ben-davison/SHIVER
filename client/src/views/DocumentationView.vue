@@ -642,22 +642,31 @@ onMounted(() => {
 		
         <section id="how-to-use">
 		  <h2>8. SHIVER User Guide</h2>
-		  <h3>8.1. Selecting Data</h3>
+		  <h3>1. Basic Usage</h3>
           <p>
-            Click anywhere on the map to view a time-series of ice velocity at that point. 
-            You can select up to ten points to compare different locations.
+            Click anywhere on the map or upload a shapefile containing a point or points to view 
+			time-series of ice velocity in those locations. 
+			After selecting a point, you can click-and-drag it to modify the position. 
+			You can select up to ten points to compare different locations.
+          </p>
+		  <p>
+            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
+			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
+			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). The value selected in this box
+			applies to <strong>all</strong> your points. If you change the value in this box, it will refresh the data for all selected points.
+			If you would prefer to have a different buffer distance for all points, then see Section 3: Uploading Files.
           </p>
 		  <p>
             <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
 			Double click on the chart to reset the axes. Or use the zoom, pan and reset buttons in the top right of the chart to navigate.
           </p>
 
-          <h3>8.2 Uploading Shapefiles</h3>
+          <h3>8.2 Uploading Files</h3>
           <p>
             <strong>Requirements:</strong>
           </p>
           <ul>
-            <li><strong>Format:</strong> Zipped Shapefile (<code>.zip</code>) containing .shp, .shx, .dbf, and .prj files.</li>
+            <li><strong>Format:</strong> KMZ, KML, GeoJSON or a zipped shapefile (containing .shp, .shx, .dbf, and .prj files).</li>
             <li><strong>Projection:</strong> Must be in WGS84 (EPSG:4326) .</li>
             <li><strong>Type:</strong> Point or Multipoint geometries only. Maximum of ten points.</li>
           </ul>
@@ -665,8 +674,8 @@ onMounted(() => {
             <strong>Optional:</strong>
           </p>
           <ul>
-            <li><strong>Buffer:</strong> Include 'buffer' as a shapefile field name, containing integer buffer values for each point.</li>
-            <li><strong>Point names:</strong> Include 'name' as a shapefile field name to give your outputs a custom name.</li>
+            <li><strong>Buffer:</strong> Include 'buffer' as a field name, containing integer buffer values in metres for each point.</li>
+            <li><strong>Point names:</strong> Include 'name' as a field name to give your outputs a custom name.</li>
           </ul>
 		  
 		  <h3>8.3. Advanced Options</h3>
@@ -684,7 +693,7 @@ onMounted(() => {
           </ul>
 		  <p>
             <strong>Processing level:</strong>
-			See the Mosaics section of our Documentation page for more details.
+			See the <AppLink to="/documentation#mosaics" class="text-link">Mosaics section of our Documentation page</AppLink> for more details.
           </p>
           <ul>
             <li><strong>raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
@@ -707,6 +716,11 @@ onMounted(() => {
 
           <h3>8.4 Interpreting the Map</h3>
           <p>
+			When you click a point on the map an icon will appear showing the extraction location or region. 
+			If you have used a buffer around your extraction location (recommended), the icon will be a square, 
+			otherwise it will just be a point.
+		  </p>
+          <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
             <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
 		  </p>
@@ -725,7 +739,7 @@ onMounted(() => {
 			<p>
 			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
 			</p>
-		  </ul>
+          </ul>
 		  <p>
 		    When viewing Antarctica, the outlines of glacier basins are shown as grey lines (Cook et al. 2014). If you zoom in sufficiently, glacier names from the
 			<AppLink to="https://apc.antarctica.ac.uk/gazetteers/go-to-gazetteers/" target="_blank" rel="noopener" class="text-link">British Antarctic Territory gazetteer</AppLink> 
@@ -734,34 +748,90 @@ onMounted(() => {
 		   <p>
 		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
 		   </p>
-		  
-		  <h3>8.5 Output</h3>
-          <p>
-            Download your timeseries as <strong>.csv</strong> files and/or the graph(s) as a , 
-            <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
-			downloaded as a .zip file containing multiple .csv files. If multiple variables 
-			or filtering levels are selected, images will be downloaded as a .zip file.
-			Downloads will
-			also include a geojson of your point locations.
+		   
+		   <h3>8.5 Interpreting the Chart</h3>
+		   <p>
+			The retrieved data are displayed as both points and a line. 
+			Each point represents the average velocity in the selected location over a 6- or 12-day period centred on that time. 
+			The corresponding error in that velocity estimate is displayed on the point as a vertical line (indicating the range of potential velocity estimates at that time). 
+			The error is defined as the median velocity over bedrock regions at the time.
+			A smoothed, daily velocity time-series is also plotted - this is linearly interpolated from the point data and then smoothed using a Savitzky-Golay filter. 
 		  </p>
 		  <p>
-            <strong>CSV naming convention:</strong> <br>
-			SiteName_Buffer_Lat_Lon_SmoothingParams.csv <br>
-			e.g., Site_1_500m_67.123_-48.567_gf24_wr25_wd25_p2.csv <br>
+			You can optionally add a linear trend line to each of the selected time-series by clicking the 
+			<svg style="width:1.2em;vertical-align:text-bottom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="20" x2="22" y2="4"/><g stroke="none" fill="currentColor"><circle cx="6" cy="15" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="9" r="2"/></g></svg>
+			button below the chart. This will add a dashed line to the chart and the retrieved trends and their 
+			significance level will be displayed in the legend. 
+			You can use the text boxes to adjust the time period over which the linear trend is calculated. 
+			Four levels of trend significance may be displayed in the legend:
+		  </p>
+		  <ul>
+            <li><strong>ns</strong> Not significant.</li>
+			<li><strong>*</strong> Significant at the 0.05 level (i.e. p<0.05).</li>
+			<li><strong>**</strong> Significant at the 0.01 level (i.e. p<0.01).</li>
+			<li><strong>***</strong> Significant at the 0.001 level (i.e. p<0.001).</li>
+		  </ul>
+		  <p>
+			Use the text boxes below the chart to adjust the x- and y-axis limits. 
+			This will also change the .png image exports, however the .xslx will always contain the full time-series.
+		  </p>
+		  
+		  <h3>8.6 Output</h3>
+          <p>
+		    Clicking the map will produce a timeseries showing point data and a smoothed line. 
+			The point data provide the measurements taken directly from our ice velocity dataset.
+			The line provides a smoothed representation of those measurements.
+		  </p>
+          <p>
+            Download your timeseries as <strong>.xlsx</strong> files and/or the graph(s) as a , 
+            <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
+			downloaded as a .zip file containing multiple .xslx files. If multiple variables 
+			or filtering levels are selected, images will be downloaded as a .zip file.
+			Downloads will also include a geojson of your point locations.
+		  </p>
+		  <p>
+			<strong>Map downloads take a while! Be patient :-)</strong>
+		  </p>
+		  <p>
+            <strong>XLSX naming convention:</strong> <br>
+			SiteName_Buffer_Lat_Lon_SmoothingParams.xslx <br>
+			e.g., Site_1_500m_67.123_-48.567_gf24_wr25_wd25_p2.xslx <br>
 			where: gf24 means gap_fill=24 days, wr25 means raw window smoothing length of 25 days, wd25 means a daily window smoothing length of 25 days, and p2 means a second order polynomial in the savitzky-golay smoother was used.
 		  </p>
 		  <p>
-            <strong>CSV output variables:</strong>
+			Each .xlsx file will contain three sheets:
+		  </p>
+		  <ul>
+            <li><strong>Point Data:</strong> A timeseries of each velocity variable, velocity error, image pair time separation (days) and the number of finite values within the extraction area at each epoch. These form the points and whiskers plotted on the chart</li>
+			<li><strong>Daily Data:</strong> A timeseries of each velocity variable interpolated to daily values. This forms the smooth line on the chart.</li>
+			<li><strong>Metadata:</strong> A table containing the site details.</li>
+		  </ul>
+		  <p>
+            <strong>Point data output variables:</strong>
 			<br>
 			<em>Note: Only "Date", "Error_m_yr", "Time_separation_days", "Pixel_Count" and "s_filt" are exported by default. 
 			Other variables can be enabled for download within the Advanced Options menu. </em>
 		  </p>
           <ul>
-            <li><strong>Date:</strong> The central date of the two images used to estimate ice speed</li>
-            <li><strong>Error_m_yr:</strong> An estimate of the <a href="#" @click.prevent="scrollToSection('error')">global uncertainty in ice speed or velocity</a>
-			at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
+            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed or velocity at this time period. Defined as the median speed over bedrock regions at that time.</li>
 			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
 			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
+			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+          </ul>
+		  <p>
+            <strong>Daily data output variables:</strong>
+			<br>
+			<em>Note: Only "Date" and "s_filt" are exported by default. 
+			Other variables can be enabled for download within the Advanced Options menu. </em>
+		  </p>
+          <ul>
+            <li><strong>Date:</strong> The date of the interpolated velocity.</li>
 			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
 			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
 			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
@@ -838,7 +908,8 @@ onMounted(() => {
           <h4>Contact</h4>
           <p>
 		  SHIVER Project Team<br>
-		  School of Geography and Planning, University of Sheffield, UK
+		  School of Geography and Planning, University of Sheffield, UK <br>
+		  Email: shiver@sheffield.ac.uk
 		  <br><br>
 		  FRAM Project Team<br>
 		  Lamont-Doherty Earth Observatory, Columbia University, USA
@@ -847,7 +918,7 @@ onMounted(() => {
 		
       </div>
       <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under MIT/GNU GPL.
+        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under GNU GPL-3.0.
       </div>
     </footer>
 

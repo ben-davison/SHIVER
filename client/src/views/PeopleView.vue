@@ -16,6 +16,7 @@ import photoKateW from '../assets/people/Kate.jpg';
 import photoStephenL from '../assets/people/Stephen.png';
 import photoSianT from '../assets/people/SianThorpe.jpg';
 import photoAndrewS from '../assets/people/AndrewSole.jpg';
+import photoJonnyK from '../assets/people/JonnyKingslake.jpg';
 
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
@@ -24,12 +25,13 @@ const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&ba
 const teamMembers = [
   {
     id: 1,
-    name: "Prof. Jonathan Kingslake",
+    name: "Associate Prof. Jonathan Kingslake",
     role: "FRAM Principal Investigator",
 	institution: "Lamont-Doherty Earth Observatory",
-    // image: photoAlice, // <--- Use the imported variable here later
-    image: getPlaceholderUrl("Jonny+Kingslake"), 
-    bio: "Jonny leads the FRAM project. Jonny specialises in ApRES measurements and Antarctic surface hydrology."
+    image: photoJonnyK, 
+    bio: "Jonny leads the FRAM project.",
+	website: "https://jkingslake.com", 
+    websiteDisplay: "jkingslake.com"
   },
   {
     id: 2,
@@ -132,7 +134,14 @@ const teamMembers = [
             <h3 class="person-name">{{ person.name }}</h3>
             <div class="person-role">{{ person.role }}</div>
 			<div class="person-institution">{{ person.institution }}</div>
-            <p class="person-bio">{{ person.bio }}</p>
+            <p class="person-bio">{{ person.bio }}
+			<span v-if="person.website">
+				 <br>
+				 <AppLink :to="person.website" target="_blank" rel="noopener" class="text-link">
+				   {{ person.websiteDisplay }}
+				 </AppLink>
+			  </span>
+			</p>
           </div>
         </div>
       </div>
@@ -172,7 +181,8 @@ const teamMembers = [
           <h4>Contact</h4>
           <p>
 		  SHIVER Project Team<br>
-		  School of Geography and Planning, University of Sheffield, UK
+		  School of Geography and Planning, University of Sheffield, UK <br>
+		  Email: shiver@sheffield.ac.uk
 		  <br><br>
 		  FRAM Project Team<br>
 		  Lamont-Doherty Earth Observatory, Columbia University, USA
@@ -181,7 +191,7 @@ const teamMembers = [
 		
       </div>
       <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under MIT/GNU GPL.
+        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under GNU GPL-3.0.
       </div>
     </footer>
 

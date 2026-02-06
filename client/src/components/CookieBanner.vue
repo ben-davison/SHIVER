@@ -1,10 +1,10 @@
 <template>
   <div v-if="isOpen" class="cookie-banner">
     <div class="cookie-content">
-      <h3>We use cookies</h3>
+      <h3>Cookies are tasty. Please accept cookies</h3>
       <p>
-        We use cookies to analyze traffic and improve your experience. 
-        You can accept analytics cookies or use the site without them.
+        These help us to see which functions are being used and demonstrate that the site is useful.
+        If you don't want cookies, consider completing this short form instead.
       </p>
     </div>
     <div class="cookie-buttons">

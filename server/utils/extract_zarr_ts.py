@@ -184,6 +184,8 @@ def _process_single_site(ds, geometry, target_crs, buffer, variables, quality_li
     u_err = u_err.replace(0, u_err.median())
     v_err = v_err.replace(0, v_err.median())
     
+    df['u_error_m_yr'] = u_err.abs()
+    df['v_error_m_yr'] = v_err.abs()    
     df['error_m_yr'] = np.sqrt(u_err**2 + v_err**2)
     df = df.sort_index()
     
@@ -215,6 +217,8 @@ def _process_single_site(ds, geometry, target_crs, buffer, variables, quality_li
     output_data = {
         "dates": full_idx.strftime('%Y-%m-%d').tolist(), 
         "error": clean_nans(df_daily['error_m_yr']),
+        "error_u": clean_nans(df_daily['u_error_m_yr']),
+        "error_v": clean_nans(df_daily['v_error_m_yr']),
         "dt": clean_nans(df_daily['time_separation']),
         "count": df_daily['valid_count'].fillna(0).astype(int).tolist()
     }
