@@ -764,7 +764,7 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted, triggerRef } from 'vue';
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LRectangle, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
@@ -835,6 +835,8 @@ const startPointDrag = (e, point) => {
 const onMapMouseMove = (e) => {
   if (!draggingState.value.active) return;
   
+  console.log("Moving!", e.latlng);
+  
   const state = draggingState.value;
   
   // Update the point's coordinates in real-time
@@ -842,6 +844,9 @@ const onMapMouseMove = (e) => {
   // Vue will automatically re-render the Rectangle and Circle at the new spot!
   state.point.lat = e.latlng.lat + state.offsetLat;
   state.point.lon = e.latlng.lng + state.offsetLon;
+  
+  // Force Vue to update the map
+  triggerRef(selectedPoints);
 };
 
 // 3. End Drag (Attached to the MAP)
