@@ -121,7 +121,7 @@
 			   :weight="1"
 			   :interactive="true" 
 			   class-name="draggable-feature"
-			   @mousedown="startPointDrag($event, point)"
+			   @mousedown="startPointDrag($event, index)"
 			   @click="stopPropagation"  
 			/>
 			<l-circle-marker 
@@ -132,7 +132,7 @@
 			   :fill-opacity="1.0" 
 			   :weight="1"
 			   class-name="draggable-feature"
-			   @mousedown="startPointDrag($event, point)"
+			   @mousedown="startPointDrag($event, index)"
 			   @click="stopPropagation"
 			>
 			   <l-tooltip>{{ getSiteLabel(point, index) }}</l-tooltip>
@@ -764,7 +764,7 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, computed, nextTick, watch, onMounted, onUnmounted, triggerRef } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LRectangle, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
@@ -803,7 +803,7 @@ const trackEvent = (eventName, params = {}) => {
 
 // --- POINT DRAGGING FUNCTIONS --- //
 // 1. Start Dragging (Attached to Rectangle AND Circle)
-const startPointDrag = (e, point) => {
+const startPointDrag = (e, index) => {
   // Prevent the click from bubbling to the map (prevents creating a new point)
   L.DomEvent.stopPropagation(e);
   L.DomEvent.preventDefault(e);
@@ -815,6 +815,9 @@ const startPointDrag = (e, point) => {
   
   // Set the global cooldown flag immediately
   isDragCooldown.value = true;
+  
+  // Make sure we use the current version of this point (with the latest coordinates)
+  const freshPoint = selectedPoints.value[index];
 
   // Calculate the difference between the mouse cursor and the shape's center
   // This ensures the shape moves smoothly relative to where you grabbed it
@@ -823,11 +826,11 @@ const startPointDrag = (e, point) => {
 
   draggingState.value = {
     active: true,
-    point: point, // Reference to the reactive point object
-    offsetLat: point.lat - mouseLat,
-    offsetLon: point.lon - mouseLng,
-	startLat: point.lat,
-    startLon: point.lon
+    point: freshPoint, // Reference to the reactive point object
+    offsetLat: freshPoint.lat - mouseLat,
+    offsetLon: freshPoint.lon - mouseLng,
+	startLat: freshPoint.lat,
+    startLon: freshPoint.lon
   };
 };
 
@@ -835,18 +838,35 @@ const startPointDrag = (e, point) => {
 const onMapMouseMove = (e) => {
   if (!draggingState.value.active) return;
   
-  console.log("Moving!", e.latlng);
-  
   const state = draggingState.value;
   
-  // Update the point's coordinates in real-time
-  // Because 'state.point' is a reference to the item in 'selectedPoints',
-  // Vue will automatically re-render the Rectangle and Circle at the new spot!
-  state.point.lat = e.latlng.lat + state.offsetLat;
-  state.point.lon = e.latlng.lng + state.offsetLon;
+  // Find the index of the point we are dragging
+  // We use findIndex because we are about to replace the object, 
+  // so we need its location in the array.
+  const index = selectedPoints.value.findIndex(p => p.id === state.point.id);
   
-  // Force Vue to update the map
-  triggerRef(selectedPoints);
+  if (index === -1) return;
+
+  // 1. Calculate new coordinates
+  const newLat = e.latlng.lat + state.offsetLat;
+  const newLon = e.latlng.lng + state.offsetLon;
+
+  // 2. Create a BRAND NEW object (Copy + Update)
+  // This breaks the reference to the old object. 
+  // Vue Production cannot ignore this—it sees a completely new piece of data.
+  const updatedPoint = {
+      ...selectedPoints.value[index], // Copy existing properties (color, name, etc.)
+      lat: newLat,
+      lon: newLon
+  };
+
+  // 3. Swap the old point for the new one using splice
+  // splice matches the array mutation methods Vue watches closely
+  selectedPoints.value.splice(index, 1, updatedPoint);
+
+  // 4. Update our drag state to track the NEW object
+  // If we don't do this, 'state.point' will still point to the old (stale) object
+  state.point = updatedPoint;
 };
 
 // 3. End Drag (Attached to the MAP)
@@ -2865,8 +2885,8 @@ const generateXLSX = (point, index) => {
 .vector-row {
   display: flex;
   align-items: center;
-  gap: 8px; /* Space between arrow tip and text */
-  margin-top: 2px;
+  gap: 4px; /* Space between arrow tip and text */
+  margin-top: 0px;
 }
 
 .vector-label {
