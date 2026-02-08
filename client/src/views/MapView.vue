@@ -7,6 +7,7 @@
         v-model:zoom="zoom" 
         v-model:center="center" 
         :use-global-leaflet="false" 
+		:options="{ zoomControl: false }"
         @click="onMapClick"
 		@mousemove="onMapMouseMove"  @mouseup="onMapMouseUp"
         @overlayadd="onOverlayAdd"
@@ -22,6 +23,11 @@
           name="Satellite Imagery"
 		  :options="{ crossOrigin: 'anonymous' }"
         ></l-tile-layer>
+		
+		<div class="map-title-overlay">
+		  <h1 class="shiver-title">SHIVER</h1>
+		  <div class="shiver-subtitle">SHeffield Ice Velocity ExploreR</div>
+		</div>
 		
 		<transition name="fade">
 		  <div 
@@ -165,7 +171,7 @@
 				<div v-if="overlayLayer === 'speed'">
 				  <h4>Ice Speed (Log Scale)</h4>
 				  <div class="legend-bar speed-gradient"></div>
-				  <div class="legend-labels">
+				  <div class="legend-bar-labels">
 					<span>1</span>
 					<span>10</span>
 					<span>100</span>
@@ -176,7 +182,7 @@
 				<div v-else-if="overlayLayer === 'count'">
 				  <h4>Percentage Valid Measurements</h4>
 				  <div class="legend-bar viridis-gradient"></div>
-				  <div class="legend-labels">
+				  <div class="legend-bar-labels">
 					<span>0</span>
 					<span>30</span>
 					<span>60</span>
@@ -187,7 +193,7 @@
 				<div v-else-if="overlayLayer === 'trend'">
 				  <h4>Speed Trend (m/yr<sup>2</sup>)</h4>
 				  <div class="legend-bar trend-gradient"></div>
-				  <div class="legend-labels">
+				  <div class="legend-bar-labels">
 					<span>{{ minTrendLabel }}</span>
 					<span>0</span>
 					<span>{{ maxTrendLabel }}</span>
@@ -196,9 +202,7 @@
 			</div>
 			
 			<div v-if="isFlowActive" class="vector-legend-group">
-				<div v-if="overlayLayer !== 'none'" class="legend-separator"></div>
-				<h4>Flow Vector Scale</h4>
-				
+				<div v-if="overlayLayer !== 'none'" class="legend-separator"></div>				
 				<div class="vector-row">
 				  <svg :width="arrowPixelWidth + 15" height="24" class="vector-arrow-svg">
 					 <defs>
@@ -220,35 +224,83 @@
 				</div>
 			</div>
 			
-			<div v-if="showMargins" style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 5px;">			  
-			  <div class="legend-item">
-				<div class="legend-line" style="background: black;"></div>
-				<span>Ice Margin</span>
+			<div v-if="showMargins" style="margin-top: 2px; border-top: 1px solid #ccc; padding-top: 2px;">			  
+			  <div class="map-legend-item">
+				<div class="map-legend-line" style="background: black;"></div>
+				<span class="map-legend-label">Ice Margin</span>
 			  </div>
 
-			  <div class="legend-item" v-if="currentRegion === 'Antarctica'">
-				<div class="legend-line" style="background: magenta;"></div>
-				<span>Grounding Line</span>
+			  <div class="map-legend-item" v-if="currentRegion === 'Antarctica'">
+				<div class="map-legend-line" style="background: magenta;"></div>
+				<span class="map-legend-label">Grounding Line</span>
 			  </div>
 			</div>
-
+			
 		</div>
 		
 	  </div>
 	  
       <div class="control-panel">
 	  
-        <div class="brand-header">
-		   <button class="btn-gear" @click="showAdvanced = !showAdvanced" title="Advanced Options">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-            </svg>
-          </button>
-		  
-          <button class="btn-help" @click="showHelp = true" title="Help & Instructions">?</button>
-          <h1 class="shiver-title">SHIVER</h1>
-          <div class="shiver-subtitle">SHeffield Ice Velocity ExploreR</div>
-        </div>
+		  <div class="panel-header">
+    
+			<div class="region-toggles">
+			  <button 
+				class="panel-btn" 
+				:class="{ 'active': currentRegion === 'Greenland' }"
+				@click="currentRegion = 'Greenland'; switchRegion()"
+				title="Switch to Greenland"
+			  >
+				<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+				  <path d="M12,2 L6,6 L4,12 L8,18 L16,16 L18,8 L14,4 Z" /> 
+				</svg>
+				<span>GL</span>
+			  </button>
+
+			  <button 
+				class="panel-btn" 
+				:class="{ 'active': currentRegion === 'Antarctica' }"
+				@click="currentRegion = 'Antarctica'; switchRegion()"
+				title="Switch to Antarctica"
+			  >
+				<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+				  <path d="M12,22 C16,22 20,18 20,12 C20,8 18,4 12,2 C6,4 4,8 4,12 C4,18 8,22 12,22 Z" />
+				</svg>
+				<span>ANT</span>
+			  </button>
+			</div>
+			
+			<div class="header-actions">
+				
+				<label 
+					class="panel-btn" 
+					:class="{ 'active': isUploading }" 
+					title="Upload File (.geojson, .kml, .kmz, or zipped shapefile - EPSG:426)"
+				  >
+					<input 
+					  type="file" 
+					  @change="handleFileUpload" 
+					  accept=".zip,.geojson,.kml,.kmz" 
+					  hidden 
+					  :disabled="isUploading"
+					>
+					<span v-if="isUploading" class="spinner-small"></span>
+					<svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					  <polyline points="17 8 12 3 7 8" />
+					  <line x1="12" y1="3" x2="12" y2="15" />
+					</svg>
+				</label>
+			
+			  <button class="panel-btn" @click="showAdvanced = !showAdvanced" :class="{ 'active': showAdvanced }" title="Advanced Options">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+				  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+				</svg>
+			  </button>
+
+			  <button class="panel-btn" @click="showHelp = true" title="Help & Instructions">?</button>
+			</div>
+		  </div>
 		
 		<div v-if="showAdvanced" class="advanced-popup">
           <div class="popup-header">
@@ -317,23 +369,6 @@
             </div>
           </div>
         </div>
-
-
-        <div class="panel-section">
-          <label>Region:</label>
-          <select v-model="currentRegion" @change="switchRegion">
-            <option value="Greenland">Greenland</option>
-            <option value="Antarctica">Antarctica</option>
-          </select>
-        </div>
-		
-		<div class="upload-section">
-		  <label class="btn-upload" :class="{ 'is-loading': isUploading }">
-			<span v-if="!isUploading">Upload file</span>
-			<span v-else class="spinner"></span>
-			<input type="file" @change="handleFileUpload" accept=".zip,.geojson,.kml,.kmz" hidden :disabled="isUploading">
-		  </label>
-		</div>
 		
         <div class="list-toolbar" v-if="selectedPoints.length > 0">
           <button @click="clearAll" class="btn-clear">Clear All</button>
@@ -370,45 +405,58 @@
         </div>
 
         <div class="control-group" v-if="selectedPoints.length > 0">
-		  <label>Export Data:</label>
-		  <div class="export-buttons">
+			<div class="panel-subhead">Export Data</div>
+			<div class="export-actions">
 			
-			<button 
-			  @click="handleDownload" 
-			  class="btn-download" 
-			  :disabled="isDownloading"
-			  style="margin-bottom: 10px;"
-			>
-			  <i class="fas" :class="isDownloading ? 'fa-spinner fa-spin' : 'fa-file-csv'"></i> 
-			  {{ isDownloading ? 'Zipping...' : downloadLabel }}
-			</button>
+				<button 
+					  class="panel-btn" 
+					  @click="handleDownload" 
+					  :class="{ 'active': isDownloading }" 
+					  :disabled="isDownloading"
+					  :title="isDownloading ? 'Zipping...' : downloadLabel"
+					>
+					  <span v-if="isDownloading" class="spinner-small"></span>
+					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="3" width="18" height="18" rx="2" stroke-opacity="0.6" />
+						<path d="M3 9h18 M9 3v18" stroke-opacity="0.6" />
+						<path d="M12 11v8 M8 15l4 4 4-4" stroke="#2c3e50" stroke-width="2.5" />
+					  </svg>
+				</button>
+			
+				<button 
+					  class="panel-btn" 
+					  @click="downloadChartImage" 
+					  :class="{ 'active': isDownloadingChart }" 
+					  :disabled="isDownloadingChart"
+					  :title="isDownloadingChart ? 'Processing...' : chartDownloadLabel"
+					>
+					  <span v-if="isDownloadingChart" class="spinner-small"></span>
+					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<polyline points="3 14 7 8 11 12 15 5 21 5" stroke-opacity="0.6" />
+						<path d="M3 19h18" stroke-opacity="0.6" />
+						<path d="M18 9v8 M15 14l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
+					  </svg>
+				</button>
 
-			<div class="button-row">
-			  <button 
-				@click="downloadChartImage" 
-				class="btn-download half-width"
-				:disabled="isDownloadingChart"
-			  >
-				<i class="fas" :class="isDownloadingChart ? 'fa-spinner fa-spin' : 'fa-chart-line'"></i>
-				{{ isDownloadingChart ? 'Processing...' : chartDownloadLabel }}
-			  </button>
-			  
-			  <button 
-				@click="downloadMapAndGraph" 
-				class="btn-download half-width"
-				:disabled="isDownloadingMap"
-			  >
-				<i class="fas" :class="isDownloadingMap ? 'fa-spinner fa-spin' : 'fa-map'"></i>
-				{{ isDownloadingMap ? 'Processing...' : mapDownloadLabel }}
-			  </button>
-			</div>
+				<button 
+					  class="panel-btn" 
+					  @click="downloadMapAndGraph" 
+					  :class="{ 'active': isDownloadingMap }" 
+					  :disabled="isDownloadingMap"
+					  :title="isDownloadingMap ? 'Processing...' : mapDownloadLabel"
+					>
+					  <span v-if="isDownloadingMap" class="spinner-small"></span>
+					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" stroke-opacity="0.6" />
+						<path d="M12 10v8 M9 15l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
+					  </svg>
+				</button>
 			
 		  </div>
 		</div>
-
-        <p class="status-text"><span v-if="isFetching" class="spinner"></span> {{ statusMessage }}</p>
-      </div>
-    </div>
+	
+	</div>
+	</div>
 	
 	<div class="resize-handle" @mousedown.prevent="startDrag">
        <div class="handle-grip"></div>
@@ -2647,51 +2695,199 @@ const generateXLSX = (point, index) => {
 .handle-grip { width: 40px; height: 4px; border-top: 2px solid #999; border-bottom: 2px solid #999; }
 
 
-/* --- CONTROL PANEL (RIGHT SIDEBAR) --- */
+/* --- CONTROL PANEL (RIGHT SIDEBAR) --- */ 
 .control-panel {
   position: absolute; top: 10px; right: 10px; z-index: 1000;
   background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 320px; max-height: 80%; overflow-y: auto; font-family: sans-serif;
 }
-.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
 
 /* --- BRANDING (SHIVER) --- */
-.brand-header {
-  position: relative; /* Added: Establishes the boundary for absolute positioning */
-  padding-bottom: 15px; margin-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0; text-align: center;
+/* --- 1. FLOATING TITLE OVERLAY --- */
+.map-title-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%); /* Centers the div perfectly */
+  z-index: 1000; /* Ensures it sits above the map layers */
+  
+  background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+  backdrop-filter: blur(4px); /* Nice "frosted glass" effect */
+  padding: 10px 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  
+  text-align: center;
+  pointer-events: none; /* Allows clicks to pass through transparent areas */
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .shiver-title {
-  margin: 0; font-size: 26px; font-weight: 700; color: #0056b3; line-height: 1; letter-spacing: 1px;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0b1e3b;
+  letter-spacing: 1px;
+  line-height: 1;
 }
+
 .shiver-subtitle {
-  margin-top: 6px; font-size: 13px; font-weight: 600; color: #5a9bd4; letter-spacing: 0.5px;
+  font-size: 0.75rem;
+  color: #0077B6;
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
-/* --- HELP BUTTON (?) --- */
-.btn-help, .btn-gear {
-  /* Positioning */
-  position: absolute;
-  top: 0px;   /* Aligns to the top edge of brand-header padding */
-  /* Styling (Subtle, smaller, grey/blue tone) */
-  background: transparent;
-  color: #aab8c2; /* Pale grey-blue */
-  border: 2px solid #e1e8ed; /* Very subtle border definition */
-  /* Sizing */
-  width: 25px; height: 25px; font-size: 14px; font-weight: bold; 
-  /* Standard button stuff */
-  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+/*--- control panel header --- */
+.panel-header-row {
+  margin-bottom: 5px;
+  padding-right: 30px; 
+  display: flex;
+  align-items: center;
 }
-/* Help is Right aligned */
-.btn-help { right: 0px; }
-/* Gear is Left aligned */
-.btn-gear { left: 0px; font-size: 16px; padding: 3px; }
 
-.btn-help:hover, .btn-gear:hover {
-  background: #f5f8fa;
-  color: #0056b3; /* Turns the brand color on hover */
-  border-color: #0056b3;
+.panel-header-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #95a5a6; /* Subtle grey uppercase label */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- Top row buttons--- */
+.region-toggles, .header-actions {
+  display: flex;
+  gap: 12px; /* Space between buttons */
+}
+
+.panel-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%; /* Makes them perfectly circular */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;       /* White background by default */
+  border: 1px solid #ccc; /* Subtle grey border */
+  color: #666;            /* Grey icon/text */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  /* Font settings for text buttons (GL, ANT, ?) */
+  font-weight: 700;
+  font-size: 0.75rem; 
+  font-family: sans-serif;
+}
+
+/* Update .panel-btn to handle SVGs with strokes (like the upload icon) */
+.panel-btn svg {
+  fill: currentColor; 
+  stroke: currentColor; 
+}
+
+/* Ensure the fill-based icons (like the Gear) don't get messed up by stroke */
+.panel-btn svg[fill="currentColor"] {
+  stroke: none;
+}
+
+/* A smaller spinner specifically for inside the buttons */
+.spinner-small {
+  display: inline-block;
+  width: 14px;  /* Fits nicely inside the 32px button */
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff; /* White spinner looks great on the blue active background */
+  animation: spin 0.8s linear infinite;
+}
+
+/* (Make sure you still have your @keyframes spin defined from before!) */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* HOVER STATE (When mouse is over) */
+.panel-btn:hover {
+  border-color: #888;     /* Darker border */
+  color: #333;            /* Darker text */
+  background: #f8f9fa;    /* Very light grey fill */
+}
+
+/* ACTIVE STATE (Selected Region or Open Menu) */
+.panel-btn.active {
+  background: #2c3e50;    /* Dark Blue fill */
+  border-color: #2c3e50;  /* match fill */
+  color: #fff;            /* White text/icon */
+}
+
+/* Fix for SVG icons inside the button */
+.panel-btn svg {
+  fill: currentColor; /* Allows SVG to change color with text */
+  display: block;
+}
+
+/* mobile resize */
+@media (max-width: 600px) {
+  .map-title-overlay {
+    top: 10px;
+    padding: 6px 15px;
+    width: 80%; /* Prevent it from being too wide on phones */
+  }
+  
+  .shiver-title {
+    font-size: 1.2rem;
+  }
+  
+  .shiver-subtitle {
+    display: none; /* Hide subtitle on very small screens to save space */
+  }
+}
+
+/* --- EXPORT SECTION LAYOUT --- */
+
+/* A neat subheader style (Uppercase, small, grey) */
+.panel-subhead {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #95a5a6;
+  letter-spacing: 0.5px;
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+/* Flex container to hold the 3 buttons in a row */
+.export-actions {
+  display: flex;
+  gap: 10px;      /* Consistent spacing between buttons */
+  flex-wrap: wrap; 
+}
+
+/* OPTIONAL: 
+   If you want the download arrows to really "pop" and look solid 
+   even though the icon is outlined, add this specific tweak:
+*/
+.panel-btn svg path[stroke="#2c3e50"] {
+  stroke: currentColor; /* Matches the button text color (grey or white) */
+  fill: transparent;
+}
+
+/* Ensure disabled buttons look inactive */
+.panel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f0f0f0;
 }
 
 /* --- ADVANCED OPTIONS POPUP --- */
@@ -2823,23 +3019,6 @@ const generateXLSX = (point, index) => {
 .control-group input[type="number"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
 .status-text { font-size: 0.8rem; color: #666; margin-top: 10px; text-align: center; min-height: 1.2em;}
 .empty-state { padding: 15px; text-align: center; color: #888; border: 1px dashed #ccc; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem;}
-.download-group { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; width: 100%; }
-/* Layout Container for the buttons */
-.export-buttons { width: 100%; display: flex; flex-direction: column; }
-
-/* Row container for the two side-by-side buttons */
-.button-row { display: flex; gap: 10px; width: 100%; }
-
-/* Helper to make buttons share width equally */
-.half-width { flex: 1; }
-
-/* Your existing button style (Confirmed from previous turn) */
-.btn-download { width: 100%; background-color: #2c3e50; color: white; 
-  border: none;  padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background-color 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-.btn-download:hover:not(:disabled) { background-color: #42b983; }
-.btn-download:disabled { background-color: #95a5a6; cursor: not-allowed; }
 
 /* --- MAP LEGEND --- */
 .map-legend {
@@ -2847,9 +3026,6 @@ const generateXLSX = (point, index) => {
   background: rgba(255, 255, 255, 0.95); padding: 12px 15px; border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2); width: 240px; font-family: sans-serif; pointer-events: none;
 }
-.map-legend h4 { margin: 0 0 10px 0; font-size: 0.85rem; color: #333; text-align: center; font-weight: 600; }
-.legend-bar { height: 18px; width: 100%; border-radius: 2px; border: 1px solid #ccc; margin-bottom: 5px; }
-.legend-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: #444; font-weight: bold; }
 
 .legend-container {
   position: absolute;
@@ -2859,9 +3035,8 @@ const generateXLSX = (point, index) => {
   display: flex;
   flex-direction: column; /* This ensures they stack */
   align-items: flex-start;
-  gap: 10px; /* Space between the two legends */
+  gap: 5px; /* Space between the two legends */
   pointer-events: none; /* Allow clicks to pass through empty space */
-  min-width: 120px;
 }
 
 .scalar-legend-group {
@@ -2871,7 +3046,7 @@ const generateXLSX = (point, index) => {
 .legend-separator {
   height: 1px;
   background-color: #ddd;
-  margin: 8px 0;
+  margin: 1px 0;
   width: 100%;
 }
 
@@ -2894,6 +3069,7 @@ const generateXLSX = (point, index) => {
   color: #444;
   font-weight: 600;
   white-space: nowrap;
+  margin-bottom: 1px;
 }
 
 /* Ensure the SVG handles overflow correctly */
@@ -2903,28 +3079,65 @@ const generateXLSX = (point, index) => {
 }
 
 .legend-box {
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
-  width: 200px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3px 6px 3px 3px;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  width: 180px;
   pointer-events: auto; /* Re-enable clicks on the box itself */
   font-family: sans-serif;
+  backdrop-filter: blur(2px);
 }
 
-.legend-item {
+.map-legend-item {
   display: flex;
   align-items: center;
-  margin-top: 8px;
-  font-size: 0.8rem;
+  flex-direction: row;
+  margin-top: 5px;
+  font-size: 0.75rem;
   color: #333;
+  line-height: 1.2;
 }
 
-.legend-line {
-  width: 30px;
+.map-legend-line {
+  width: 20px;
   height: 3px;
-  margin-right: 10px;
+  margin-right: 8px;
   border-radius: 1px;
+}
+
+.map-legend-label {
+  font-size: 0.75rem;
+  color: #333;
+  font-weight: 600;       /* Semi-bold looks good here */
+  white-space: nowrap;    /* Keeps text on one line */
+}
+
+@media (max-width: 600px) {
+  /* On phones, move legend to top-right or squash it further */
+  .legend-container {
+    bottom: 25px; 
+    left: 5px;
+    gap: 5px;
+  }
+
+  .legend-box {
+    width: 140px; /* Even smaller width */
+    padding: 6px 8px;
+  }
+  
+  .map-legend-item {
+    font-size: 0.7rem; 
+  }
+  
+  .vector-label {
+    font-size: 0.65rem;
+  }
+  
+  /* Hide the scalar gradient bar if it's too big, or make it smaller */
+  .legend-bar {
+    height: 12px;
+  }
 }
 
 /* --- SCALE BAR --- */
@@ -2980,25 +3193,30 @@ const generateXLSX = (point, index) => {
 }
 
 /* HEADERS */
+.map-legend h4,
 .legend-box h4 {
-  margin: 0 0 8px 0;
-  font-size: 0.9rem;
+  margin: 0px 0px 1px 2px !important;
+  padding: 0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
   color: #333;
+  line-height: 1.1 !important;
   text-align: center;
 }
 
 /* BAR STYLING */
 .legend-bar {
-  height: 15px;
+  height: 10px;
   width: 100%;
   border: 1px solid #ccc;
-  margin-bottom: 5px;
+  margin-bottom: 1px;
 }
 
-.legend-labels {
+.legend-bar-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  margin-top: 3px;
+  font-size: 0.65rem;
   color: #666;
 }
 
@@ -3150,7 +3368,9 @@ const generateXLSX = (point, index) => {
 }
 
 .legend-label {
-  font-weight: 700; 
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
 }
 
 .legend-trend {
@@ -3302,13 +3522,49 @@ const generateXLSX = (point, index) => {
 /* LEAFLET OVERRIDES (Global Style)
    Force layer control to expand on hover instead of click 
 */
+.leaflet-control-layers-base {
+  display: none !important;
+}
+.leaflet-control-layers-separator {
+  display: none !important;
+}
+
+.leaflet-control-layers {
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
 .leaflet-control-layers:hover {
-  padding: 6px 10px 6px 6px !important;
+  padding: 3px 6px 3px 3px !important;
   background: #fff !important;
   color: #333 !important;
   box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
   border-radius: 5px !important;
+  max-width: 200px;
 }
-.leaflet-control-layers:hover .leaflet-control-layers-list { display: block !important; }
+.leaflet-control-layers:hover .leaflet-control-layers-list { display: block !important; font-size: 0.7rem; margin-bottom: 0; }
 .leaflet-control-layers:hover .leaflet-control-layers-toggle { display: none !important; }
+
+.leaflet-control-layers:hover label {
+  margin-bottom: 1px !important; 
+  margin-top: 1px !important;
+  line-height: 0.9 !important;   
+  display: flex !important;      
+  align-items: center;           
+  min-height: auto !important;   
+}
+
+/* Targets the actual checkbox/radio button to remove its default spacing */
+.leaflet-control-layers:hover input {
+  margin: 0 2px 0 0 !important; 
+  height: 12px; 
+  width: 12px;
+}
+
+@media (max-width: 480px) {
+  .leaflet-control-layers {
+    margin-top: 50px !important; 
+    margin-right: 5px !important;
+  }
+}
 </style>
