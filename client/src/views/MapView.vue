@@ -22,6 +22,7 @@
           layer-type="base" 
           name="Satellite Imagery"
 		  :options="{ crossOrigin: 'anonymous' }"
+		  crossOrigin="anonymous"
         ></l-tile-layer>
 		
 		<div class="map-title-overlay">
@@ -120,7 +121,7 @@
 				
         <template v-for="(point, index) in selectedPoints" :key="point.id">
 			<l-rectangle
-			   :bounds="getSquareBounds( point.lat, point.lon, point.buffer !== undefined ? point.buffer : bufferSize )"
+			   :bounds="getSquareBounds( point.lat, point.lon, point.buffer !== undefined ? point.buffer : pendingBuffer.value )"
 			   :color="point.color"
 			   :fill-color="point.color"
 			   :fill-opacity="0.3"
@@ -214,7 +215,7 @@
 					 
 					 <line 
 					   x1="0" y1="12" 
-					   :x2="arrowPixelWidth" y2="12" 
+					   :x2="Math.max(arrowPixelWidth, 20) + 5" y2="12"
 					   stroke="#333" 
 					   stroke-width="2" 
 					   marker-end="url(#arrowhead)" 
@@ -240,331 +241,338 @@
 		
 	  </div>
 	  
-      <div class="control-panel">
+      <div class="map-toolbar">
 	  
-		  <div class="panel-header">
-    
-			<div class="region-toggles">
-			  <button 
-				class="panel-btn" 
-				:class="{ 'active': currentRegion === 'Greenland' }"
-				@click="currentRegion = 'Greenland'; switchRegion()"
-				title="Switch to Greenland"
-			  >
-				<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-				  <path d="M12,2 L6,6 L4,12 L8,18 L16,16 L18,8 L14,4 Z" /> 
-				</svg>
-				<span>GL</span>
-			  </button>
-
-			  <button 
-				class="panel-btn" 
-				:class="{ 'active': currentRegion === 'Antarctica' }"
-				@click="currentRegion = 'Antarctica'; switchRegion()"
-				title="Switch to Antarctica"
-			  >
-				<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-				  <path d="M12,22 C16,22 20,18 20,12 C20,8 18,4 12,2 C6,4 4,8 4,12 C4,18 8,22 12,22 Z" />
-				</svg>
-				<span>ANT</span>
-			  </button>
-			</div>
-			
-			<div class="header-actions">
-				
-				<label 
-					class="panel-btn" 
-					:class="{ 'active': isUploading }" 
-					title="Upload File (.geojson, .kml, .kmz, or zipped shapefile - EPSG:426)"
-				  >
-					<input 
-					  type="file" 
-					  @change="handleFileUpload" 
-					  accept=".zip,.geojson,.kml,.kmz" 
-					  hidden 
-					  :disabled="isUploading"
-					>
-					<span v-if="isUploading" class="spinner-small"></span>
-					<svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-					  <polyline points="17 8 12 3 7 8" />
-					  <line x1="12" y1="3" x2="12" y2="15" />
-					</svg>
-				</label>
-			
-			  <button class="panel-btn" @click="showAdvanced = !showAdvanced" :class="{ 'active': showAdvanced }" title="Advanced Options">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-				  <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-				</svg>
-			  </button>
-
-			  <button class="panel-btn" @click="showHelp = true" title="Help & Instructions">?</button>
-			</div>
+		  <div class="menu-trigger">
+			<button class="panel-btn" title="Open Toolbox">
+			  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+				<line x1="3" y1="12" x2="21" y2="12"></line>
+				<line x1="3" y1="6" x2="21" y2="6"></line>
+				<line x1="3" y1="18" x2="21" y2="18"></line>
+			  </svg>
+			</button>
 		  </div>
-		
-		<div v-if="showAdvanced" class="advanced-popup">
-          <div class="popup-header">
-			  <strong>Advanced Options</strong>
-			  
-			  <div class="header-actions">
-				<button @click="restoreDefaults" class="btn-restore-link">
-				  Restore defaults
+		  
+		  <div class="tools-wrapper">
+
+			  <div class="toolbar-group">
+				<button 
+				  class="panel-btn" 
+				  :class="{ 'active': currentRegion === 'Greenland' }"
+				  @click="currentRegion = 'Greenland'; switchRegion()"
+				  title="Switch to Greenland"
+				>
+				  <greenlandIcon class="btn-icon-svg" />
 				</button>
-				
-				<button @click="showAdvanced = false" class="popup-close">&times;</button>
+
+				<button 
+				  class="panel-btn" 
+				  :class="{ 'active': currentRegion === 'Antarctica' }"
+				  @click="currentRegion = 'Antarctica'; switchRegion()"
+				  title="Switch to Antarctica"
+				>
+				  <antarcticaIcon class="btn-icon-svg" />
+				</button>
 			  </div>
+
+			  <div class="toolbar-group">
+				<label 
+				  class="panel-btn" 
+				  :class="{ 'active': isUploading }" 
+				  title="Upload File"
+				>
+				  <input type="file" @change="handleFileUpload" accept=".zip,.geojson,.kml,.kmz" hidden :disabled="isUploading">
+				  <span v-if="isUploading" class="spinner-small"></span>
+				  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="17 8 12 3 7 8" />
+					<line x1="12" y1="3" x2="12" y2="15" />
+				  </svg>
+				</label>
+
+				<button 
+				  class="panel-btn" 
+				  @click="showAdvanced = !showAdvanced" 
+				  :class="{ 'active': showAdvanced }" 
+				  title="Advanced Options"
+				>
+				  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+					<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+				  </svg>
+				</button>
+
+				<button class="panel-btn" @click="showHelp = true" title="Help">
+				  <span><strong>?</strong></span>
+				</button>
+			  </div>
+
+			  <div class="toolbar-group" v-if="selectedPoints.length > 0">
+				<button class="panel-btn" @click="handleDownload" :class="{ 'active': isDownloading }" :disabled="isDownloading" :title="xlsxDownloadLabel">
+				   <span v-if="isDownloading" class="spinner-small"></span>
+				   <excelIcon v-else class="btn-icon-svg" />
+				</button>
+
+				<button class="panel-btn" @click="downloadChartImage" :class="{ 'active': isDownloadingChart }" :disabled="isDownloadingChart" :title="chartDownloadLabel">
+				   <span v-if="isDownloadingChart" class="spinner-small"></span>
+				   <graphIcon v-else class="btn-icon-svg" />
+				</button>
+
+				<button class="panel-btn" @click="downloadMapAndGraph" :class="{ 'active': isDownloadingMap }" :disabled="isDownloadingMap" title="Export .png of Map and Chart">
+				   <span v-if="isDownloadingMap" class="spinner-small"></span>
+				   <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+					  <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" stroke-opacity="0.6" />
+					  <path d="M12 10v8 M9 15l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
+				   </svg>
+				</button>
+			  </div>
+
 			</div>
-          
-		  <div class="opt-section">
-            <span class="opt-label">Variables:</span>
-            <div class="opt-checks">
-               <label v-for="v in availableVars" :key="v">
-                 <input type="checkbox" :value="v" v-model="pendingVars"> {{ v.toUpperCase() }}
-               </label>
-            </div>
-          </div>
-
-          <div class="opt-section">
-            <span class="opt-label">Processing level:</span>
-            <div class="opt-checks">
-               <label v-for="q in availableQuality" :key="q">
-                 <input type="checkbox" :value="q" v-model="pendingQuality"> {{ q }}
-               </label>
-            </div>
-          </div>
+			
+		</div>
 		
-		  <hr class="opt-divider">
-          <div class="opt-section">
-            <span class="opt-label">Smoothing Parameters:</span>
-            
-            <div class="param-row">
-              <label>Max gap fill length days</label>
-              <input type="range" v-model.number="pendingSmoothingParams.gap" min="1" max="120" class="param-slider">
-              <input type="number" v-model.number="pendingSmoothingParams.gap" class="param-input">
-            </div>
+		<div v-if="showAdvanced" class="advanced-popup-container">
+			<div class="advanced-card">
 
-            <div class="param-row">
-              <label>Window size days (Points)</label>
-              <input type="range" v-model.number="pendingSmoothingParams.win_raw" min="1" max="121" step="2" class="param-slider">
-              <input type="number" v-model.number="pendingSmoothingParams.win_raw" class="param-input">
-            </div>
+				<div class="card-header">
+					  <strong>Advanced Options</strong>
+					  <div class="header-actions">
+						<button @click="restoreDefaults" class="btn-restore-link">
+						  Restore defaults
+						</button>
+						<button @click="showAdvanced = false" class="popup-close">&times;</button>
+					  </div>
+				</div>
+				
+				<div class="card-body custom-scrollbar">
+		  
+				<div class="opt-group">
+					<label class="group-label">Variables</label>
+					<div class="checkbox-grid">
+					   <label v-for="v in availableVariable" :key="v" class="checkbox-pill">
+						 <input type="checkbox" :value="v" v-model="pendingVariable"> 
+						 <span>{{ v.toUpperCase() }}</span>
+					   </label>
+					</div>
+				</div>
 
-            <div class="param-row">
-              <label>Window size days (Line)</label>
-              <input type="range" v-model.number="pendingSmoothingParams.win_daily" min="1" max="121" step="2" class="param-slider">
-              <input type="number" v-model.number="pendingSmoothingParams.win_daily" class="param-input">
-            </div>
-
-            <div class="param-row">
-              <label>Polynomial order</label>
-              <input type="range" v-model.number="pendingSmoothingParams.poly" min="1" max="5" class="param-slider">
-              <input type="number" v-model.number="pendingSmoothingParams.poly" class="param-input">
-            </div>
-			
-			<div class="action-row" style="margin-top: 15px; text-align: right;">
-                <button class="btn-download" @click="applyAdvancedOptions" :disabled="isFetching">
-                    <span v-if="isFetching" class="spinner"></span>
-                    <span v-else>Update Timeseries</span>
-                </button>
-            </div>
-          </div>
-        </div>
+				<div class="opt-group">
+					<label class="group-label">Processing Level</label>
+					<div class="checkbox-grid">
+					   <label v-for="q in availableQuality" :key="q" class="checkbox-pill">
+						 <input type="checkbox" :value="q" v-model="pendingQuality"> 
+							<span>{{ qualityLabels[q] || q }}</span>
+					   </label>
+					</div>
+				</div>
+				
+				<hr class="divider">
 		
-        <div class="list-toolbar" v-if="selectedPoints.length > 0">
-          <button @click="clearAll" class="btn-clear">Clear All</button>
-        </div>
-
-        <div class="points-list" v-if="selectedPoints.length > 0">
-          <table>
-            <thead><tr><th style="width:30px;">ID</th><th>Lat</th><th>Lon</th><th style="width:30px;"></th></tr></thead>
-            <tbody>
-              <tr v-for="(point, index) in selectedPoints" :key="point.id">
-                <td><span class="color-dot" :style="{backgroundColor: point.color}"></span>{{ index + 1 }}</td>
-                <td><input type="number" v-model.number="point.lat" step="0.001" class="coord-input" @change="refreshPointData(point)"></td>
-                <td><input type="number" v-model.number="point.lon" step="0.001" class="coord-input" @change="refreshPointData(point)"></td>
-                <td style="text-align:center;">
-                  <button @click.stop="removePoint(point.id)" class="btn-remove">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="empty-state">Click map or upload file</div>
-
-        <div class="control-group">
-          <label>Buffer distance (m):</label>
-          <input 
-            type="number" 
-            v-model.number.lazy="bufferSize" 
-            min="0" 
-            step="100"
-            @keyup.enter="$event.target.blur()"
-          >
-        </div>
-
-        <div class="control-group" v-if="selectedPoints.length > 0">
-			<div class="panel-subhead">Export Data</div>
-			<div class="export-actions">
+				<div class="opt-group">
+					<label class="group-label">Parameters</label>
 			
-				<button 
-					  class="panel-btn" 
-					  @click="handleDownload" 
-					  :class="{ 'active': isDownloading }" 
-					  :disabled="isDownloading"
-					  :title="isDownloading ? 'Zipping...' : downloadLabel"
-					>
-					  <span v-if="isDownloading" class="spinner-small"></span>
-					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="3" y="3" width="18" height="18" rx="2" stroke-opacity="0.6" />
-						<path d="M3 9h18 M9 3v18" stroke-opacity="0.6" />
-						<path d="M12 11v8 M8 15l4 4 4-4" stroke="#2c3e50" stroke-width="2.5" />
-					  </svg>
-				</button>
+					<div class="param-item">
+						<div class="param-info">
+							<span>Buffer (m)</span>
+							<span class="param-val">{{ pendingBuffer }}m</span>
+						</div>
+						<input type="range" v-model.number="pendingBuffer" min="0" max="5000" step="50" class="modern-slider">
+					</div>
 			
-				<button 
-					  class="panel-btn" 
-					  @click="downloadChartImage" 
-					  :class="{ 'active': isDownloadingChart }" 
-					  :disabled="isDownloadingChart"
-					  :title="isDownloadingChart ? 'Processing...' : chartDownloadLabel"
-					>
-					  <span v-if="isDownloadingChart" class="spinner-small"></span>
-					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-						<polyline points="3 14 7 8 11 12 15 5 21 5" stroke-opacity="0.6" />
-						<path d="M3 19h18" stroke-opacity="0.6" />
-						<path d="M18 9v8 M15 14l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
-					  </svg>
-				</button>
+					<div class="param-item">
+						<div class="param-info">
+							<span>Gap Fill (Days)</span>
+							<span class="param-val">{{ pendingSmoothingParams.gap }}</span>
+						</div>
+						<input type="range" v-model.number="pendingSmoothingParams.gap" min="1" max="120" class="modern-slider">
+					</div>
 
-				<button 
-					  class="panel-btn" 
-					  @click="downloadMapAndGraph" 
-					  :class="{ 'active': isDownloadingMap }" 
-					  :disabled="isDownloadingMap"
-					  :title="isDownloadingMap ? 'Processing...' : mapDownloadLabel"
-					>
-					  <span v-if="isDownloadingMap" class="spinner-small"></span>
-					  <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" stroke-opacity="0.6" />
-						<path d="M12 10v8 M9 15l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
-					  </svg>
-				</button>
+					<div class="param-item">
+						<div class="param-info">
+							<span>Window Size (Points)</span>
+							<span class="param-val">{{ pendingSmoothingParams.win_raw }}</span>
+						</div>
+						<input type="range" v-model.number="pendingSmoothingParams.win_raw" min="1" max="121" step="2" class="modern-slider">
+					</div>
+			
+					<div class="param-item">
+						<div class="param-info">
+							<span>Window Size (Line)</span>
+							<span class="param-val">{{ pendingSmoothingParams.win_daily }}</span>
+						</div>
+						<input type="range" v-model.number="pendingSmoothingParams.win_daily" min="1" max="121" step="2" class="modern-slider">
+					</div>
+
+					 <div class="param-item">
+						<div class="param-info">
+							<span>Polynomial Order</span>
+							<span class="param-val">{{ pendingSmoothingParams.poly }}</span>
+						</div>
+						<input type="range" v-model.number="pendingSmoothingParams.poly" min="1" max="5" class="modern-slider">
+					</div>
+				</div>
+				
+			</div>
+			
+			<div class="card-footer">
+			   <button class="btn-primary-action" @click="applyAdvancedOptions" :disabled="isFetching">
+				   <span v-if="isFetching" class="spinner-small"></span>
+				   <span v-else>Update All Timeseries</span>
+			   </button>
+			</div>
 			
 		  </div>
 		</div>
-	
-	</div>
+			
 	</div>
 	
 	<div class="resize-handle" @mousedown.prevent="startDrag">
        <div class="handle-grip"></div>
     </div>
 
-    <div class="chart-wrapper" :style="{ height: (100 - mapHeightPercent) + '%' }">
-	
-		<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
-			<span class="overlay-label">Graph View:</span>
-			<select v-model="currentPlotVar" @change="updateChart" class="overlay-select">
-			   <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
-				   {{ opt.label }}
-			   </option>
-			</select>
-		</div>
-		
-		<div class="custom-legend" v-if="legendItems.length > 0">
-		
-			<div class="legend-global-key">
-			   <div class="key-item">
-				  <span class="symbol-dot"></span><span>Points</span>
-			   </div>
-			   <div class="key-item">
-				  <span class="symbol-line"></span><span>Daily</span>
-			   </div>
-			   <div class="key-item" v-if="showTrends">
-				  <span class="symbol-dash"></span><span>Trend</span>
-			   </div>
-			</div>
-			
-			<div 
-			   v-for="item in legendItems" 
-			   :key="item.id" 
-			   class="legend-item"
-			   :class="{ 'is-hidden': !item.isVisible }"
-			   @click="togglePointVisibility(item.id)"
-			>
-			   <span class="legend-label" :style="{ color: item.color }">
-				  {{ item.label }}
-			   </span>
-			   
-			   <span 
-					  v-if="item.trendText" 
-					  class="legend-trend" 
-					  :style="{ color: item.color }"
-					  v-html="item.trendText"
-				></span>
-			</div>
-		</div>
-		  
-        <div id="velocity-chart" class="chart-container"></div>
-	  
-	    <div class="axis-controls" v-if="selectedPoints.length > 0">
-		
-		  <div class="axis-group">
-			<label>Y-Min:</label>
-			<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
-			<label>Y-Max:</label>
-			<input type="number" step="any" v-model.lazy="yAxisMax" @change="updatePlotAxes" />
-		  </div>
-
-		  <div class="axis-group">
-			<label>Start:</label>
-			<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
-			<label>End:</label>
-			<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
-		  </div>
-		  <button @click="resetAxes" class="btn-reset-axes">Reset</button>
-		  
-		  <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
-		  <div class="trend-group">
-			  <button 
-				  @click="toggleTrends" 
-				  class="btn-icon" 
-				  :class="{ 'active': showTrends }"
-				  title="Calculate Trend"
-				>
-				  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<line x1="2" y1="20" x2="22" y2="4" />
-					<circle cx="6" cy="15" r="2" fill="currentColor" stroke="none" />
-					<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
-					<circle cx="18" cy="9" r="2" fill="currentColor" stroke="none" />
-				  </svg>
-				</button>
-
-			  <div v-if="showTrends" style="display:flex; gap:5px; align-items:center;">
-				  <label>Range:</label>
-				  <input 
-					 type="text" 
-					 v-model.lazy="trendStart" 
-					 @change="updateTrendCalc" 
-					 placeholder="Start" 
-					 class="trend-input"
-				  />
-				  <span>-</span>
-				  <input 
-					 type="text" 
-					 v-model.lazy="trendEnd" 
-					 @change="updateTrendCalc" 
-					 placeholder="End" 
-					 class="trend-input"
-				  />
-			  </div>
-		  </div>
+    <div class="bottom-dashboard" :style="{ height: (100 - mapHeightPercent) + '%' }">
   
+		  <div class="chart-section">
+		  
+				<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
+					<span class="overlay-label">Graph View:</span>
+					<select v-model="currentPlotVariable" @change="updateChart" class="overlay-select">
+					   <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
+						   {{ opt.label }}
+					   </option>
+					</select>
+				</div>
+				
+				<div class="custom-legend" v-if="legendItems.length > 0">
+				
+					<div class="legend-global-key">
+					   <div class="key-item">
+						  <span class="symbol-dot"></span><span>Points</span>
+					   </div>
+					   <div class="key-item">
+						  <span class="symbol-line"></span><span>Daily</span>
+					   </div>
+					   <div class="key-item" v-if="showTrends">
+						  <span class="symbol-dash"></span><span>Trend</span>
+					   </div>
+					</div>
+					
+					<div 
+					   v-for="item in legendItems" 
+					   :key="item.id" 
+					   class="legend-item"
+					   :class="{ 'is-hidden': !item.isVisible }"
+					   @click="togglePointVisibility(item.id)"
+					>
+					   <span class="legend-label" :style="{ color: item.color }">
+						  {{ item.label }}
+					   </span>
+					   
+					   <span 
+							  v-if="item.trendText" 
+							  class="legend-trend" 
+							  :style="{ color: item.color }"
+							  v-html="item.trendText"
+						></span>
+					</div>
+				</div>
+				
+				<div id="velocity-chart" class="chart-container"></div>
+				
+				<div class="axis-controls" v-if="selectedPoints.length > 0">
+					<div class="axis-group">
+						<label>Y-Min:</label>
+						<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
+						<label>Y-Max:</label>
+						<input type="number" step="any" v-model.lazy="yAxisMax" @change="updatePlotAxes" />
+					</div>
+					
+					<div class="axis-group">
+						<label>Start:</label>
+						<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
+						<label>End:</label>
+						<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
+					</div>
+					<button @click="resetAxes" class="btn-reset-axes">Reset</button>
+					
+					<div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+					
+					<div class="trend-group">
+						<button 
+							  @click="toggleTrends" 
+							  class="btn-icon" 
+							  :class="{ 'active': showTrends }"
+							  title="Calculate Trend"
+							>
+							  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="2" y1="20" x2="22" y2="4" />
+									<circle cx="6" cy="15" r="2" fill="currentColor" stroke="none" />
+									<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+									<circle cx="18" cy="9" r="2" fill="currentColor" stroke="none" />
+							  </svg>
+						</button>
+						
+						<div v-if="showTrends" style="display:flex; gap:5px; align-items:center;">
+							<label>Range:</label>
+							<input 
+								 type="text" 
+								 v-model.lazy="trendStart" 
+								 @change="updateTrendCalc" 
+								 placeholder="Start" 
+								 class="trend-input"
+							/>
+							<span>-</span>
+							<input 
+								 type="text" 
+								 v-model.lazy="trendEnd" 
+								 @change="updateTrendCalc" 
+								 placeholder="End" 
+								 class="trend-input"
+							/>
+						</div>
+					</div>
+					
+				</div>
+				
+			</div>
+
+		  <div class="info-sidebar" v-if="selectedPoints.length > 0">
+			
+			<div class="info-header">
+			   <button @click="clearAll" class="btn-text-only">Clear All</button>
+			</div>
+
+			<div class="info-list-container">
+			  <table class="points-table">
+				<thead>
+				   <tr>
+					 <th style="width:8px">#</th>
+					 <th>Lat</th>
+					 <th>Lon</th>
+					 <th>Buffer (m)</th>
+					 <th style="width:8px"></th>
+				   </tr>
+				</thead>
+				<tbody>
+				  <tr v-for="(point, index) in selectedPoints" :key="point.id">
+					 <td :style="{ color: point.color, fontWeight: 'bold', fontSize: '1.1em', textAlign: 'center' }" > {{ index + 1 }} </td>
+					 <td><input type="number" v-model.number="point.lat" step="0.001" @change="refreshPointData(point)"></td>
+					 <td><input type="number" v-model.number="point.lon" step="0.001" @change="refreshPointData(point)"></td>
+					 <td><input type="number" v-model.number.lazy="point.buffer" min="0" step="50" class="table-input" style="text-align: right;" @change="refreshPointData(point)" > </td>
+					 <td>
+					   <button @click.stop="removePoint(point.id)" class="btn-remove-icon">&times;</button>
+					 </td>
+				  </tr>
+				</tbody>
+			  </table>
+			</div>
+
+		  </div>
+		  
+		  <div class="info-sidebar empty" v-else>
+			 <p>Select points on the map or upload a file to view data.</p>
+		  </div>
+
 		</div>
-		
-    </div> 
 	
   </div> 
   
@@ -823,6 +831,10 @@ import L from 'leaflet';
 import html2canvas from 'html2canvas';
 import domtoimage from 'dom-to-image-more';
 import * as XLSX from 'xlsx';
+import antarcticaIcon from '../components/icons/antarcticaIcon.vue';
+import greenlandIcon from '../components/icons/greenlandIcon.vue';
+import excelIcon from '../components/icons/excelIcon.vue';
+import graphIcon from '../components/icons/graphIcon.vue';
 
 // --- API CONFIGURATION ---
 // 1. Get the URL (Localhost in dev, Ngrok in prod)
@@ -1033,7 +1045,6 @@ const currentRegion = ref('Greenland');
 const overlayLayer = ref('none'); // Tracks which visual layer is active (speed/count/trend)
 const zoom = ref(8);
 const center = ref([67.133129, -48.900752]);
-const bufferSize = ref(500); 
 const statusMessage = ref("");
 const isDownloading = ref(false);
 const isDownloadingChart = ref(false);
@@ -1080,24 +1091,55 @@ const xAxisMax = ref('');
 const yAxisMin = ref('');
 const yAxisMax = ref('');
 
+// Vectors
+const REFERENCE_VELOCITY = computed(() => {
+  if (currentRegion.value === 'Greenland') {
+    return 250; // Greenland Legend shows 250 m/yr
+  } else {
+    return 500; // Antarctica Legend shows 500 m/yr (since scale is 5000 vs 2250)
+  }
+});
+const TILE_SIZE = 256; 
+const vectorScaleLabel = computed(() => { return `${REFERENCE_VELOCITY.value} m/yr`; });
+const arrowPixelWidth = computed(() => {
+  if (!currentRegion.value) return 50; 
+
+  // Backend Scales: Greenland=2250, Antarctica=5000
+  const scale = currentRegion.value === 'Greenland' ? 2250 : 5000;
+  
+  // Math: (1000 / Scale) * 256
+  // Greenland result: ~113px
+  // Antarctica result: ~51px
+  return (REFERENCE_VELOCITY.value / scale) * TILE_SIZE;
+});
+
 // --- ADVANCED OPTIONS ---
 const showAdvanced = ref(false);
-const availableVars = ['s', 'u', 'v'];
+
+// 1. Define Defaults (Single Source of Truth)
+const DEFAULTS = {
+  buffer: 500,
+  variable: ['s'],
+  quality: ['filt'],
+  smoothing: { gap: 24, win_raw: 1, win_daily: 25, poly: 2 }
+};
+
+// 2. State Definitions 
+const availableVariable = ['s', 'u', 'v'];
 const availableQuality = ['filt', 'raw'];
-const selectedVars = ref(['s']);         
-const selectedQuality = ref(['filt']);   
-const currentPlotVar = ref('s_filt');    
+const currentPlotVariable = ref('s_filt');    
+const pendingBuffer = ref(DEFAULTS.buffer); 
+const pendingVariable = ref([...DEFAULTS.variable]); 
+const pendingQuality = ref([...DEFAULTS.quality]);
+const pendingSmoothingParams = ref({ ...DEFAULTS.smoothing });
 
-// Smoothing Parameters
-const smoothingParams = ref({ gap: 24, win_raw: 1, win_daily: 25, poly: 2 });
-const pendingVars = ref(['S']); 
-const pendingQuality = ref(['filt']);
-const pendingSmoothingParams = ref({ gap: 24, win_raw: 25, win_daily: 25, poly: 2 });
-
+// 3. Restore Defaults
+// This now updates the "pending" values, so the UI in the popup actually resets.
 const restoreDefaults = () => {
-  selectedVars.value = ['s'];
-  selectedQuality.value = ['filt'];
-  smoothingParams.value = { gap: 24, win_raw: 1, win_daily: 25, poly: 2 };
+  pendingVariable.value = [...DEFAULTS.variable];
+  pendingQuality.value = [...DEFAULTS.quality];
+  pendingSmoothingParams.value = { ...DEFAULTS.smoothing };
+  pendingBuffer.value = DEFAULTS.buffer;
 };
 
 // --- Good data mask --- //
@@ -1111,15 +1153,6 @@ onMounted(async () => {
     globalMaskData.value = maskRes.data;
     globalOutlineData.value = outlineRes.data;
   } catch (e) { console.error("Data boundary loading failed.", e); }
-});
-
-// Helper: Ensure the "Pending" state matches "Real" state when the component loads
-onMounted(() => {
-    // ... any existing onMounted code ...
-    pendingVars.value = [...selectedVars.value];
-    pendingQuality.value = [...selectedQuality.value];
-    // Create a copy of the object to break reference
-    pendingSmoothingParams.value = { ...smoothingParams.value };
 });
 
 const getSiteLabel = (point, index) => {
@@ -1298,35 +1331,39 @@ watch(() => selectedPoints.value.length, () => {
 
 // Generate suffix string for filenames: e.g. _gf24_wr25_wd25_p2
 const smoothingSuffix = computed(() => {
-    const p = smoothingParams.value;
+    const p = pendingSmoothingParams.value; 
+    if (!p) return ''; 
     return `_gf${p.gap}_wr${p.win_raw}_wd${p.win_daily}_p${p.poly}`;
 });
 
-// Computed list of available plots based on selection
+// Computed list of available plots based on USER SELECTION
 const plotOptions = computed(() => {
     const opts = [];
-    selectedVars.value.forEach(v => {
-        selectedQuality.value.forEach(q => {
+    pendingVariable.value.forEach(v => { // 1. Iterate only through the user's SELECTED variables
+        pendingQuality.value.forEach(q => { // 2. Iterate only through the user's SELECTED qualities
             const labelMap = { s: 'Speed', u: 'Velocity U', v: 'Velocity V' };
             const typeMap = { filt: '(Filtered)', raw: '(Raw)' };
-            opts.push({ val: `${v}_${q}`, label: `${labelMap[v]} ${typeMap[q]}` });
+            // 3. Create option only if both parts are selected
+            opts.push({ 
+                val: `${v}_${q}`, 
+                label: `${labelMap[v]} ${typeMap[q]}` 
+            });
         });
     });
     return opts;
 });
 
-// Ensure currentPlotVar is valid; if not, reset
+// Ensure currentPlotVariable is valid; if not, reset
 watch(plotOptions, (newOpts) => {
-    if (newOpts.length > 0 && !newOpts.find(o => o.val === currentPlotVar.value)) {
-        currentPlotVar.value = newOpts[0].val;
+    if (newOpts.length > 0 && !newOpts.find(o => o.val === currentPlotVariable.value)) {
+        currentPlotVariable.value = newOpts[0].val;
         updateChart();
     }
 }, { deep: true });
 
 // Dynamic label for the download button
-const downloadLabel = computed(() => selectedPoints.value.length > 1 ? 'All .xslx (.zip)' : '.xslx');
-const chartDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Graphs (.zip)' : 'Graph' );
-const mapDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'All Maps (.zip)' : 'Map & Graph' );
+const xlsxDownloadLabel = computed(() => selectedPoints.value.length > 1 ? 'Download all data (.zip)' : 'Download data (.xlsx)');
+const chartDownloadLabel = computed(() => plotOptions.value.length > 1 ? 'Download all graphs (.zip)' : 'Download graph (.png)' );
 
 // --- COMPUTED URLs FOR TILES ---
 // "timestamp" is used as a query parameter (?t=...) to force the browser 
@@ -1402,29 +1439,11 @@ const loadMarginData = async () => {
 const maxSpeedLabel = computed(() => currentRegion.value === 'Greenland' ? '400 m/yr' : '800 m/yr');
 const maxTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '2.5' : '15');
 const minTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '-2.5' : '-15');
-const vectorScaleLabel = computed(() => currentRegion.value === 'Greenland' ? '250 m/yr' : '500 m/yr');
 
-// --- REFERENCE VECTOR CALCULATION --- //
-const arrowPixelWidth = computed(() => {
-  // Standard web map tiles are 256x256 pixels
-  const tileSize = 256; 
-  
-  // Define the variables relative to the region
-  let refSpeed;
-  let backendScale;
-
-  if (currentRegion.value === 'Greenland') {
-     refSpeed = 250;       // User desired reference
-     backendScale = 2250;  // Backend scale for Greenland
-  } else {
-     refSpeed = 500;       // User desired reference
-     backendScale = 5000;  // Backend scale for Antarctica
-  }
-
-  // Calculate: (Reference / BackendScale) * 256px
-  return (refSpeed / backendScale) * tileSize;
-});
-
+const qualityLabels = {
+  'filt': 'Time-filtered',
+  'raw':  'Raw Data'  // (Optional: Makes "raw" look nicer too)
+};
 
 // --- REGION MANAGEMENT ---
 const switchRegion = () => {
@@ -1447,118 +1466,152 @@ const debouncedRefetch = () => {
     debounceTimer = setTimeout(() => { refetchAllPoints(); }, 600);
 };
 
-//  watch for changes to buffer size
-watch(bufferSize, (newValue) => {
-  if (newValue === "" || newValue === null || newValue === undefined) {
-    bufferSize.value = 500; return;
-  }
-  debouncedRefetch();
-});
-
 
 const applyAdvancedOptions = async () => {
-  // 1. VALIDATION: Ensure at least one variable and level is selected
-  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+  // 1. Validation
+  if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
       alert("Warning: You must select at least one Variable and one Processing Level.");
       return; 
   }
 
-  // 2. SMART CHECK: Do we need to fetch data?
-  
-  // Check if every NEW variable is present in the OLD list
-  const isVarSubset = pendingVars.value.every(v => selectedVars.value.includes(v));
-  
-  // Check if every NEW level is present in the OLD list
-  const isQualitySubset = pendingQuality.value.every(q => selectedQuality.value.includes(q));
-  
-  // Check if smoothing parameters changed (requires simple object comparison)
-  const isParamsChanged = JSON.stringify(pendingSmoothingParams.value) !== JSON.stringify(smoothingParams.value);
+  // 2. Define the "Target" Settings
+  const targetSettings = {
+      buffer: pendingBuffer.value,
+      variable: pendingVariable.value,
+      quality: pendingQuality.value,
+      smoothing: pendingSmoothingParams.value
+  };
 
-  // We need to fetch if:
-  // - We are ADDING a variable (not a subset)
-  // - We are ADDING a quality level (not a subset)
-  // - We changed smoothing parameters (affects values)
-  const needsFetch = !isVarSubset || !isQualitySubset || isParamsChanged;
+  // 3. SMART CHECK: Do we *need* to fetch?
+  // We check if ANY point is "incompatible" with the new settings.
+  // Incompatible = Has different buffer OR different smoothing OR missing variables.
+  
+  const needsFetch = selectedPoints.value.some(point => {
+      const current = point.settings;
 
-  // 3. COMMIT CHANGES (Update the "Real" variables)
-  selectedVars.value = [...pendingVars.value];
-  selectedQuality.value = [...pendingQuality.value];
-  smoothingParams.value = { ...pendingSmoothingParams.value };
+      // A. Parameters Changed? (Buffer or Smoothing)
+      if (current.buffer !== targetSettings.buffer) return true;
+      if (JSON.stringify(current.smoothing) !== JSON.stringify(targetSettings.smoothing)) return true;
+
+      // B. Variables Added? (Target has something Current doesn't)
+      const missingVariable = targetSettings.variable.some(v => !current.variable.includes(v));
+      if (missingVariable) return true;
+
+      // C. Quality Added?
+      const missingQuality = targetSettings.quality.some(q => !current.quality.includes(q));
+      if (missingQuality) return true;
+
+      return false; // Point is compatible (it's a superset or exact match)
+  });
 
   // 4. EXECUTE
   if (needsFetch) {
-      // User added data or changed params -> Trigger Backend
-      await refetchAllPoints(); 
+      // Scenario 1: Something fundamental changed or data is missing.
+      // We must fetch fresh data for everyone to ensure consistency.
+      await refetchAllPoints();
   } else {
-      // User only removed data -> Just redraw the chart locally
-      updateChart(); 
+      // Scenario 2: Optimization! 
+      // We are only REMOVING variables or keeping things same.
+      // No server call needed. Just update the settings objects locally.
+      
+      selectedPoints.value.forEach(point => {
+          // Update the settings "metadata" so the chart knows to hide the removed variable
+          point.settings = JSON.parse(JSON.stringify(targetSettings));
+          point.buffer = targetSettings.buffer;
+      });
+      
+      // Force chart redraw
+      updateChart();
+      statusMessage.value = "Updated (No fetch needed).";
   }
+  
+  // Close the modal (optional)
+  // showAdvanced.value = false; 
 };
 
 
 // Refetch data for ALL points with the new buffer size and/or new filtering option
 const refetchAllPoints = async () => {
   if (selectedPoints.value.length === 0) return;
-  
-  // 1. Setup State
+
   isRefreshing.value = true;
-  const totalPoints = selectedPoints.value.length;
+  statusMessage.value = "Updating all points...";
+
+  // 1. Prepare the Global Settings (The "New" State)
+  const useBuffer = pendingBuffer.value;
+  const useVariable = pendingVariable.value;     
+  const useQuality = pendingQuality.value; 
+  const useSmoothing = { ...pendingSmoothingParams.value }; 
   
-  const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
-  const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
-  
-  // Track refresh
+  // Define newSettings ---
+  // We package these together so we can save them into the point later
+  const newSettings = {
+    buffer: useBuffer,
+    variable: useVariable,
+    quality: useQuality,
+    smoothing: useSmoothing
+  };
+
+  // 2. Prepare ROIs (List of [lat, lon])
+  const roiList = selectedPoints.value.map(p => [p.lat, p.lon]);
+
   trackEvent("data_refresh", {
-	  event_category: "interaction",
-	  event_label: "data_refresh",
-	  buffer: bufferSize.value,
-	  variables: reqVars,
-	  quality: reqQual,
-	  region: currentRegion.value,
-	});
+    event_category: "interaction",
+    event_label: "batch_refresh",
+    count: roiList.length,
+    buffer: useBuffer
+  });
 
   try {
-    // 2. Iterate through points one by one
-    for (let i = 0; i < totalPoints; i++) {
-      const point = selectedPoints.value[i];
-      
-      // UPDATE STATUS: "Refreshing point 1 / 10..."
-      statusMessage.value = `Refreshing point ${i + 1} / ${totalPoints}...`;
+    // 3. Create ONE Payload for ALL points
+    const payload = {
+      roi: roiList, 
+      buffer: useBuffer,
+      variable: useVariable,
+      quality: useQuality,
+      // Expand smoothing params
+      gap_fill: useSmoothing.gap,
+      win_raw: useSmoothing.win_raw,
+      win_daily: useSmoothing.win_daily,
+      poly: useSmoothing.poly
+    };
 
-      // 3. Create Payload for THIS SPECIFIC POINT only
-      const payload = {
-        roi: [[point.lat, point.lon]], // Single ROI
-        buffer: bufferSize.value,
-        variables: reqVars, 
-        quality: reqQual,
-        gap_fill: smoothingParams.value.gap,
-        win_raw: smoothingParams.value.win_raw,
-        win_daily: smoothingParams.value.win_daily,
-        poly: smoothingParams.value.poly
-      };
+    // 4. Single Batch Request
+    const response = await apiClient.post('/api/timeseries/json', payload);
+    const responseData = response.data; 
 
-      // 4. Fetch Data (Waits here until this point is done)
-      const response = await apiClient.post('/api/timeseries/json', payload);
-      
-      // 5. Update the specific point in the array immediately
-      // The backend returns an object like { "lat_lon": { data... } }
-      // We grab the first (and only) value from the values array
-      const newData = Object.values(response.data)[0];
-      
-      if (newData) {
-        selectedPoints.value[i].data = newData;
-      }
-      
-      // Optional: Update chart incrementally (cool visual effect)
-      updateChart(); 
-    }
+    // 5. Map Response back to Points
+    // If responseData is an Array:
+    const resultsArray = Array.isArray(responseData) 
+        ? responseData 
+        : Object.values(responseData); // Convert object values to array to guarantee order
 
-    // 6. Finish
-    updateChart(); 
-    statusMessage.value = "Data updated.";
+    selectedPoints.value.forEach((point, index) => {
+        // Get the data corresponding to this point's position in the list
+        const newData = resultsArray[index];
+
+        if (newData) {
+            // A. Update Raw Data
+            point.data = newData;
+            
+            // B. UPDATE SETTINGS (Deep Copy)
+            // Detach this point's settings from the UI state completely
+            point.settings = JSON.parse(JSON.stringify(newSettings));
+            
+            // Sync top-level convenience prop
+            point.buffer = newSettings.buffer;
+            
+            console.log(`Successfully updated point ${index + 1}`);
+        } else {
+            console.warn(`No data returned for point at index ${index} (ID: ${point.id})`);
+        }
+    });
+
+    statusMessage.value = "All points updated.";
+    updateChart();
 
   } catch (error) {
-    console.error("Failed to update:", error);
+    console.error("Batch update failed:", error);
     statusMessage.value = "Error updating data.";
   } finally {
     isRefreshing.value = false;
@@ -1567,7 +1620,7 @@ const refetchAllPoints = async () => {
 
 // --- MAP INTERACTION ---
 const onMapClick = async (e) => {
-// 1. Validation Checks 
+  // 1. Validation Checks 
   if (draggingState.value.active || isDragCooldown.value) return;
   const target = e.originalEvent?.target;
   if (!target || !target.isConnected) return;
@@ -1580,31 +1633,46 @@ const onMapClick = async (e) => {
   }
   
   // Ensure we don't fetch if the user has deselected everything in the menu
-  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+  if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
       alert("Warning: Please select at least one Variable and Processing Level in Advanced Options.");
       return;
   }
   
-  // Sync with advanced options
-  // Commit the "Pending" menu state to the "Real" application state
-  selectedVars.value = [...pendingVars.value];
-  selectedQuality.value = [...pendingQuality.value];
-  smoothingParams.value = { ...pendingSmoothingParams.value };
+  // 2. PREPARE SETTINGS SNAPSHOT
+  // Instead of updating global state, we create a specific settings object 
+  // for THIS new point based on the current menu state.
+  const newPointSettings = {
+      buffer: pendingBuffer.value,
+      variable: [...pendingVariable.value],
+      quality: [...pendingQuality.value],
+      smoothing: { ...pendingSmoothingParams.value }
+  };
   
-  // 2. Track clicks
+  // 3. Track clicks
   trackEvent("map_click", {
-	  event_category: "interaction",
-	  event_label: "extract_timeseries",
-	  region: currentRegion.value,
-	  lat: e.latlng.lat.toFixed(4),
-	  lon: e.latlng.lng.toFixed(4)
-	});
-	
-   const newId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-  //const color = COLORS[selectedPoints.value.length % COLORS.length];
-  //await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, color);
-  await fetchSinglePoint(newId, e.latlng.lat, e.latlng.lng, COLORS[0]);
+    event_category: "interaction",
+    event_label: "extract_timeseries",
+    region: currentRegion.value,
+    lat: e.latlng.lat.toFixed(4),
+    lon: e.latlng.lng.toFixed(4),
+    // Optional: You can now log exactly what they requested
+    buffer: newPointSettings.buffer
+  });
+    
+  const newId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  
+  // 4. FETCH
+  // We pass 'newPointSettings' as the 5th argument so the point is created 
+  // with these specific options.
+  await fetchSinglePoint(
+      newId, 
+      e.latlng.lat, 
+      e.latlng.lng, 
+      COLORS[0], // Temporary color (distributeColors will fix it)
+      newPointSettings
+  );
 };
+
 
 // Whenever points are added or removed, fix colors and update chart automatically.
 watch(() => selectedPoints.value.length, () => {
@@ -1689,149 +1757,177 @@ const outlineStyle = () => {
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  
-  // 1. VALIDATION: Ensure at least one variable/quality is selected (from Pending)
-  if (pendingVars.value.length === 0 || pendingQuality.value.length === 0) {
+
+  // 1. Validation
+  if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
       alert("Warning: Please select at least one Variable and Processing Level in Advanced Options before uploading.");
-      event.target.value = ''; // Reset input
+      event.target.value = ''; 
       return;
   }
-  
-  // 2. SYNC: Commit Pending Options to Real Options
-  // This ensures the upload uses exactly what the user sees in the menu
-  selectedVars.value = [...pendingVars.value];
-  selectedQuality.value = [...pendingQuality.value];
-  smoothingParams.value = { ...pendingSmoothingParams.value };
-  
-  // 3. Start loading state
+
+  // 2. Prepare Settings Snapshot (Crucial for chart to work!)
+  const uploadSettings = {
+      buffer: pendingBuffer.value,
+      variable: [...pendingVariable.value],       
+      quality: [...pendingQuality.value], 
+      smoothing: { ...pendingSmoothingParams.value } 
+  };
+
   isUploading.value = true;
-  statusMessage.value = "Uploading... 0%";
-  
-  const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
-  const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
-  
+  statusMessage.value = "Uploading...";
+
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("buffer", bufferSize.value); // apply global buffer value in case shapefile does not specify it
+  formData.append("buffer", uploadSettings.buffer);
   
-  reqVars.forEach(v => formData.append("variables", v));
-  reqQual.forEach(q => formData.append("quality", q));
+  // Append arrays
+  uploadSettings.variable.forEach(v => formData.append("variable", v));
+  uploadSettings.quality.forEach(q => formData.append("quality", q));
   
-  // Append smoothing params
-  formData.append("gap_fill", smoothingParams.value.gap);
-  formData.append("win_raw", smoothingParams.value.win_raw);
-  formData.append("win_daily", smoothingParams.value.win_daily);
-  formData.append("poly", smoothingParams.value.poly);
+  // Append smoothing
+  formData.append("gap_fill", uploadSettings.smoothing.gap);
+  formData.append("win_raw", uploadSettings.smoothing.win_raw);
+  formData.append("win_daily", uploadSettings.smoothing.win_daily);
+  formData.append("poly", uploadSettings.smoothing.poly);
 
   try {
     const response = await apiClient.post('/api/timeseries/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-	  // Track upload progress
-	  onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-		if (percentCompleted < 100) {
-           statusMessage.value = `Uploading... ${percentCompleted}%`;
-        } else {
-           // Once we hit 100% upload, we are waiting for the server
-           statusMessage.value = "Upload complete. Analyzing server response..."; }
-        }
     });
-	
+
     const results = response.data;
     if (results.status === 'error') throw new Error(results.message);
-	
-	// Convert to entries so we can iterate with index
+
+    // 3. Process results (Fast Loop)
     const entries = Object.entries(results);
-	
-	let added = 0;
-    for (let i = 0; i < entries.length; i++) {
-      if (selectedPoints.value.length >= 10) break;
-      const [siteName, data] = entries[i];
-      // Update status for the specific site
-      statusMessage.value = `Processing site ${i + 1} of ${entries.length}...`;
-      // Force a short (10ms) to let Vue render the text update.
-      await new Promise(resolve => setTimeout(resolve, 2));
-      // Parse data
-      const ptLat = data.meta?.lat || 0;
-      const ptLon = data.meta?.lon || 0;
-	  const metaBuffer = data.meta?.buffer_used;
-	  const hasSpecificBuffer = metaBuffer !== undefined && metaBuffer !== null;
-	  const siteSpecificBuffer = hasSpecificBuffer ? Number(metaBuffer) : Number(bufferSize.value);
-      const color = COLORS[selectedPoints.value.length % COLORS.length];
-      // Extract
-      selectedPoints.value.push({
-        id: Date.now() + added, lat: ptLat, lon: ptLon, color: color, data: data, name: siteName, buffer: siteSpecificBuffer 
-      });
-      added++;
+    let addedCount = 0;
+
+    // We can use a simple loop without 'await' for speed
+    for (const [siteName, data] of entries) {
+        // Stop if we hit the limit
+        if (selectedPoints.value.length >= 10) break;
+
+        const ptLat = data.meta?.lat || 0;
+        const ptLon = data.meta?.lon || 0;
+        
+        // Handle buffer logic
+        const metaBuffer = data.meta?.buffer_used;
+        const siteSpecificBuffer = (metaBuffer !== undefined && metaBuffer !== null) 
+            ? Number(metaBuffer) 
+            : Number(pendingBuffer.value);
+
+        const color = COLORS[selectedPoints.value.length % COLORS.length];
+
+        // Create and push the point
+        selectedPoints.value.push({
+            id: Date.now() + addedCount, // Ensure unique IDs
+            lat: ptLat,
+            lon: ptLon,
+            color: color,
+            data: data,
+            name: siteName,
+            buffer: siteSpecificBuffer,
+            settings: JSON.parse(JSON.stringify(uploadSettings)) // Deep copy settings
+        });
+
+        addedCount++;
     }
-	
-    statusMessage.value = `Loaded ${added} sites.`;
+
+    statusMessage.value = `Loaded ${addedCount} sites.`;
     updateChart();
-	
-	// Clear input in case of additional uploads
-	event.target.value = '';
-	
+    event.target.value = ''; // Reset file input
+
   } catch (error) {
-    console.error(error); 
-	statusMessage.value = "Upload failed.";
-	alert("Upload failed: " + (error.message || "Unknown error"));
+    console.error(error);
+    statusMessage.value = "Upload failed.";
+    alert("Upload failed: " + (error.message || "Unknown error"));
   } finally {
     isUploading.value = false;
   }
 };
 
+
 // Fetch data for a single point (used by Map Click)
-const fetchSinglePoint = async (id, lat, lon, color) => {
+const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
   isFetching.value = true;
   statusMessage.value = "Fetching...";
-  const reqVars = selectedVars.value.length > 0 ? selectedVars.value : ['s'];
-  const reqQual = selectedQuality.value.length > 0 ? selectedQuality.value : ['filt'];
+  
+  // BEHAVIOUR 1 LOGIC:
+  // If customSettings is null (New Point Click), snapshot the current Advanced Options.
+  // If customSettings exists (Refresh or Mass Update), use those.
+  const settings = customSettings || {
+      buffer: pendingBuffer.value,
+      variable: [...pendingVariable.value],
+      quality: [...pendingQuality.value],
+      smoothing: { ...pendingSmoothingParams.value }
+  };
+  
   // Track data fetching
   trackEvent("data_fetch", {
 	  event_category: "interaction",
 	  event_label: "data_fetch",
-	  buffer: bufferSize.value,
-	  variables: reqVars,
-	  quality: reqQual,
-	  region: currentRegion.value,
+	  buffer: settings.buffer,
+      variable: settings.variable,
+      quality: settings.quality,
+      region: currentRegion.value,
 	  lat: lat,
 	  lon: lon
 	});
+  
+  // Ping the backend
   try {
     const payload = { 
         roi: [[lat, lon]], 
-        buffer: bufferSize.value,
-        variables: reqVars, 
-        quality: reqQual,
-        // Pass smoothing params
-        gap_fill: smoothingParams.value.gap,
-        win_raw: smoothingParams.value.win_raw,
-        win_daily: smoothingParams.value.win_daily,
-        poly: smoothingParams.value.poly
+        buffer: settings.buffer,
+        variable: settings.variable, 
+        quality: settings.quality,
+        gap_fill: settings.smoothing.gap,
+        win_raw: settings.smoothing.win_raw,
+        win_daily: settings.smoothing.win_daily,
+        poly: settings.smoothing.poly
     };
     const response = await apiClient.post('/api/timeseries/json', payload);
     const rawData = response.data;
     const firstKey = Object.keys(rawData)[0];
     const siteData = rawData[firstKey];
+	
+	// Check for ping errors
     if (siteData.status === 'error') {
       statusMessage.value = `Error: ${siteData.message}`; return;
     }
-    const newPoint = { id, lat, lon, color, data: siteData, name: firstKey };
+	
+	// Save the snapshot
+    // We store 'settings' inside the point. This freezes the configuration 
+    // for this specific point until the user explicitly changes it.
+    const newPoint = { id, lat, lon, color, settings: settings, buffer: settings.buffer, data: siteData, name: firstKey };
+	
+	// Record
     const idx = selectedPoints.value.findIndex(p => p.id === id);
     if (idx >= 0) selectedPoints.value[idx] = newPoint;
     else selectedPoints.value.push(newPoint);
+	
+	// Show status
     statusMessage.value = "Loaded.";
     updateChart();
   } catch (error) {
     console.error(error); statusMessage.value = "Server Error.";
   } finally {
-    // 2. STOP SPINNER (Runs regardless of success or failure)
     isFetching.value = false;
   }
 };
 
 // Wrapper for updating a point when coords are manually edited
-const refreshPointData = async (point) => await fetchSinglePoint(point.id, point.lat, point.lon, point.color);
+const refreshPointData = async (point) => {
+    // Construct settings using the point's existing variables/smoothing
+    // but the new buffer from the input box.
+    const updatedSettings = {
+        ...point.settings, // Copy old variable, quality, smoothing
+        buffer: point.buffer // Use the new buffer value
+    };
+    
+    // Pass these settings back to fetchSinglePoint
+    await fetchSinglePoint(point.id, point.lat, point.lon, point.color, updatedSettings);
+};
 const removePoint = (id) => { selectedPoints.value = selectedPoints.value.filter(p => p.id !== id); distributeColors(); updateChart(); };
 const clearAll = () => { selectedPoints.value = []; Plotly.purge('velocity-chart'); };
 
@@ -1845,9 +1941,26 @@ const buildChartConfig = (plotKey) => {
   // Reset Legend Items
   legendItems.value = [];
   
+  // 1. PREPARE KEYS FOR FILTERING
+  // Split 's_filt' into 's' and 'filt'
+  const [targetVariable, targetQuality] = plotKey.split('_'); 
+
   selectedPoints.value.forEach((point, idx) => {
-    // Data validation
+    // A. DATA EXISTENCE CHECK (Existing)
     if (point.data.status === 'error' || !point.data.data) return;
+    
+    // B. SETTINGS CHECK (New "Visual Filtering")
+    // Ensure we have settings (fallback for safety)
+    const settings = point.settings || { variable: [], quality: [] };
+    
+    // Check if this specific variable/quality combination is enabled for this point
+    const isEnabled = settings.variable.includes(targetVariable) && 
+                      settings.quality.includes(targetQuality);
+
+    // If data is missing OR user disabled this variable, skip it.
+    if (!point.data.data[plotKey] || !isEnabled) return;
+
+    // Load data and check
     const varData = point.data.data[plotKey];
     const rootData = point.data.data;
     if (!varData) return;
@@ -1980,27 +2093,32 @@ const buildChartConfig = (plotKey) => {
   if (plotKey.startsWith('s')) yAxisLabel = "Speed (m/yr)";
   else if (plotKey.startsWith('u')) yAxisLabel = "Easting velocity (m/yr)";
   else if (plotKey.startsWith('v')) yAxisLabel = "Northing velocity (m/yr)";
+  
+  // Define the SVG Data URI for the word "SHIVER"
+	const watermarkSvg = `
+	  <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20">
+		<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
+			  font-family="sans-serif" font-weight="900" font-size="18" 
+			  fill="rgba(135, 206, 235, 0.15)">
+		  S H I V E R
+		</text>
+	  </svg>`;
+
+	// Convert it to a Base64 string for Plotly
+	const watermarkUrl = "data:image/svg+xml;base64," + btoa(watermarkSvg);
 
   const layout = {
-	annotations: [
-      {
-        text: "S H I V E R",
-        x: 0.5, // Horizontal center
-        y: 0.5, // Vertical center
-        xref: "paper", // Position relative to the chart area (0-1)
-        yref: "paper",
-        showarrow: false,
-        font: {
-          family: "sans-serif",
-          size: 200, // Large font
-          color: "rgba(135, 206, 235, 0.15)", // Faint Sky Blue (low opacity)
-          weight: 600
-        },
-        textangle: 0, // Optional: slight rotation for style
-        layer: "below"  // Tries to put it behind data (though Plotly text often sits on top)
-      }
-    ],
-    title: `Ice Velocity: ${plotKey.toUpperCase()}`,
+	images: [
+		{
+		  source: watermarkUrl,
+		  xref: "paper", yref: "paper",
+		  x: 0.5, y: 0.5,
+		  sizex: 0.8, sizey: 0.8, // 80% of the chart width/height
+		  xanchor: "center", yanchor: "middle",
+		  layer: "below",
+		  opacity: 1 // Opacity is handled inside the SVG fill color
+		}
+	],
     xaxis: { title: { text: 'Date', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
     yaxis: { title: { text: yAxisLabel, standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true },
     margin: {t:5, r:20, l:60, b:40}, 
@@ -2025,6 +2143,8 @@ const togglePointVisibility = (id) => {
 // PLOT CHART
 const updateChart = async () => {
   await nextTick(); 
+  
+  // Handle empty state
   if (selectedPoints.value.length === 0) { 
       Plotly.purge('velocity-chart'); 
       legendItems.value = []; 
@@ -2034,7 +2154,8 @@ const updateChart = async () => {
       return; 
   }
   
-  const { data, layout } = buildChartConfig(currentPlotVar.value);
+  // Build data and configuration
+  const { data, layout } = buildChartConfig(currentPlotVariable.value);
   
   // Zoom if user interacted
   if (isUserZoomed.value) {
@@ -2049,9 +2170,11 @@ const updateChart = async () => {
       }
   }
   
-  // Define the configuration
+  // Adjust plotly configuration
   const config = {
     responsive: true,
+	displayModeBar: true,
+	displaylogo: false,
     // Add the specific button names you want to hide here
     modeBarButtonsToRemove: [
       'lasso2d',       // Lasso Select
@@ -2062,7 +2185,7 @@ const updateChart = async () => {
       'hoverClosestCartesian', // Often redundant if you use 'compare'
       'hoverCompareCartesian'  // Keep this if you want shared tooltips
     ],
-	// 2. Add your custom button
+	// -- Add your custom button
     modeBarButtonsToAdd: [
       {
         name: 'custom_download', // Internal name
@@ -2074,11 +2197,9 @@ const updateChart = async () => {
         }
       }
     ],
-    // Optional: Set to false if you want the bar hidden entirely until hover
-    displayModeBar: 'hover', 
   };
   
-  // Make the plot
+  // Render the plot
   const graphDiv = await Plotly.newPlot('velocity-chart', data, layout, config);
   
   //Attach listener for axis updates
@@ -2086,8 +2207,7 @@ const updateChart = async () => {
     graphDiv.removeAllListeners && graphDiv.removeAllListeners('plotly_relayout');
     graphDiv.on('plotly_relayout', onPlotRelayout);
     
-    // 3. POPULATE INITIAL VALUES (New Code)
-    // We read the calculated range from the chart's internal layout
+    // Populate initial values if not zoomed
     if (graphDiv.layout && graphDiv.layout.xaxis && graphDiv.layout.yaxis) {
         const xRange = graphDiv.layout.xaxis.range;
         const yRange = graphDiv.layout.yaxis.range;
@@ -2211,36 +2331,51 @@ const setWaitCursor = (shouldWait) => {
 const downloadChartImage = async () => {
   if (selectedPoints.value.length === 0) return;
 
+  // 1. Identify the container
+  // Ensure this class matches your HTML. It should wrap the Chart AND the Legend.
+  const chartElement = document.querySelector('.chart-section'); 
+
+  if (!chartElement) {
+      console.error("Could not find .chart-section element to export.");
+      alert("Error: Chart container not found.");
+      return;
+  }
+
   statusMessage.value = "Processing charts...";
-  
-  // 1. Force Cursor (Nuclear Option)
   setWaitCursor(true);
   
   const EXPORT_SCALE = 3; 
-  const originalPlotVar = currentPlotVar.value;
+  const originalPlotVariable = currentPlotVariable.value;
 
-  // 2. Use setTimeout to allow the UI to paint the cursor change
+  // 2. Delay to allow cursor update
   setTimeout(async () => {
     try {
       const zip = new JSZip();
-      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value, label: 'Current'}];
+      // If no 'plotOptions' (i.e. user hasn't opened advanced menu yet), default to current
+      const optionsProcess = plotOptions.value.length > 0 
+          ? plotOptions.value 
+          : [{val: currentPlotVariable.value, label: 'Current'}];
+      
       const filesToSave = [];
 
       for (const opt of optionsProcess) {
         statusMessage.value = `Capturing ${opt.label || opt.val}...`;
 
-        // Update View
-        if (currentPlotVar.value !== opt.val) {
-            currentPlotVar.value = opt.val;
+        // A. Switch View & Wait for Render
+        if (currentPlotVariable.value !== opt.val) {
+            currentPlotVariable.value = opt.val;
             await nextTick();
-            // Give Plotly time to settle
+            // Force the chart to redraw with new data
+            if (typeof updateChart === 'function') await updateChart();
+            // Wait for animation/render to settle
             await new Promise(r => setTimeout(r, 800)); 
         }
 
-        const chartElement = document.querySelector('.chart-wrapper');
+        // B. Capture Dimensions
         const width = chartElement.clientWidth;
         const height = chartElement.clientHeight;
 
+        // C. Generate Image with Robust Filtering
         const imgUrl = await domtoimage.toPng(chartElement, {
             bgcolor: '#FFFFFF', 
             width: width * EXPORT_SCALE,
@@ -2251,13 +2386,30 @@ const downloadChartImage = async () => {
               width: `${width}px`,
               height: `${height}px`
             },
-            // Filter out UI elements (Toolbar & Text Inputs)
+            // --- UPDATED FILTERING LOGIC ---
             filter: (node) => {
-                if (node.classList) {
-                    if (node.classList.contains('modebar')) return false;
-                    if (node.classList.contains('axis-controls')) return false; 
-                    if (node.tagName === 'INPUT' || node.tagName === 'SELECT') return false;
+                // 1. Keep text nodes and standard elements
+                if (!node.classList) return true; 
+
+                // 2. Exclude Plotly UI
+                if (node.classList.contains('modebar')) return false; // Floating toolbar
+                if (node.classList.contains('js-plotly-plot') === false && node.id === 'velocity-chart') return true; // Keep the chart div
+
+                // 3. Exclude Dashboard/Control Elements
+                // Add the class names of your new sidebar/bottom dashboard containers here
+                if (node.classList.contains('chart-controls')) return false;
+                if (node.classList.contains('axis-inputs')) return false; 
+                if (node.classList.contains('info-sidebar')) return false;
+
+                // 4. Exclude Generic Form Elements
+                // This strips out the Axis Min/Max inputs, Apply buttons, Dropdowns
+                const tag = node.tagName;
+                if (['INPUT', 'SELECT', 'BUTTON', 'LABEL', 'TEXTAREA'].includes(tag)) {
+                    // Exception: If you have labels INSIDE your custom legend, allow them.
+                    // If your legend uses <label> tags, remove 'LABEL' from this list.
+                    return false;
                 }
+                
                 return true;
             }
         });
@@ -2268,211 +2420,113 @@ const downloadChartImage = async () => {
       }
 
       // Restore State
-      if (currentPlotVar.value !== originalPlotVar) {
-          currentPlotVar.value = originalPlotVar;
+      if (currentPlotVariable.value !== originalPlotVariable) {
+          currentPlotVariable.value = originalPlotVariable;
+          await nextTick();
+          if (typeof updateChart === 'function') await updateChart();
       }
 
-      // Save & Track
+      // Save File(s)
       if (filesToSave.length === 1) {
         saveAs(filesToSave[0].blob, filesToSave[0].name);
         statusMessage.value = "Chart downloaded.";
-        trackEvent("file_download", {
-             event_category: "export",
-             event_label: "png_chart",
-             file_extension: "png",
-             file_name: filesToSave[0].name,
-             plot_type: currentPlotVar.value
-        });
       } else {
         filesToSave.forEach(f => zip.file(f.name, f.blob));
         statusMessage.value = "Compressing...";
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, `Velocity_Charts_${currentRegion.value}.zip`);
         statusMessage.value = "All charts downloaded.";
-        trackEvent("file_download", {
-             event_category: "export",
-             event_label: "png_chart",
-             file_extension: "png",
-             file_name: "zipped_charts",
-             plot_type: currentPlotVar.value
-        });
       }
 
     } catch (error) {
       console.error("Chart Export Error:", error);
       statusMessage.value = "Error generating chart.";
     } finally {
-      // 3. Remove Nuclear Cursor
-      setWaitCursor(false);
-      // Optional: clear status message after a moment
-      setTimeout(() => statusMessage.value = "", 2000);
-    }
-  }, 100); // 100ms delay to ensure browser paints the cursor
-};
-
-
-
-const downloadMapAndGraph = async () => {
-  if (selectedPoints.value.length === 0) return;
-
-  isDownloadingMap.value = true;
-  statusMessage.value = "Processing images...";
-  
-  // 1. Force "Nuclear" Wait Cursor
-  setWaitCursor(true);
-
-  // SETTINGS
-  const EXPORT_SCALE = 3; 
-  
-  // Store original selection to restore later
-  const originalPlotVar = currentPlotVar.value;
-
-  setTimeout(async () => {
-    try {
-      // --- 1. Capture the Map (Once) ---
-      const mapElement = document.querySelector('.map-wrapper');
-      const mapWidth = mapElement.clientWidth;
-      const mapHeight = mapElement.clientHeight;
-
-      const mapImgUrl = await domtoimage.toPng(mapElement, {
-          width: mapWidth * EXPORT_SCALE,
-          height: mapHeight * EXPORT_SCALE,
-          style: {
-            transform: `scale(${EXPORT_SCALE})`,
-            transformOrigin: 'top left',
-            width: `${mapWidth}px`,
-            height: `${mapHeight}px`
-          },
-          // Filter out Map Controls
-          filter: (node) => {
-            if (node.classList) {
-                if (node.classList.contains('control-panel')) return false;
-                if (node.classList.contains('leaflet-control-zoom')) return false;
-                if (node.classList.contains('leaflet-control-layers')) return false;
-                if (node.classList.contains('feedback-popup')) return false;
-            }
-            return true;
-          }
-      });
-
-      const mapImg = new Image();
-      mapImg.src = mapImgUrl;
-      await new Promise(resolve => mapImg.onload = resolve);
-
-      // --- 2. Loop Through Variables ---
-      const zip = new JSZip();
-      const optionsProcess = plotOptions.value.length > 0 ? plotOptions.value : [{val: currentPlotVar.value, label: 'Current'}];
-      const filesToSave = [];
-
-      for (const opt of optionsProcess) {
-        statusMessage.value = `Capturing ${opt.label || opt.val}...`;
-
-        // A. Update the Chart View
-        if (currentPlotVar.value !== opt.val) {
-            currentPlotVar.value = opt.val;
-            await nextTick(); 
-            await new Promise(r => setTimeout(r, 800)); 
-        }
-
-        // B. Capture the Chart (Screenshot)
-        const chartElement = document.querySelector('.chart-wrapper');
-        const chartWidth = chartElement.clientWidth;
-        const chartHeight = chartElement.clientHeight;
-
-        const chartImgUrl = await domtoimage.toPng(chartElement, {
-            bgcolor: '#FFFFFF', 
-            width: chartWidth * EXPORT_SCALE,
-            height: chartHeight * EXPORT_SCALE,
-            style: {
-              transform: `scale(${EXPORT_SCALE})`,
-              transformOrigin: 'top left',
-              width: `${chartWidth}px`,
-              height: `${chartHeight}px`
-            },
-            // === NEW: Filter out Chart Controls/Inputs ===
-            filter: (node) => {
-                if (node.classList) {
-                    if (node.classList.contains('modebar')) return false; // Plotly Toolbar
-                    if (node.classList.contains('axis-controls')) return false; // Container for inputs (if class exists)
-                    // Generic catch-all for Inputs and Dropdowns
-                    if (node.tagName === 'INPUT' || node.tagName === 'SELECT') return false;
-                }
-                return true;
-            }
-        });
-
-        const chartImg = new Image();
-        chartImg.src = chartImgUrl;
-        await new Promise(resolve => chartImg.onload = resolve);
-
-        // C. Stitch Map + Chart
-        const combinedCanvas = document.createElement('canvas');
-        const ctx = combinedCanvas.getContext('2d');
-        
-        const finalWidth = mapImg.naturalWidth;
-        const chartAspectRatio = chartImg.naturalWidth / chartImg.naturalHeight;
-        const finalChartHeight = finalWidth / chartAspectRatio;
-        const finalHeight = mapImg.naturalHeight + finalChartHeight;
-
-        combinedCanvas.width = finalWidth;
-        combinedCanvas.height = finalHeight;
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, finalWidth, finalHeight);
-        
-        ctx.drawImage(mapImg, 0, 0);
-        ctx.drawImage(chartImg, 0, mapImg.naturalHeight, finalWidth, finalChartHeight);
-
-        const blob = await new Promise(resolve => combinedCanvas.toBlob(resolve, 'image/png'));
-        
-        // D. Create Filename
-        const fname = `velocity_${opt.val}_timeseries${smoothingSuffix.value}_map.png`;
-        filesToSave.push({ name: fname, blob: blob });
-      }
-
-      // Restore original view state
-      if (currentPlotVar.value !== originalPlotVar) {
-          currentPlotVar.value = originalPlotVar;
-      }
-
-      // --- 3. Save & Track ---
-      if (filesToSave.length === 1) {
-        saveAs(filesToSave[0].blob, filesToSave[0].name);
-        statusMessage.value = "Image downloaded.";
-        
-        trackEvent("file_download", {
-            event_category: "export",
-            event_label: "png_map",
-            file_extension: "png",
-            file_name: filesToSave[0].name,
-            plot_type: currentPlotVar.value
-        });
-      } else {
-        filesToSave.forEach(f => zip.file(f.name, f.blob));
-        statusMessage.value = "Compressing...";
-        const content = await zip.generateAsync({type:"blob"});
-        saveAs(content, `Map_Velocity_Export_${currentRegion.value}.zip`);
-        statusMessage.value = "All charts downloaded.";
-        
-        trackEvent("file_download", {
-            event_category: "export",
-            event_label: "png_map",
-            file_extension: "png",
-            file_name: "zipped_maps",
-            plot_type: currentPlotVar.value
-        });
-      }
-
-    } catch (error) {
-      console.error("Map Export Error:", error);
-      statusMessage.value = "Error generating images.";
-    } finally {
-      isDownloadingMap.value = false;
-      // 2. Remove "Nuclear" Cursor
       setWaitCursor(false);
       setTimeout(() => statusMessage.value = "", 2000);
     }
   }, 100);
+};
+
+// Helper: Loads an image from a URL/Base64 string with better error reporting
+const loadImage = (src, label) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    // handling CORS if the src is external, though usually it's a data URI here
+    img.crossOrigin = "Anonymous"; 
+    
+    img.onload = () => resolve(img);
+    
+    img.onerror = (e) => {
+      console.error(`Failed to load ${label} image. Source length: ${src ? src.length : 0}`);
+      reject(new Error(`Failed to render the ${label}. (Likely a CORS or Tainted Canvas issue)`));
+    };
+    
+    img.src = src;
+  });
+};
+
+
+// Download image of the chart and the map (Combined)
+const downloadMapAndGraph = async () => {
+  if (selectedPoints.value.length === 0) return;
+
+  statusMessage.value = "Preparing screenshot...";
+  setWaitCursor(true);
+
+  // 1. Force a short delay to let the UI settle (e.g. if you just closed a menu)
+  await new Promise(r => setTimeout(r, 300));
+
+  try {
+    // A. Target the whole application wrapper
+    // If your app has a main ID like #app, use that. Otherwise 'document.body' works.
+    const elementToCapture = document.body; 
+
+    // B. Capture the Screenshot
+    const canvas = await html2canvas(elementToCapture, {
+        useCORS: true,       // CRITICAL: Allows loading cross-origin images (tiles/markers)
+        allowTaint: true,    // CRITICAL: Allows "tainted" canvases to be read
+        logging: false,      // Turn off debug noise
+        backgroundColor: '#FFFFFF',
+        // Start the screenshot at the top of the window (avoids scroll issues)
+        scrollY: -window.scrollY, 
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        
+        // OPTIONAL: Hide specific elements (like the "Download" button itself)
+        ignoreElements: (node) => {
+            // Add classes of things you definitely DO NOT want in the screenshot
+            // e.g. The toast notification messages
+            if (node.classList && node.classList.contains('status-message')) return true;
+            return false;
+        }
+    });
+
+    // C. Convert to Blob
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    
+    // D. Create Filename
+    const currentVariable = currentPlotVariable.value; 
+    const fname = `velocity_${currentVariable}_timeseries${smoothingSuffix.value}_map.png`;
+
+    // E. Save
+    saveAs(blob, fname);
+    
+    statusMessage.value = "Screenshot saved.";
+    trackEvent("file_download", {
+        event_category: "export",
+        event_label: "screen_capture",
+        file_extension: "png"
+    });
+
+  } catch (error) {
+    console.error("Screenshot Error:", error);
+    alert("Screenshot failed. See console for details.");
+    statusMessage.value = "Error saving screenshot.";
+  } finally {
+    setWaitCursor(false);
+    setTimeout(() => statusMessage.value = "", 2000);
+  }
 };
 
 
@@ -2481,7 +2535,7 @@ const getFilename = (p, index) => {
   const meta = p.data.meta || {};
   let name = meta.site_name || p.name || 'Site';
   if (/^Site_\d+$/.test(name)) name = `Site_${index + 1}`;
-  const buf = meta.buffer_used !== undefined ? meta.buffer_used : bufferSize.value;
+  const buf = meta.buffer_used !== undefined ? meta.buffer_used : pendingBuffer.value;
   // Use toFixed(3) for lat/lon as requested previously + params
   const lat = p.lat.toFixed(3);
   const lon = p.lon.toFixed(3);
@@ -2540,7 +2594,7 @@ const handleDownload = async () => {
           properties: {
             id: index + 1,
             name: name,
-            buffer_m: p.data.meta?.buffer_used || bufferSize.value,
+            buffer_m: p.data.meta?.buffer_used || pendingBuffer.value,
             region: currentRegion.value
           }
         };
@@ -2645,7 +2699,7 @@ const generateXLSX = (point, index) => {
       ["Site Name", siteName],
       ["Latitude", point.lat],
       ["Longitude", point.lon],
-      ["Buffer (m)", meta.buffer_used || bufferSize.value],
+      ["Buffer (m)", meta.buffer_used || pendingBuffer.value],
       ["Region", currentRegion.value],
       ["Smoothing Suffix", smoothingSuffix.value],
       ["Export Date", new Date().toISOString()]
@@ -2668,7 +2722,7 @@ const generateXLSX = (point, index) => {
 .chart-wrapper { width: 100%; background: white; position: relative; overflow: hidden; display: flex; flex-direction: column;}
 .chart-container { width: 100%; flex: 1; min-height: 0;}
 .chart-controls-overlay {
-  position: absolute; top: 25px; right: 10px; z-index: 100;  display: flex; 
+  position: absolute; top: 5px; right: 35px; z-index: 100;  display: flex; 
   align-items: center; gap: 8px; background-color: rgba(255, 255, 255, 0.9); 
   padding: 4px 8px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
   font-size: 0.85rem;
@@ -2695,20 +2749,284 @@ const generateXLSX = (point, index) => {
 .handle-grip { width: 40px; height: 4px; border-top: 2px solid #999; border-bottom: 2px solid #999; }
 
 
-/* --- CONTROL PANEL (RIGHT SIDEBAR) --- */ 
-.control-panel {
-  position: absolute; top: 10px; right: 10px; z-index: 1000;
-  background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 320px; max-height: 80%; overflow-y: auto; font-family: sans-serif;
+/* --- MAIN CONTROLS--- */ 
+.map-toolbar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000; /* Above Leaflet Map */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
-.panel-header {
+
+/* The wrapper holds the actual button groups */
+.tools-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  transition: opacity 0.2s ease;
+}
+
+.toolbar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Space between buttons in a group */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 20px; /* Capsule shape container */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  backdrop-filter: blur(4px);
+}
+
+/* The Hamburger Menu Button (Hidden by default) */
+.menu-trigger {
+  display: none; 
+  margin-bottom: 10px;
+}
+.menu-trigger .panel-btn {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* Circle shape for the trigger */
+}
+
+/* --- RESPONSIVE LOGIC --- */
+/* If the screen height is less than 750px, switch to Compact Mode */
+@media (max-height: 900px) {
+  
+  /* 1. Show the hamburger button */
+  .menu-trigger {
+    display: block;
+  }
+
+  /* 2. Hide the tools by default */
+  .tools-wrapper {
+    /* Hidden state */
+    opacity: 0;
+    visibility: hidden; /* Use visibility instead of pointer-events */
+    
+    position: absolute;
+    top: 0;
+    right: 50px;
+    
+    flex-direction: row-reverse; 
+    align-items: flex-start;
+    
+    /* THE MAGIC SAUCE:
+       1. opacity: fade out over 0.3s... AFTER waiting 0.5s
+       2. visibility: switch to hidden... AFTER waiting 0.8s (0.5 + 0.3)
+       
+       This keeps the buttons interactive during the delay!
+    */
+    transition: 
+      opacity 0.3s ease 0.5s, 
+      visibility 0s linear 0.8s;
+  }
+
+  /* 3. On Hover: Reveal the tools */
+  .map-toolbar:hover .tools-wrapper {
+    /* Visible state */
+    opacity: 1;
+    visibility: visible;
+    
+    /* Show immediately (no delay) */
+    transition: 
+      opacity 0.2s ease 0s, 
+      visibility 0s linear 0s;
+  }
+}
+.region-toggles, .header-actions {
+  display: flex;
+  gap: 12px; /* Space between buttons */
+}
+
+.panel-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%; /* Makes them perfectly circular */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;       /* White background by default */
+  border: 1px solid #ddd; /* Subtle grey border */
+  color: #555;            /* Grey icon/text */
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+/* Update .panel-btn to handle SVGs with strokes (like the upload icon) */
+.panel-btn svg {
+  fill: currentColor; 
+  stroke: currentColor; 
+}
+
+/* Ensure the fill-based icons (like the Gear) don't get messed up by stroke */
+.panel-btn svg[fill="currentColor"] {
+  stroke: none;
+}
+
+.panel-btn svg path[stroke="#2c3e50"] {
+  stroke: currentColor; /* Matches the button text color (grey or white) */
+  fill: transparent;
+}
+
+/* A smaller spinner specifically for inside the buttons */
+.spinner-small {
+  display: inline-block;
+  width: 14px;  /* Fits nicely inside the 32px button */
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff; /* White spinner looks great on the blue active background */
+  animation: spin 0.8s linear infinite;
+}
+
+/* (Make sure you still have your @keyframes spin defined from before!) */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* HOVER STATE (When mouse is over) */
+.panel-btn:hover {
+  border-color: #888;     /* Darker border */
+  color: #333;            /* Darker text */
+  background: #f8f9fa;    /* Very light grey fill */
+}
+
+/* ACTIVE STATE (Selected Region or Open Menu) */
+.panel-btn.active {
+  background: #2c3e50;    /* Dark Blue fill */
+  border-color: #2c3e50;  /* match fill */
+  color: #fff;            /* White text/icon */
+}
+
+/* Ensure disabled buttons look inactive */
+.panel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+
+/*------------------------------------*/
+/* --- 2. BOTTOM DASHBOARD LAYOUT --- */
+/*------------------------------------*/
+.bottom-dashboard {
+  display: flex;
+  width: 100%;
+  background: white;
+  border-top: 1px solid #ddd;
+  overflow: hidden; /* Prevent double scrollbars */
+}
+
+/* Left: Chart */
+.chart-section {
+  flex: 1; /* Takes all available space */
+  position: relative;
+  min-width: 0; /* Flexbox safety */
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Right: Site Info Sidebar */
+.info-sidebar {
+  width: 300px; /* Fixed width for the list */
+  border-left: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f9;
+}
+
+.info-sidebar.empty {
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Info Header (Buffer + Clear) */
+.info-header {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  background: white;
 }
+
+.info-header input {
+  width: 60px;
+  margin-left: 5px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn-text-only {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-text-only:hover { text-decoration: underline; }
+
+/* Scrollable List Area */
+.info-list-container {
+  flex: 1; /* Fills remaining vertical space */
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Compact Table Styling */
+.points-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.points-table th {
+  text-align: left;
+  padding: 8px;
+  background: #eee;
+  color: #666;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.points-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.points-table input {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: monospace;
+}
+.points-table input:focus {
+  border-color: #3498db;
+  background: white;
+}
+
+.btn-remove-icon {
+  border: none;
+  background: none;
+  color: #999;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.btn-remove-icon:hover { color: #e74c3c; }
 
 /* --- BRANDING (SHIVER) --- */
 /* --- 1. FLOATING TITLE OVERLAY --- */
@@ -2747,97 +3065,6 @@ const generateXLSX = (point, index) => {
   letter-spacing: 0.5px;
 }
 
-/*--- control panel header --- */
-.panel-header-row {
-  margin-bottom: 5px;
-  padding-right: 30px; 
-  display: flex;
-  align-items: center;
-}
-
-.panel-header-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #95a5a6; /* Subtle grey uppercase label */
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-/* --- Top row buttons--- */
-.region-toggles, .header-actions {
-  display: flex;
-  gap: 12px; /* Space between buttons */
-}
-
-.panel-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%; /* Makes them perfectly circular */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;       /* White background by default */
-  border: 1px solid #ccc; /* Subtle grey border */
-  color: #666;            /* Grey icon/text */
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-  /* Font settings for text buttons (GL, ANT, ?) */
-  font-weight: 700;
-  font-size: 0.75rem; 
-  font-family: sans-serif;
-}
-
-/* Update .panel-btn to handle SVGs with strokes (like the upload icon) */
-.panel-btn svg {
-  fill: currentColor; 
-  stroke: currentColor; 
-}
-
-/* Ensure the fill-based icons (like the Gear) don't get messed up by stroke */
-.panel-btn svg[fill="currentColor"] {
-  stroke: none;
-}
-
-/* A smaller spinner specifically for inside the buttons */
-.spinner-small {
-  display: inline-block;
-  width: 14px;  /* Fits nicely inside the 32px button */
-  height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff; /* White spinner looks great on the blue active background */
-  animation: spin 0.8s linear infinite;
-}
-
-/* (Make sure you still have your @keyframes spin defined from before!) */
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* HOVER STATE (When mouse is over) */
-.panel-btn:hover {
-  border-color: #888;     /* Darker border */
-  color: #333;            /* Darker text */
-  background: #f8f9fa;    /* Very light grey fill */
-}
-
-/* ACTIVE STATE (Selected Region or Open Menu) */
-.panel-btn.active {
-  background: #2c3e50;    /* Dark Blue fill */
-  border-color: #2c3e50;  /* match fill */
-  color: #fff;            /* White text/icon */
-}
-
-/* Fix for SVG icons inside the button */
-.panel-btn svg {
-  fill: currentColor; /* Allows SVG to change color with text */
-  display: block;
-}
-
 /* mobile resize */
 @media (max-width: 600px) {
   .map-title-overlay {
@@ -2855,98 +3082,201 @@ const generateXLSX = (point, index) => {
   }
 }
 
-/* --- EXPORT SECTION LAYOUT --- */
 
-/* A neat subheader style (Uppercase, small, grey) */
-.panel-subhead {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #95a5a6;
-  letter-spacing: 0.5px;
-  margin-top: 15px;
-  margin-bottom: 8px;
-}
 
-/* Flex container to hold the 3 buttons in a row */
-.export-actions {
+/* --- 3. MODERN ADVANCED POPUP --- */
+
+/* 1. The Invisible Container */
+/* This centers the popup but lets clicks pass through to the map */
+.advanced-popup-container {
+  position: absolute;
+  
+  /* Fill the entire parent (.map-wrapper) */
+  inset: 0;  /* Short for top:0; right:0; bottom:0; left:0; */
+  
+  z-index: 2000;
+  pointer-events: none; /* KEY: Allows clicking the map behind! */
+  
   display: flex;
-  gap: 10px;      /* Consistent spacing between buttons */
-  flex-wrap: wrap; 
+  justify-content: center;
+  align-items: flex-start; /* Aligns to top, but with margin */
+  padding-top: 60px; /* Space from the top of the map */
+  padding-bottom: 20px; /* Space from bottom of map */
 }
 
-/* OPTIONAL: 
-   If you want the download arrows to really "pop" and look solid 
-   even though the icon is outlined, add this specific tweak:
-*/
-.panel-btn svg path[stroke="#2c3e50"] {
-  stroke: currentColor; /* Matches the button text color (grey or white) */
-  fill: transparent;
+/* 2. The Card Itself */
+.advanced-card {
+  pointer-events: auto; /* Re-enable clicks inside the card */
+  width: 380px;
+  max-width: 90%;
+  max-height: 95%; 
+  display: flex;
+  flex-direction: column; /* Stack Header, Body, Footer */
+  
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px); /* Modern frosted glass effect */
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  overflow: hidden; /* Clips children to rounded corners */
+  
+  /* Slide-in Animation */
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Ensure disabled buttons look inactive */
-.panel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f0f0f0;
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-/* --- ADVANCED OPTIONS POPUP --- */
-.advanced-popup {
-    background: #f9fbfd;
-    border: 1px solid #0056b3;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+/* --- HEADER --- */
+.card-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
 }
-.popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #0056b3; }
-.popup-close { border: none; background: none; font-size: 18px; cursor: pointer; color: #999; }
-.popup-close:hover { color: red; }
-.opt-section { margin-bottom: 8px; }
-.opt-label { display: block; font-size: 0.85rem; font-weight: bold; color: #666; margin-bottom: 4px; }
-.opt-checks { display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px; align-items: center; }
-.opt-checks label { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
-.param-row { display: flex; align-items: center; justify-content: space-between; gap: 5px; font-size: 0.75rem; }
-.param-row label { flex: 1; color: #555; }
-.param-slider { flex: 1; height: 4px; }
-.param-input { width: 40px; padding: 2px; text-align: right; border: 1px solid #ccc; border-radius: 3px; }
-
+.card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 15px; /* Space between 'Restore defaults' and 'X' */
+  gap: 12px;
 }
-
-/* 3. Style the Restore button as a text link */
-.btn-restore-link {
-  background: transparent;
+.btn-restore {
+  background: none;
   border: none;
-  color: #95a5a6; /* Subtle grey */
-  font-size: 0.8rem;
+  color: #95a5a6;
+  font-size: 0.75rem;
   cursor: pointer;
-  padding: 0;
-  transition: all 0.2s;
-}
-
-/* 4. Hover Effects: Red + Underline */
-.btn-restore-link:hover {
-  color: #c0392b;
   text-decoration: underline;
 }
-
-/* (Make sure .popup-close doesn't have huge margins that break alignment) */
-.popup-close {
+.btn-restore:hover { color: #e74c3c; }
+.btn-close {
   background: none;
   border: none;
   font-size: 1.5rem;
   line-height: 1;
-  color: #666;
+  color: #bdc3c7;
   cursor: pointer;
   padding: 0;
 }
-.popup-close:hover {
-  color: #c0392b;
+.btn-close:hover { color: #2c3e50; }
+
+/* --- BODY (SCROLLABLE) --- */
+.card-body {
+  flex: 1; /* Fills available space */
+  overflow-y: auto; /* Scrolls if content is too tall */
+  padding: 20px;
 }
+
+.opt-group { margin-bottom: 20px; }
+.group-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #95a5a6;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.divider {
+  border: 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  margin: 20px 0;
+}
+
+/* Modern Checkbox "Pills" */
+.checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.checkbox-pill {
+  position: relative;
+  cursor: pointer;
+}
+.checkbox-pill input {
+  position: absolute; opacity: 0; width: 0; height: 0;
+}
+.checkbox-pill span {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #f1f3f5;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #555;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+/* Selected State */
+.checkbox-pill input:checked + span {
+  background: #e8f4fd;
+  color: #3498db;
+  border-color: #3498db;
+  font-weight: 500;
+}
+
+/* Sliders */
+.param-item { margin-bottom: 12px; }
+.param-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+.param-val { font-weight: 600; color: #3498db; }
+
+.modern-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #e0e0e0;
+  outline: none;
+}
+.modern-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3498db;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.modern-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+/* --- FOOTER --- */
+.card-footer {
+  padding: 15px 20px;
+  background: white;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.btn-primary-action {
+  width: 100%;
+  padding: 10px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary-action:hover { background: #34495e; }
+.btn-primary-action:disabled { background: #95a5a6; cursor: not-allowed; }
+
+/* Custom Scrollbar for the body */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 3px; }
 
 /* --- HELP MODAL OVERLAY --- */
 .modal-overlay {
@@ -3008,17 +3338,9 @@ const generateXLSX = (point, index) => {
 .points-list table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 15px; }
 .points-list th { text-align: left; padding: 4px; color: #555; }
 .points-list td { padding: 4px; border-bottom: 1px solid #eee; }
-.color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 .coord-input { width: 70px; padding: 4px; font-size: 0.85rem; border: 1px solid #ddd; border-radius: 3px; }
 .btn-remove { border: none; background: transparent; color: #999; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: all 0.2s ease; }
 .btn-remove:hover { color: #dc3545; background-color: rgba(220, 53, 69, 0.1); }
-
-/* --- GENERAL CONTROLS --- */
-.control-group { margin-bottom: 15px; }
-.control-group label { display: block; font-size: 0.9rem; margin-bottom: 4px; font-weight: 600; }
-.control-group input[type="number"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-.status-text { font-size: 0.8rem; color: #666; margin-top: 10px; text-align: center; min-height: 1.2em;}
-.empty-state { padding: 15px; text-align: center; color: #888; border: 1px dashed #ccc; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem;}
 
 /* --- MAP LEGEND --- */
 .map-legend {
@@ -3567,4 +3889,24 @@ const generateXLSX = (point, index) => {
     margin-right: 5px !important;
   }
 }
+
+/* --- PLOTLY TOOLBAR OVERRIDES --- */
+
+/* 1. Force the toolbar to the top-right corner */
+.js-plotly-plot .plotly .modebar {
+    position: absolute;
+    top: 10px !important;      /* Pin to very top */
+    right: 20px !important;    /* Pin to very right */
+    left: auto !important;
+    
+    /* Optional: Add a background so lines don't show through if they go high */
+    background: rgba(255, 255, 255, 0.8) !important; 
+}
+
+/* 2. (Optional) Adjust the spacing of the icons */
+.js-plotly-plot .plotly .modebar-group {
+    background: transparent !important;
+    padding-top: 0px !important; /* Centers buttons vertically in the margin space */
+}
+
 </style>

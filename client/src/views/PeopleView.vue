@@ -107,11 +107,11 @@ const teamMembers = [
   },
   {
     id: 11,
-    name: "Dr Kate Winter",
+    name: "Associate Prof. Kate Winter",
     role: "Co-Investigator",
 	institution: "Northumbria University",
     image: photoKateW,
-    bio: "Kate is a glacial geophysics expert. Kate led the campaign in 2024 and supported the deployment of GNSS and ApRES."
+    bio: "Kate is a glacial geophysics expert. Kate led the field campaign in 2024 and supported the deployment of GNSS and ApRES."
   }
 ];
 </script>

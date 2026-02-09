@@ -51,7 +51,7 @@ def get_glacier_timeseries(
     location_input, 
     buffer=500, 
     name_column=None, 
-    variables=['s'], 
+    variable=['s'], 
     quality=['filt'],
     gap_fill=24,
     win_raw=25,
@@ -90,7 +90,7 @@ def get_glacier_timeseries(
             except (ValueError, TypeError): current_buffer = buffer
             
         site_data = _process_single_site(
-            ds, row.geometry, store_info['crs'], current_buffer, variables, quality,
+            ds, row.geometry, store_info['crs'], current_buffer, variable, quality,
             gap_fill, win_raw, win_daily, poly
         )
         
@@ -102,7 +102,7 @@ def get_glacier_timeseries(
             "lat": round(centroid.y, 5),
             "lon": round(centroid.x, 5),
             "type": "Polygon" if isinstance(row.geometry, Polygon) else "Point",
-            "variables": variables,
+            "variable": variable,
             "quality": quality,
             "params": { "gap": gap_fill, "win_raw": win_raw, "win_daily": win_daily, "poly": poly }
         }
@@ -117,7 +117,7 @@ def get_glacier_timeseries(
     return results
 
 
-def _process_single_site(ds, geometry, target_crs, buffer, variables, quality_list, gap_fill, win_raw, win_daily, poly):
+def _process_single_site(ds, geometry, target_crs, buffer, variable, quality_list, gap_fill, win_raw, win_daily, poly):
 
     temp_gdf = gpd.GeoDataFrame({'geometry': [geometry]}, crs="EPSG:4326").to_crs(target_crs)
     proj_geom = temp_gdf.geometry.iloc[0]
@@ -146,7 +146,7 @@ def _process_single_site(ds, geometry, target_crs, buffer, variables, quality_li
         except Exception: is_single_pixel = True
 
     target_keys = []
-    for v in variables:
+    for v in variable:
         for q in quality_list:
             target_keys.append(f"{v}_{q}")
             

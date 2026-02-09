@@ -135,7 +135,7 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 class RoiRequest(BaseModel):
     roi: List[List[float]]
     buffer: int = 500
-    variables: List[str] = ["s"] # s, u, and/or v
+    variable: List[str] = ["s"] # s, u, and/or v
     quality: List[str] = ["filt"] # filt and/or raw
     gap_fill: int = 24
     win_raw: int = 25
@@ -440,12 +440,12 @@ def extract_from_json(payload: RoiRequest):
     """
     Extracts time series for coordinates provided in JSON body.
     """
-    print(f"JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer} | Vars: {payload.variables} | Qual: {payload.quality}")
+    print(f"JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer} | Vars: {payload.variable} | Qual: {payload.quality}")
     try:
         results = get_glacier_timeseries(
             location_input=payload.roi,
             buffer=payload.buffer,
-            variables=payload.variables,
+            variable=payload.variable,
             quality=payload.quality,
             # Pass new params
             gap_fill=payload.gap_fill,
@@ -463,7 +463,7 @@ def extract_from_json(payload: RoiRequest):
 async def upload_shapefile(
     file: UploadFile = File(...), 
     buffer: float = Form(500),
-    variables: List[str] = Form(["s"]),
+    variable: List[str] = Form(["s"]),
     quality: List[str] = Form(["filt"]),
     # New Form params
     gap_fill: int = Form(24),
@@ -481,7 +481,7 @@ async def upload_shapefile(
         results = get_glacier_timeseries(
             tmp_path, 
             buffer=buffer, 
-            variables=variables, 
+            variable=variable, 
             quality=quality,
             gap_fill=gap_fill, win_raw=win_raw, win_daily=win_daily, poly=poly
         )
