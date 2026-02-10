@@ -3570,8 +3570,9 @@ const generateXLSX = (point, index) => {
 .viridis-gradient {
   background: linear-gradient(to right, #440154, #482878, #3e4989, #31688e, #26828e, #1f9e89, #35b779, #6ece58, #b5de2b, #fde725);
 }
+/* OLD BWR MAP .trend-gradient { background: linear-gradient(to right, #0000FF 0%, #4040FF 12.5%, #8080FF 25%, #BFBFFF 37.5%, #FFFFFF 50%, #FFBFBF 62.5%, #FF8080 75%, #FF4040 87.5%, #FF0000 100%); } */
 .trend-gradient {
-  background: linear-gradient(to right, #0000FF 0%, #4040FF 12.5%, #8080FF 25%, #BFBFFF 37.5%, #FFFFFF 50%, #FFBFBF 62.5%, #FF8080 75%, #FF4040 87.5%, #FF0000 100%);
+  background: linear-gradient(to right, #011261 0%, #024481 12.5%, #2E7CA6 25%, #92BDD2 37.5%, #EBEDEA 50%, #D4C096 62.5%, #AF8A3E 75%, #864C01 87.5%, #611200 100%);
 }
 .speed-gradient {
   /* Complex gradient from previous step */

@@ -34,18 +34,23 @@ if current_os == "Windows":
             }
         }
 else:
+    stanage_gr_grio1_path = Path("/shared/grio1/Shared/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair.zarr")
+    stanage_ant_grio1_path = Path("/shared/grio1/Shared/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
+    
     print("🚀 Environment: Linux (HPC Production)")
-    base_hpc_path = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1")
-    DATA_STORES = {
-        'Greenland': {
-            'path': base_hpc_path / "Greenland/mosaic/subregions/lev/date_pair.zarr",
-            'crs': "EPSG:3413"
-        },
-        'Antarctica': {
-            'path': base_hpc_path / "Antarctica/mosaic/subregions/peninsula/date_pair.zarr",
-            'crs': "EPSG:3031"
+    if stanage_gr_grio1_path.exists():
+        DATA_STORES = {
+            'Greenland': {'path': stanage_gr_grio1_path, 'crs': "EPSG:3413"},
+            'Antarctica': {'path': stanage_ant_grio1_path, 'crs': "EPSG:3031"}
         }
-    }
+    else:
+        stanage_gr_scratch_path = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair.zarr")
+        stanage_ant_scratch_path = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
+        DATA_STORES = {
+            'Greenland': {'path': stanage_gr_scratch_path, 'crs': "EPSG:3413"},
+            'Antarctica': {'path': stanage_ant_scratch_path, 'crs': "EPSG:3031"}
+        }
+        
 
 def get_glacier_timeseries(
     location_input, 

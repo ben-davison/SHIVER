@@ -8,6 +8,7 @@ from typing import List, Optional
 import io
 import numpy as np
 import matplotlib.cm as cm
+import cmcrameri.cm as cmc
 from PIL import Image
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -393,7 +394,8 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
                 if layer_type == "trend":
                     # 'bwr' = Blue-White-Red (0=Blue, 0.5=White, 1=Red)
                     # This matches the "positive = red" requirement
-                    cm_data = cm.bwr(norm) 
+                    #cm_data = cm.bwr(norm) 
+                    cm_data = cmc.vik(norm)
                 else:
                     # 'viridis' for Count
                     cm_data = cm.viridis(norm)
