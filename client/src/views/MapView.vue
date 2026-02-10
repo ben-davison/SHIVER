@@ -317,13 +317,6 @@
 				   <graphIcon v-else class="btn-icon-svg" />
 				</button>
 
-				<button class="panel-btn" @click="downloadMapAndGraph" :class="{ 'active': isDownloadingMap }" :disabled="isDownloadingMap" title="Export .png of Map and Chart">
-				   <span v-if="isDownloadingMap" class="spinner-small"></span>
-				   <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-					  <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" stroke-opacity="0.6" />
-					  <path d="M12 10v8 M9 15l3 3 3-3" stroke="#2c3e50" stroke-width="2.5" />
-				   </svg>
-				</button>
 			  </div>
 
 			</div>
@@ -431,113 +424,102 @@
 
     <div class="bottom-dashboard" :style="{ height: (100 - mapHeightPercent) + '%' }">
   
-		  <div class="chart-section">
+		<div class="chart-section">
 		  
-				<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
-					<span class="overlay-label">Graph View:</span>
-					<select v-model="currentPlotVariable" @change="updateChart" class="overlay-select">
-					   <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
-						   {{ opt.label }}
-					   </option>
-					</select>
-				</div>
-				
-				<div class="custom-legend" v-if="legendItems.length > 0">
-				
-					<div class="legend-global-key">
-					   <div class="key-item">
-						  <span class="symbol-dot"></span><span>Points</span>
-					   </div>
-					   <div class="key-item">
-						  <span class="symbol-line"></span><span>Daily</span>
-					   </div>
-					   <div class="key-item" v-if="showTrends">
-						  <span class="symbol-dash"></span><span>Trend</span>
-					   </div>
-					</div>
-					
-					<div 
-					   v-for="item in legendItems" 
-					   :key="item.id" 
-					   class="legend-item"
-					   :class="{ 'is-hidden': !item.isVisible }"
-					   @click="togglePointVisibility(item.id)"
-					>
-					   <span class="legend-label" :style="{ color: item.color }">
-						  {{ item.label }}
-					   </span>
-					   
-					   <span 
-							  v-if="item.trendText" 
-							  class="legend-trend" 
-							  :style="{ color: item.color }"
-							  v-html="item.trendText"
-						></span>
-					</div>
-				</div>
-				
-				<div id="velocity-chart" class="chart-container"></div>
-				
-				<div class="axis-controls" v-if="selectedPoints.length > 0">
-					<div class="axis-group">
-						<label>Y-Min:</label>
-						<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
-						<label>Y-Max:</label>
-						<input type="number" step="any" v-model.lazy="yAxisMax" @change="updatePlotAxes" />
-					</div>
-					
-					<div class="axis-group">
-						<label>Start:</label>
-						<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
-						<label>End:</label>
-						<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
-					</div>
-					<button @click="resetAxes" class="btn-reset-axes">Reset</button>
-					
-					<div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
-					
-					<div class="trend-group">
-						<button 
-							  @click="toggleTrends" 
-							  class="btn-icon" 
-							  :class="{ 'active': showTrends }"
-							  title="Calculate Trend"
-							>
-							  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<line x1="2" y1="20" x2="22" y2="4" />
-									<circle cx="6" cy="15" r="2" fill="currentColor" stroke="none" />
-									<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
-									<circle cx="18" cy="9" r="2" fill="currentColor" stroke="none" />
-							  </svg>
-						</button>
-						
-						<div v-if="showTrends" style="display:flex; gap:5px; align-items:center;">
-							<label>Range:</label>
-							<input 
-								 type="text" 
-								 v-model.lazy="trendStart" 
-								 @change="updateTrendCalc" 
-								 placeholder="Start" 
-								 class="trend-input"
-							/>
-							<span>-</span>
-							<input 
-								 type="text" 
-								 v-model.lazy="trendEnd" 
-								 @change="updateTrendCalc" 
-								 placeholder="End" 
-								 class="trend-input"
-							/>
-						</div>
-					</div>
-					
-				</div>
-				
+			<div class="chart-controls-overlay" v-if="selectedPoints.length > 0 && plotOptions.length > 1">
+				<span class="overlay-label">Graph View:</span>
+				<select v-model="currentPlotVariable" @change="updateChart" class="overlay-select">
+				   <option v-for="opt in plotOptions" :key="opt.val" :value="opt.val">
+					   {{ opt.label }}
+				   </option>
+				</select>
 			</div>
+				
+			<div class="custom-legend" v-if="legendItems.length > 0">
+				
+				<div class="legend-global-key">
+				   <div class="key-item">
+					  <span class="symbol-dot"></span><span>Points</span>
+				   </div>
+				   <div class="key-item">
+					  <span class="symbol-line"></span><span>Daily</span>
+				   </div>
+				   <div class="key-item" v-if="showTrends">
+					  <span class="symbol-dash"></span><span>Trend</span>
+				   </div>
+				</div>
+					
+				<div 
+				   v-for="item in legendItems" 
+				   :key="item.id" 
+				   class="legend-item"
+				   :class="{ 'is-hidden': !item.isVisible }"
+				   @click="togglePointVisibility(item.id)"
+				>
+				   <span class="legend-label" :style="{ color: item.color }">
+					  {{ item.label }}
+				   </span>
+				   
+				   <span 
+						  v-if="item.trendText" 
+						  class="legend-trend" 
+						  :style="{ color: item.color }"
+						  v-html="item.trendText"
+					></span>
+				</div>
+			</div>
+				
+			<div id="velocity-chart" class="chart-container"></div>
+				
+			<div class="axis-controls" v-if="selectedPoints.length > 0">
+				<div class="axis-group">
+					<label>Y-Min:</label>
+					<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
+					<label>Y-Max:</label>
+					<input type="number" step="any" v-model.lazy="yAxisMax" @change="updatePlotAxes" />
+				</div>
+					
+				<div class="axis-group">
+					<label>Start:</label>
+					<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
+					<label>End:</label>
+					<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
+				</div>
+				<button @click="resetAxes" class="btn-reset-axes">Reset</button>
+					
+				<div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+					
+				<div class="trend-group">
+					<button 
+						  @click="toggleTrends" 
+						  class="btn-icon" 
+						  :class="{ 'active': showTrends }"
+						  title="Calculate Trend"
+						>
+						  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<line x1="2" y1="20" x2="22" y2="4" />
+								<circle cx="6" cy="15" r="2" fill="currentColor" stroke="none" />
+								<circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+								<circle cx="18" cy="9" r="2" fill="currentColor" stroke="none" />
+						  </svg>
+					</button>
+						
+					<div v-if="showTrends" style="display:flex; gap:5px; align-items:center;">
+						<label>Range:</label>
+						<input type="text" v-model.lazy="trendStart" @change="updateTrendCalc" placeholder="Start" class="trend-input"/>
+						<span>-</span>
+						<input type="text" v-model.lazy="trendEnd" @change="updateTrendCalc" placeholder="End" class="trend-input"/>
+					</div>
+				</div>
+					
+			</div>
+				
+		</div>
 
-		  <div class="info-sidebar" v-if="selectedPoints.length > 0">
+		<div class="info-sidebar" v-if="selectedPoints.length > 0">
 			
 			<div class="info-header">
+				<strong>Site List</strong>
 			   <button @click="clearAll" class="btn-text-only">Clear All</button>
 			</div>
 
@@ -574,7 +556,7 @@
 
 		</div>
 	
-  </div> 
+    </div> 
   
   <div v-if="showHelp" class="modal-overlay" @click.self="showHelp = false">
       <div class="modal-content">
@@ -591,12 +573,11 @@
 			You can select up to ten points to compare different locations.
           </p>
 		  <p>
-            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
-			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
-			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). The value selected in this box
-			applies to <strong>all</strong> your points. If you change the value in this box, it will refresh the data for all selected points.
-			If you would prefer to have a different buffer distance for all points, then see Section 3: Uploading Files.
-          </p>
+			Navigate to your preferred ice sheet by clicking the Greenland button 
+			( <greenlandIcon class="inline-icon"/> )
+			or the Antarctica button
+			( <antarcticaIcon class="inline-icon"/> )
+		  </p>
 		  <p>
             <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
 			Double click on the chart to reset the axes. Or use the zoom, pan and reset buttons in the top right of the chart to navigate.
@@ -633,7 +614,22 @@
 			Read our <AppLink to="/documentation" class="text-link"><strong>documentation</strong></AppLink> page for more details.
           </p>
 		  
-          <h3>3. Uploading Files</h3>
+          <h3>3. Uploading Files   
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="17 8 12 3 7 8" />
+					<line x1="12" y1="3" x2="12" y2="15" />
+				</svg>
+		  </h3>
+		  <p>
+			You can upload a file by clicking the
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="17 8 12 3 7 8" />
+				<line x1="12" y1="3" x2="12" y2="15" />
+			</svg>
+			symbol.
+		  </p>
           <p>
             <strong>Requirements:</strong>
           </p>
@@ -650,11 +646,28 @@
             <li><strong>Point names:</strong> Include 'name' as a field name to give your outputs a custom name.</li>
           </ul>
 		  
-		  <h3>4. Advanced Options</h3>
+		  <h3>4. Advanced Options <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></h3>
+		  <p>
+			 You can access the advanced options by clicking the 
+			 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+			 symbol.
+		  </p>
           <p>
-		     The advanced options allow you to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
+		     The advanced options allow you to modify the 'buffer' placed around your selection point 
+			 and to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
 			 timeseries smoothing parameters. 
 		   </p>
+		   <p>
+			When you modify anything in the advanced options, your choices will be applied to all subsequent extraction locations.
+			If you want to apply your advanced options to existing extraction locations, then click "Update All Timeseries".
+		   </p>
+		   <p>
+            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
+			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
+			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). If you want to modify the buffer 
+			distance for all of the points, just change the value and click "Update All Timeseries". If you want to modify the buffer distance for 
+			just one point, then change the value in the Site List table below the map.
+          </p>
 		   <p>
             <strong>Variables:</strong>
           </p>
@@ -674,7 +687,7 @@
 		  <p>
             <strong>Smoothing parameters:</strong>
 			All time-series extracted with SHIVER are smoothed using a Savitzky-Golay filter.
-			Use the slide bars or text boxes to modify how much smoothing is applied.
+			Use the slide bars to modify how much smoothing is applied.
           </p>
           <ul>
             <li><strong>Max gap fill length days:</strong> Small gaps in the point data are filled using linear interpolation. Use this option to control the maximum length of gap that is filled.</li>
@@ -682,15 +695,15 @@
 			<li><strong>Window size days (Line):</strong> Set the size of the moving window used to smooth the line data displayed on the time-series chart. A larger window increases smoothing.</li>
 			<li><strong>Polynomial order:</strong> Set the degree of the local polynomial fitted to the data within each moving window. A lower order increases smoothing but may distort rapid changes; a higher order better preserved high-frequences features but reduces smoothing.</li>
           </ul>
-		  <p>
-		    Note that the same variables and filtering level, using the same smoothing parameters, will be applied to all extraction locations.
-		  </p>
 
           <h3>5. Interpreting the Map</h3>
 		  <p>
 			When you click a point on the map an icon will appear showing the extraction location or region. 
-			If you have used a buffer around your extraction location (recommended), the icon will be a square, 
-			otherwise it will just be a point.
+			The icon will usually be a square with a point in the centre: the point shows where you  clicked and the 
+			square shows the region in which data were extracted. The size if this square is controlled by the 
+			Advanced Options 
+			(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> ) 
+			"Buffer" setting.
 		  </p>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
@@ -720,7 +733,6 @@
 		   <p>
 		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
 		   </p>
-		   
 		   
 		  <h3>6. Interpreting the Chart</h3>
 		  <p>
@@ -755,15 +767,19 @@
 			The point data provide the measurements taken directly from our ice velocity dataset.
 			The line provides a smoothed representation of those measurements.
 		  </p>
-          <p>
-            Download your timeseries as <strong>.xlsx</strong> files and/or the graph(s) as a , 
-            <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
-			downloaded as a .zip file containing multiple .xslx files. If multiple variables 
-			or filtering levels are selected, images will be downloaded as a .zip file.
-			Downloads will also include a geojson of your point locations.
+		  <p>
+			<graphIcon class="inline-icon"/> <strong>Download the graph: </strong> 
+			You can download the graph showing your data by clicking the 
+			<graphIcon class="inline-icon"/>
+			button. If one variable or filtering level is selected, this will download a .png of the graph. 
+			If multiple variables or filtering levels are selected, this will download a .zip containing one graph per combination of variable and filtering level.
 		  </p>
 		  <p>
-			<strong>Map downloads take a while! Be patient :-)</strong>
+			<excelIcon class="inline-icon"/> <strong>Download the data: </strong>
+			You can also download your data to an excel spreadsheet by clicking the 
+			<excelIcon class="inline-icon"/>
+			button. This will download a .zip containing one excel file per location
+			along with a geojson of your point location(s).
 		  </p>
 		  <p>
             <strong>XLSX naming convention:</strong> <br>
@@ -828,7 +844,6 @@ import Plotly from 'plotly.js-dist-min';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import L from 'leaflet';
-import html2canvas from 'html2canvas';
 import domtoimage from 'dom-to-image-more';
 import * as XLSX from 'xlsx';
 import antarcticaIcon from '../components/icons/antarcticaIcon.vue';
@@ -1968,7 +1983,8 @@ const buildChartConfig = (plotKey) => {
 	// Setup styles
     const pale = makePale(point.color);
     const label = /^Site_\d+$/.test(point.name) ? `Site${idx+1}` : point.name;
-    const suffix = plotKey.includes('raw') ? ' (Raw)' : '';
+    //const suffix = plotKey.includes('raw') ? ' (Raw)' : ''; // uncomment if you want raw next to each legend item
+	const suffix = plotKey.includes('raw') ? '' : '';
 	
 	// Check visibility (Default to true if undefined)
     const isVisible = point.visible !== false;
@@ -2090,9 +2106,12 @@ const buildChartConfig = (plotKey) => {
   
   // Define axis labels
   let yAxisLabel = "Velocity (m/yr)";
-  if (plotKey.startsWith('s')) yAxisLabel = "Speed (m/yr)";
-  else if (plotKey.startsWith('u')) yAxisLabel = "Easting velocity (m/yr)";
-  else if (plotKey.startsWith('v')) yAxisLabel = "Northing velocity (m/yr)";
+  if (plotKey.startsWith('s') && plotKey.includes('raw')) yAxisLabel = "Raw speed (m/yr)"; 
+  else if (plotKey.startsWith('s')) yAxisLabel = "Filtered speed (m/yr)";
+  else if (plotKey.startsWith('u') && plotKey.includes('raw')) yAxisLabel = "Raw easting velocity (m/yr)"; 
+  else if (plotKey.startsWith('u')) yAxisLabel = "Filtered easting velocity (m/yr)";
+  else if (plotKey.startsWith('v') && plotKey.includes('raw')) yAxisLabel = "Raw northing velocity (m/yr)"; 
+  else if (plotKey.startsWith('v')) yAxisLabel = "Filtered northing velocity (m/yr)";
   
   // Define the SVG Data URI for the word "SHIVER"
 	const watermarkSvg = `
@@ -2327,16 +2346,16 @@ const setWaitCursor = (shouldWait) => {
 };
 
 
-// CHART IMAGE DOWNLOAD (MULTI-FILE SUPPORT) ---
+// CHART IMAGE DOWNLOAD (MULTI-FILE + OPTIMIZED SNAPSHOT)
 const downloadChartImage = async () => {
   if (selectedPoints.value.length === 0) return;
 
-  // 1. Identify the container
-  // Ensure this class matches your HTML. It should wrap the Chart AND the Legend.
-  const chartElement = document.querySelector('.chart-section'); 
+  // 1. Identify Elements
+  const chartContainer = document.querySelector('.chart-section'); 
+  const graphDiv = document.getElementById('velocity-chart'); // The specific Plotly div
 
-  if (!chartElement) {
-      console.error("Could not find .chart-section element to export.");
+  if (!chartContainer || !graphDiv) {
+      console.error("Could not find chart elements.");
       alert("Error: Chart container not found.");
       return;
   }
@@ -2344,39 +2363,65 @@ const downloadChartImage = async () => {
   statusMessage.value = "Processing charts...";
   setWaitCursor(true);
   
-  const EXPORT_SCALE = 3; 
+  // High quality scale
+  const EXPORT_SCALE = 1.5; 
   const originalPlotVariable = currentPlotVariable.value;
 
-  // 2. Delay to allow cursor update
+  // 2. Wrap in timeout to allow UI to show "Processing..."
   setTimeout(async () => {
+    let tempImg = null;
+    const originalDisplay = graphDiv.style.display; // Remember original display state
+
     try {
       const zip = new JSZip();
-      // If no 'plotOptions' (i.e. user hasn't opened advanced menu yet), default to current
+      
+      // Determine which variables to process
       const optionsProcess = plotOptions.value.length > 0 
           ? plotOptions.value 
           : [{val: currentPlotVariable.value, label: 'Current'}];
       
       const filesToSave = [];
 
+      // --- START LOOP ---
       for (const opt of optionsProcess) {
         statusMessage.value = `Capturing ${opt.label || opt.val}...`;
 
         // A. Switch View & Wait for Render
+        // We still need to do this so Plotly calculates the new trend lines/data
         if (currentPlotVariable.value !== opt.val) {
             currentPlotVariable.value = opt.val;
             await nextTick();
-            // Force the chart to redraw with new data
             if (typeof updateChart === 'function') await updateChart();
-            // Wait for animation/render to settle
+            // Wait for Plotly animation/render to settle
             await new Promise(r => setTimeout(r, 800)); 
         }
 
-        // B. Capture Dimensions
-        const width = chartElement.clientWidth;
-        const height = chartElement.clientHeight;
+        // B. Snapshot Plotly Vectors to PNG
+        const plotlyDataUrl = await Plotly.toImage(graphDiv, {
+            format: 'png',
+            width: graphDiv.clientWidth * EXPORT_SCALE,
+            height: graphDiv.clientHeight * EXPORT_SCALE,
+            scale: 1 
+        });
 
-        // C. Generate Image with Robust Filtering
-        const imgUrl = await domtoimage.toPng(chartElement, {
+        // C. Swap: Hide Interactive Graph, Show Static Image
+        tempImg = document.createElement('img');
+        tempImg.src = plotlyDataUrl;
+        tempImg.style.width = '100%'; 
+        tempImg.style.height = '100%';
+        tempImg.style.objectFit = 'contain';
+        tempImg.style.display = 'block';
+        
+        // Insert Image, Hide Graph
+        graphDiv.parentNode.insertBefore(tempImg, graphDiv);
+        graphDiv.style.display = 'none';
+
+        // D. Capture Container (Legend + Static Image)
+        // dom-to-image is now instant because it doesn't see vectors
+        const width = chartContainer.clientWidth;
+        const height = chartContainer.clientHeight;
+
+        const imgUrl = await domtoimage.toPng(chartContainer, {
             bgcolor: '#FFFFFF', 
             width: width * EXPORT_SCALE,
             height: height * EXPORT_SCALE,
@@ -2386,53 +2431,61 @@ const downloadChartImage = async () => {
               width: `${width}px`,
               height: `${height}px`
             },
-            // --- UPDATED FILTERING LOGIC ---
             filter: (node) => {
-                // 1. Keep text nodes and standard elements
+                // 1. Standard Checks
                 if (!node.classList) return true; 
 
-                // 2. Exclude Plotly UI
-                if (node.classList.contains('modebar')) return false; // Floating toolbar
-                if (node.classList.contains('js-plotly-plot') === false && node.id === 'velocity-chart') return true; // Keep the chart div
+                // 2. Exclude the hidden graphDiv so dom-to-image doesn't process it
+                if (node.id === 'velocity-chart') return false; 
 
-                // 3. Exclude Dashboard/Control Elements
-                // Add the class names of your new sidebar/bottom dashboard containers here
+                // 3. Exclude UI/Dashboard Elements
                 if (node.classList.contains('chart-controls')) return false;
+                if (node.classList.contains('chart-controls-overlay')) return false;
                 if (node.classList.contains('axis-inputs')) return false; 
                 if (node.classList.contains('info-sidebar')) return false;
 
-                // 4. Exclude Generic Form Elements
-                // This strips out the Axis Min/Max inputs, Apply buttons, Dropdowns
+                // 4. Exclude Inputs/Buttons
                 const tag = node.tagName;
-                if (['INPUT', 'SELECT', 'BUTTON', 'LABEL', 'TEXTAREA'].includes(tag)) {
-                    // Exception: If you have labels INSIDE your custom legend, allow them.
-                    // If your legend uses <label> tags, remove 'LABEL' from this list.
-                    return false;
-                }
-                
+                if (['INPUT', 'SELECT', 'BUTTON', 'TEXTAREA'].includes(tag)) return false;
+                if (tag === 'LABEL' && node.parentElement.classList.contains('axis-group')) return false;
+
                 return true;
             }
         });
 
+        // E. Store Result
         const blob = await (await fetch(imgUrl)).blob();
-        const fname = `velocity_${opt.val}_timeseries${smoothingSuffix.value}.png`;
+        
+        // Handle suffix safely
+        const suffix = (typeof smoothingSuffix !== 'undefined' && smoothingSuffix.value) ? smoothingSuffix.value : '';
+        const fname = `velocity_${opt.val}_timeseries${suffix}.png`;
+        
         filesToSave.push({ name: fname, blob: blob });
-      }
 
-      // Restore State
+        // F. Cleanup for next iteration
+        // Remove temp image and show graph again so the next 'updateChart' works
+        if (tempImg) tempImg.remove();
+        graphDiv.style.display = originalDisplay;
+
+        // Pause briefly to let browser breathe (prevents "Page Unresponsive")
+        await new Promise(resolve => setTimeout(resolve, 50)); 
+      }
+      // --- END LOOP ---
+
+      // 3. Restore Original State
       if (currentPlotVariable.value !== originalPlotVariable) {
           currentPlotVariable.value = originalPlotVariable;
           await nextTick();
           if (typeof updateChart === 'function') await updateChart();
       }
 
-      // Save File(s)
+      // 4. Save/Zip
       if (filesToSave.length === 1) {
         saveAs(filesToSave[0].blob, filesToSave[0].name);
         statusMessage.value = "Chart downloaded.";
       } else {
-        filesToSave.forEach(f => zip.file(f.name, f.blob));
         statusMessage.value = "Compressing...";
+        filesToSave.forEach(f => zip.file(f.name, f.blob));
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, `Velocity_Charts_${currentRegion.value}.zip`);
         statusMessage.value = "All charts downloaded.";
@@ -2442,91 +2495,14 @@ const downloadChartImage = async () => {
       console.error("Chart Export Error:", error);
       statusMessage.value = "Error generating chart.";
     } finally {
+      // Final safety cleanup
+      if (tempImg && tempImg.parentNode) tempImg.remove();
+      if (graphDiv) graphDiv.style.display = originalDisplay;
+
       setWaitCursor(false);
       setTimeout(() => statusMessage.value = "", 2000);
     }
-  }, 100);
-};
-
-// Helper: Loads an image from a URL/Base64 string with better error reporting
-const loadImage = (src, label) => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    // handling CORS if the src is external, though usually it's a data URI here
-    img.crossOrigin = "Anonymous"; 
-    
-    img.onload = () => resolve(img);
-    
-    img.onerror = (e) => {
-      console.error(`Failed to load ${label} image. Source length: ${src ? src.length : 0}`);
-      reject(new Error(`Failed to render the ${label}. (Likely a CORS or Tainted Canvas issue)`));
-    };
-    
-    img.src = src;
-  });
-};
-
-
-// Download image of the chart and the map (Combined)
-const downloadMapAndGraph = async () => {
-  if (selectedPoints.value.length === 0) return;
-
-  statusMessage.value = "Preparing screenshot...";
-  setWaitCursor(true);
-
-  // 1. Force a short delay to let the UI settle (e.g. if you just closed a menu)
-  await new Promise(r => setTimeout(r, 300));
-
-  try {
-    // A. Target the whole application wrapper
-    // If your app has a main ID like #app, use that. Otherwise 'document.body' works.
-    const elementToCapture = document.body; 
-
-    // B. Capture the Screenshot
-    const canvas = await html2canvas(elementToCapture, {
-        useCORS: true,       // CRITICAL: Allows loading cross-origin images (tiles/markers)
-        allowTaint: true,    // CRITICAL: Allows "tainted" canvases to be read
-        logging: false,      // Turn off debug noise
-        backgroundColor: '#FFFFFF',
-        // Start the screenshot at the top of the window (avoids scroll issues)
-        scrollY: -window.scrollY, 
-        windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight,
-        
-        // OPTIONAL: Hide specific elements (like the "Download" button itself)
-        ignoreElements: (node) => {
-            // Add classes of things you definitely DO NOT want in the screenshot
-            // e.g. The toast notification messages
-            if (node.classList && node.classList.contains('status-message')) return true;
-            return false;
-        }
-    });
-
-    // C. Convert to Blob
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    
-    // D. Create Filename
-    const currentVariable = currentPlotVariable.value; 
-    const fname = `velocity_${currentVariable}_timeseries${smoothingSuffix.value}_map.png`;
-
-    // E. Save
-    saveAs(blob, fname);
-    
-    statusMessage.value = "Screenshot saved.";
-    trackEvent("file_download", {
-        event_category: "export",
-        event_label: "screen_capture",
-        file_extension: "png"
-    });
-
-  } catch (error) {
-    console.error("Screenshot Error:", error);
-    alert("Screenshot failed. See console for details.");
-    statusMessage.value = "Error saving screenshot.";
-  } finally {
-    setWaitCursor(false);
-    setTimeout(() => statusMessage.value = "", 2000);
-  }
+  }, 50);
 };
 
 
@@ -2545,44 +2521,38 @@ const getFilename = (p, index) => {
 // --- DATA DOWNLOAD HANDLER ---
 const handleDownload = async () => {
   if (selectedPoints.value.length === 0) return;
-  
-  // Track downloads (Metadata updated to reflect xlsx)
+
+  // Track downloads (Always a ZIP now)
   trackEvent("file_download", {
       event_category: "export",
-      event_label: "xlsx_data", 
-      file_extension: selectedPoints.value.length === 1 ? "xlsx" : "zip", 
-      file_name: selectedPoints.value.length === 1 ? getFilename(selectedPoints.value[0], 0) : "velocity_data_batch",
+      event_label: "zip_data_package", 
+      file_extension: "zip", 
+      file_name: selectedPoints.value.length === 1 
+          ? `${getFilename(selectedPoints.value[0], 0)}_package` 
+          : "velocity_data_batch",
       region: currentRegion.value,
       count: selectedPoints.value.length
   });
-  
-  // --- SINGLE FILE DOWNLOAD ---
-  if (selectedPoints.value.length === 1) {
-    const p = selectedPoints.value[0];
-    // Pass index 0 since it's a single file
-    const wb = generateXLSX(p, 0);
-    XLSX.writeFile(wb, getFilename(p, 0)); 
-    return;
-  }
 
-  // --- BATCH DOWNLOAD (ZIP) ---
   isDownloading.value = true;
+  
   try {
     const zip = new JSZip();
     
     // 1. Add XLSX Files to Zip
     selectedPoints.value.forEach((p, index) => {
+      // Pass index (will be 0 if single file)
       const wb = generateXLSX(p, index);
-      // Generate binary buffer for the zip
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       zip.file(getFilename(p, index), wbout);
     });
 
-    // 2. Add GeoJSON Summary (Unchanged logic)
+    // 2. Add GeoJSON Summary (Always included)
     const geojson = {
       type: "FeatureCollection",
       features: selectedPoints.value.map((p, index) => {
         let name = p.name || `Site_${p.id}`;
+        // Logic to ensure clean naming if default IDs are used
         if (/^Site_\d+$/.test(name)) name = `Site_${index + 1}`;
 
         return {
@@ -2603,8 +2573,21 @@ const handleDownload = async () => {
 
     zip.file("sites.geojson", JSON.stringify(geojson, null, 2));
 
+    // 3. Generate and Save
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "velocity_data_batch.zip");
+    
+    // Determine Filename:
+    // If single file, use that site's name + "_data.zip"
+    // If multiple, use generic "batch.zip"
+    let zipName = "velocity_data_batch.zip";
+    
+    if (selectedPoints.value.length === 1) {
+        const baseName = getFilename(selectedPoints.value[0], 0).replace('.xlsx', '');
+        zipName = `${baseName}_data.zip`;
+    }
+
+    saveAs(content, zipName);
+
   } catch (e) {
     statusMessage.value = "Zip Error.";
     console.error(e);
@@ -3028,6 +3011,47 @@ const generateXLSX = (point, index) => {
 }
 .btn-remove-icon:hover { color: #e74c3c; }
 
+/* --- MOBILE RESPONSIVENESS FOR BOTTOM-DASHBOARD --- */
+@media (max-width: 768px) {
+  
+  /* 1. Stack the dashboard vertically */
+  .bottom-dashboard {
+    flex-direction: column;
+    /* Allow the dashboard container to scroll vertically 
+       because the stacked content (Chart + List) might be taller 
+       than the allocated screen height */
+    overflow-y: auto !important; 
+    overflow-x: hidden;
+  }
+
+  /* 2. Give the chart a fixed height */
+  .chart-section {
+    width: 100%;
+    /* flex: none ensures it doesn't try to shrink to fit the screen.
+       It will force the dashboard to scroll if needed. */
+    flex: none; 
+    height: 350px; /* Enough space for Plotly to be readable */
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* 3. Make the sidebar full width */
+  .info-sidebar {
+    width: 100%;
+    height: auto; /* Let it grow based on content */
+    border-left: none; /* Remove side border */
+    border-top: 1px solid #eee; /* Add top border */
+    flex: none;
+  }
+
+  /* 4. Restrict the table height (Optional) */
+  /* This prevents the table from becoming 5000px long if you have many points,
+     forcing the user to scroll forever to get back to the chart. */
+  .info-list-container {
+    max-height: 300px; 
+    overflow-y: auto;
+  }
+}
+
 /* --- BRANDING (SHIVER) --- */
 /* --- 1. FLOATING TITLE OVERLAY --- */
 .map-title-overlay {
@@ -3066,11 +3090,11 @@ const generateXLSX = (point, index) => {
 }
 
 /* mobile resize */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .map-title-overlay {
     top: 10px;
     padding: 6px 15px;
-    width: 80%; /* Prevent it from being too wide on phones */
+    width: 25%; /* Prevent it from being too wide on phones */
   }
   
   .shiver-title {
@@ -3652,6 +3676,17 @@ const generateXLSX = (point, index) => {
   background-color: #fffbe6; 
 }
 
+.inline-icon {
+  display: inline-block;
+  height: 3.0em;       /* Scales relative to the font size (makes it fit) */
+  width: auto;         /* Maintains aspect ratio */
+  vertical-align: middle; /* Aligns center of icon with center of lowercase text */
+  margin: 0 0px;       /* Adds a tiny bit of breathing room */
+  position: relative;  
+  top: -2px;           /* visual tweak to lift it slightly if needed */
+  fill: currentColor;  /* Optional: makes the icon take the text color */
+}
+
 /* CUSTOM LEGEND STYLES */
 .custom-legend {
   display: flex;
@@ -3704,7 +3739,7 @@ const generateXLSX = (point, index) => {
 .legend-global-key {
   position: absolute;
   top: 100%; 
-  left: 65px; 
+  left: 70px; 
   margin-top: 10px; 
   display: flex;
   flex-direction: row;

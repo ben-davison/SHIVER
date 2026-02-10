@@ -58,7 +58,12 @@ import deploymentImg from '../assets/images/deployments.png';
 			  November/December 2024 and another group went again in 2025. The teams deployed a suite of instruments on the glacier surface
 			  to measure ice motion and meltwater across a range of timescales and resolutions.
 			  </p>
-			  <img :src="deploymentImg" alt="Flask Glacier deployment map" class="box-image" />
+				<figure style="text-align: center; margin: 20px 0;">
+					<img src="../assets/images/deployments.png" alt="Flask Glacier deployment map" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+					<figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+						Map of deployed instruments on Flask Glacier.
+					</figcaption>
+				</figure>
 			  <ul>
               <li>Global Navigation Satellite System (GNSS) instruments to measure horizontal and vertical ice motion.</li>
               <li>Automatic weather station (AWS) measurements of surface melt and related variables</li>
@@ -67,7 +72,12 @@ import deploymentImg from '../assets/images/deployments.png';
 			  <li>Passive seismic detection of subglacial water flow</li>
             </ul>
 			<br>
-			<img :src="fieldworkImg1" alt="Wingtra UAV flying on Flask Glacier" class="box-image" />
+				<figure style="text-align: center; margin: 20px 0;">
+					<img src="../assets/images/fieldwork_photo1.jpg" alt="Wingtra UAV flying on Flask Glacier" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+					<figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+						Rohi flying the UAV on Flask Glacier.
+					</figcaption>
+				</figure>
           </div>
 		  
 		  <div class="highlight-box">
@@ -85,7 +95,13 @@ import deploymentImg from '../assets/images/deployments.png';
 			  resolution from October 2014-present. We supplement the Sentinel-1 observations with images from Sentinel-2 and the Landsat
 			  archive, which require clear skies and sunlight.
 			  <br>
-			  <img :src="velocityImg1" alt="Example Sentinel-1 velocity field" class="box-image" />
+			    <figure style="text-align: center; margin: 20px 0;">
+					<img src="../assets/images/velocity_photo1.png" alt="Example Sentinel-1 velocity field" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+					<figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+						An example Sentinel-1 velocity field over a section of the Antarctic Peninsula. 
+						Our field sites on Flask Glacier are located at approximately -2370 km East, 1225 km North. 
+					</figcaption>
+				</figure>
             </p>
           </div>
 		  

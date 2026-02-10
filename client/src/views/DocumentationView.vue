@@ -13,6 +13,8 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
 // Import other pretty pictures
 import S1cartoon from '../assets/documentation/S1cartoon.jpg';
 import S1IW from '../assets/documentation/S1IW.png';
+import excelIcon from '../components/icons/excelIcon.vue';
+import graphIcon from '../components/icons/graphIcon.vue';
 
 // Imports for scrolling with hash
 import { onMounted, nextTick } from 'vue'
@@ -642,7 +644,7 @@ onMounted(() => {
 		
         <section id="how-to-use">
 		  <h2>8. SHIVER User Guide</h2>
-		  <h3>1. Basic Usage</h3>
+		  <h3>8.1. Basic Usage</h3>
           <p>
             Click anywhere on the map or upload a shapefile containing a point or points to view 
 			time-series of ice velocity in those locations. 
@@ -650,18 +652,32 @@ onMounted(() => {
 			You can select up to ten points to compare different locations.
           </p>
 		  <p>
-            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
-			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
-			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). The value selected in this box
-			applies to <strong>all</strong> your points. If you change the value in this box, it will refresh the data for all selected points.
-			If you would prefer to have a different buffer distance for all points, then see Section 3: Uploading Files.
-          </p>
+			Navigate to your preferred ice sheet by clicking the Greenland button 
+			( <greenlandIcon class="inline-icon"/> )
+			or the Antarctica button
+			( <antarcticaIcon class="inline-icon"/> )
+		  </p>
 		  <p>
             <strong>Explore timeseries chart:</strong> click-and-drag in the chart area to zoom in on a particular section of the chart. 
 			Double click on the chart to reset the axes. Or use the zoom, pan and reset buttons in the top right of the chart to navigate.
           </p>
-
-          <h3>8.2 Uploading Files</h3>
+		  
+          <h3>8.2. Uploading Files   
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="17 8 12 3 7 8" />
+					<line x1="12" y1="3" x2="12" y2="15" />
+				</svg>
+		  </h3>
+		  <p>
+			You can upload a file by clicking the
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="17 8 12 3 7 8" />
+				<line x1="12" y1="3" x2="12" y2="15" />
+			</svg>
+			symbol.
+		  </p>
           <p>
             <strong>Requirements:</strong>
           </p>
@@ -678,11 +694,28 @@ onMounted(() => {
             <li><strong>Point names:</strong> Include 'name' as a field name to give your outputs a custom name.</li>
           </ul>
 		  
-		  <h3>8.3. Advanced Options</h3>
+		  <h3>8.3. Advanced Options <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></h3>
+		  <p>
+			 You can access the advanced options by clicking the 
+			 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+			 symbol.
+		  </p>
           <p>
-		     The advanced options allow you to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
+		     The advanced options allow you to modify the 'buffer' placed around your selection point 
+			 and to select which ice velocity variable(s) and processing level(s) to extract, and allow you to tune the
 			 timeseries smoothing parameters. 
 		   </p>
+		   <p>
+			When you modify anything in the advanced options, your choices will be applied to all subsequent extraction locations.
+			If you want to apply your advanced options to existing extraction locations, then click "Update All Timeseries".
+		   </p>
+		   <p>
+            <strong>Buffer distance (m):</strong> When you click a location on the map, data are extracted from a small square centred 
+			on your chosen point. The size of that square is controlled by the buffer distance text box. The default value is 500 m, which 
+			produces a 1000 x 1000 m box (since we buffer outwards by 500 m from the chosen location). If you want to modify the buffer 
+			distance for all of the points, just change the value and click "Update All Timeseries". If you want to modify the buffer distance for 
+			just one point, then change the value in the Site List table below the map.
+          </p>
 		   <p>
             <strong>Variables:</strong>
           </p>
@@ -702,7 +735,7 @@ onMounted(() => {
 		  <p>
             <strong>Smoothing parameters:</strong>
 			All time-series extracted with SHIVER are smoothed using a Savitzky-Golay filter.
-			Use the slide bars or text boxes to modify how much smoothing is applied.
+			Use the slide bars to modify how much smoothing is applied.
           </p>
           <ul>
             <li><strong>Max gap fill length days:</strong> Small gaps in the point data are filled using linear interpolation. Use this option to control the maximum length of gap that is filled.</li>
@@ -710,15 +743,15 @@ onMounted(() => {
 			<li><strong>Window size days (Line):</strong> Set the size of the moving window used to smooth the line data displayed on the time-series chart. A larger window increases smoothing.</li>
 			<li><strong>Polynomial order:</strong> Set the degree of the local polynomial fitted to the data within each moving window. A lower order increases smoothing but may distort rapid changes; a higher order better preserved high-frequences features but reduces smoothing.</li>
           </ul>
-		  <p>
-		    Note that the same variables and filtering level, using the same smoothing parameters, will be applied to all extraction locations.
-		  </p>
 
-          <h3>8.4 Interpreting the Map</h3>
-          <p>
+          <h3>8.4. Interpreting the Map</h3>
+		  <p>
 			When you click a point on the map an icon will appear showing the extraction location or region. 
-			If you have used a buffer around your extraction location (recommended), the icon will be a square, 
-			otherwise it will just be a point.
+			The icon will usually be a square with a point in the centre: the point shows where you  clicked and the 
+			square shows the region in which data were extracted. The size if this square is controlled by the 
+			Advanced Options 
+			(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> ) 
+			"Buffer" setting.
 		  </p>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
@@ -749,8 +782,8 @@ onMounted(() => {
 		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
 		   </p>
 		   
-		   <h3>8.5 Interpreting the Chart</h3>
-		   <p>
+		   <h3>8.5. Interpreting the Chart</h3>
+		  <p>
 			The retrieved data are displayed as both points and a line. 
 			Each point represents the average velocity in the selected location over a 6- or 12-day period centred on that time. 
 			The corresponding error in that velocity estimate is displayed on the point as a vertical line (indicating the range of potential velocity estimates at that time). 
@@ -776,21 +809,25 @@ onMounted(() => {
 			This will also change the .png image exports, however the .xslx will always contain the full time-series.
 		  </p>
 		  
-		  <h3>8.6 Output</h3>
-          <p>
+		  <h3>8.6. Output</h3>
+		  <p>
 		    Clicking the map will produce a timeseries showing point data and a smoothed line. 
 			The point data provide the measurements taken directly from our ice velocity dataset.
 			The line provides a smoothed representation of those measurements.
 		  </p>
-          <p>
-            Download your timeseries as <strong>.xlsx</strong> files and/or the graph(s) as a , 
-            <strong>.png</strong> file. If multiple points are selected, the extracted timeseries will be 
-			downloaded as a .zip file containing multiple .xslx files. If multiple variables 
-			or filtering levels are selected, images will be downloaded as a .zip file.
-			Downloads will also include a geojson of your point locations.
+		  <p>
+			<graphIcon class="inline-icon"/> <strong>Download the graph: </strong> 
+			You can download the graph showing your data by clicking the 
+			<graphIcon class="inline-icon"/>
+			button. If one variable or filtering level is selected, this will download a .png of the graph. 
+			If multiple variables or filtering levels are selected, this will download a .zip containing one graph per combination of variable and filtering level.
 		  </p>
 		  <p>
-			<strong>Map downloads take a while! Be patient :-)</strong>
+			<excelIcon class="inline-icon"/> <strong>Download the data: </strong>
+			You can also download your data to an excel spreadsheet by clicking the 
+			<excelIcon class="inline-icon"/>
+			button. This will download a .zip containing one excel file per location
+			along with a geojson of your point location(s).
 		  </p>
 		  <p>
             <strong>XLSX naming convention:</strong> <br>
@@ -1054,6 +1091,18 @@ p, li {
   margin: 15px 0;        /* Adds space above and below the image */
   border-radius: 4px;    /* Optional: slightly rounded corners */
   box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: subtle shadow */
+}
+
+/* --- ICONS --- */
+.inline-icon {
+  display: inline-block;
+  height: 3.0em;       /* Scales relative to the font size (makes it fit) */
+  width: auto;         /* Maintains aspect ratio */
+  vertical-align: middle; /* Aligns center of icon with center of lowercase text */
+  margin: 0 0px;       /* Adds a tiny bit of breathing room */
+  position: relative;  
+  top: -2px;           /* visual tweak to lift it slightly if needed */
+  fill: currentColor;  /* Optional: makes the icon take the text color */
 }
 
 /* --- FOOTER STYLES (Copied from HomeView) --- */
