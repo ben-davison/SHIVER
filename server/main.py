@@ -52,7 +52,7 @@ TIFF_PATHS = {
         "trend": base_path_gr.parent / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif"
     },
     "Antarctica": {
-        "speed": base_path_ant / "S_median_20141125_20250805_200m_timefiltered_cog.tif",
+        "speed": base_path_ant / "S_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "u":     base_path_ant / "U_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "v":     base_path_ant / "V_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "count": base_path_ant / "perc_finite_px_20141125_20250805_200m_timefiltered_cog.tif",
@@ -337,7 +337,7 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
             if layer_type == "speed":
                 # --- DYNAMIC LIMITS ---
                 if region == "Antarctica":
-                    max_v = 800.0
+                    max_v = 2000.0
                 else:
                     max_v = 400.0 # Greenland default
 

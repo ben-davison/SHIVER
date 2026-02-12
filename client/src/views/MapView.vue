@@ -56,6 +56,15 @@
           </button>
         </div>
       </transition>
+	  
+		<Transition name="fade">
+			  <div v-if="statusMessage" class="status-toast">
+				<div class="status-content">
+				  <span class="message-display-spinner" v-if="isMessageSpinnerRequired"></span>
+				  {{ statusMessage }}
+				</div>
+			  </div>
+		</Transition>
 
         <l-tile-layer
           :url="speedUrl"
@@ -175,7 +184,7 @@
 				  <div class="legend-bar-labels">
 					<span>1</span>
 					<span>10</span>
-					<span>100</span>
+					<span>150</span>
 					<span>{{ maxSpeedLabel }}</span>
 				  </div>
 				</div>
@@ -418,7 +427,7 @@
 			
 	</div>
 	
-	<div class="resize-handle" @mousedown.prevent="startDrag">
+	<div class="resize-handle" @mousedown.prevent="startDrag" @touchstart.prevent="startDrag">
        <div class="handle-grip"></div>
     </div>
 
@@ -1087,7 +1096,9 @@ const isUserZoomed = ref(false);
 const TIME_DELAY_MS = 90000; // 1.5 Minutes 
 const STORAGE_KEY = 'shiver_feedback_shown';
 const showFeedbackPopup = ref(false);
+const isMessageSpinnerRequired = ref(false);  // Optional: controls the spinner
 let timerInstance = null;
+let messageTimeout = null;
 
 // Drag features
 const isDragCooldown = ref(false);
@@ -1156,6 +1167,30 @@ const restoreDefaults = () => {
   pendingSmoothingParams.value = { ...DEFAULTS.smoothing };
   pendingBuffer.value = DEFAULTS.buffer;
 };
+
+
+// --- WATCHER FOR STATUS MESSAGE --- //
+watch(statusMessage, (newVal) => {
+  // 1. Clear any existing timer so we don't fade out prematurely
+  if (messageTimeout) clearTimeout(messageTimeout);
+
+  // 2. If message is cleared externally, do nothing
+  if (!newVal) return;
+
+  // 3. Logic: If it looks like a "completion" message, set a timer to hide it.
+  //    If it looks like a "processing" message (ends in '...'), keep it visible.
+  if (!newVal.endsWith('...')) {
+      isMessageSpinnerRequired.value = false; // Stop spinner
+      
+      // Auto-hide after 2.5 seconds
+      messageTimeout = setTimeout(() => {
+          statusMessage.value = "";
+      }, 2500);
+  } else {
+      isMessageSpinnerRequired.value = true; // Start spinner
+  }
+});
+
 
 // --- Good data mask --- //
 onMounted(async () => {
@@ -1269,20 +1304,36 @@ const getSquareBounds = (lat, lon, bufferMeters) => {
 };
 
 // --- Drag Logic ---
-const startDrag = () => {
+const startDrag = (e) => {
+  if (e.cancelable) e.preventDefault();
   isDragging.value = true;
   // Attach listeners to window so dragging continues even if mouse leaves the handle
   window.addEventListener('mousemove', onDrag);
   window.addEventListener('mouseup', stopDrag);
+  // Attach Touch Listeners (passive: false allows us to prevent scrolling)
+  window.addEventListener('touchmove', onDrag, { passive: false });
+  window.addEventListener('touchend', stopDrag);
 };
 
 const onDrag = (e) => {
   if (!isDragging.value) return;
+  
+  // 1. Get Client Y (Unified for Mouse & Touch)
+  let clientY;
+  if (e.touches && e.touches.length > 0) {
+      // Touch Event
+      clientY = e.touches[0].clientY;
+      // Prevent scrolling the page while dragging the map
+      if (e.cancelable) e.preventDefault(); 
+  } else {
+      // Mouse Event
+      clientY = e.clientY;
+  }
 
   const container = document.querySelector('.page-container');
   if (!container) return;
 
-  // Calculate mouse Y position relative to the container top
+  // 2. Calculate mouse Y position relative to the container top
   const containerRect = container.getBoundingClientRect();
   const relativeY = e.clientY - containerRect.top;
   
@@ -1291,17 +1342,21 @@ const onDrag = (e) => {
 
   // Clamp limits (e.g., Map can't be smaller than 10% or larger than 90%)
   newHeight = Math.min(Math.max(newHeight, 10), 90);
-
   mapHeightPercent.value = newHeight;
 
-  // CRITICAL: Tell Leaflet and Plotly the window size changed so they redraw
+  // Trigger redraw of plotly and leaflet
   window.dispatchEvent(new Event('resize'));
 };
 
 const stopDrag = () => {
   isDragging.value = false;
+  // Remove Mouse Listeners
   window.removeEventListener('mousemove', onDrag);
   window.removeEventListener('mouseup', stopDrag);
+  
+  // Remove Touch Listeners
+  window.removeEventListener('touchmove', onDrag);
+  window.removeEventListener('touchend', stopDrag);
   
   // Final resize trigger to ensure crisp rendering
   setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
@@ -1451,7 +1506,7 @@ const loadMarginData = async () => {
 };
 
 // Max speed label changes between Greenland (400) and Antarctica (800)
-const maxSpeedLabel = computed(() => currentRegion.value === 'Greenland' ? '400 m/yr' : '800 m/yr');
+const maxSpeedLabel = computed(() => currentRegion.value === 'Greenland' ? '400 m/yr' : '2000 m/yr');
 const maxTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '2.5' : '15');
 const minTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '-2.5' : '-15');
 
@@ -2364,7 +2419,7 @@ const downloadChartImage = async () => {
   setWaitCursor(true);
   
   // High quality scale
-  const EXPORT_SCALE = 1.5; 
+  const EXPORT_SCALE = 1; 
   const originalPlotVariable = currentPlotVariable.value;
 
   // 2. Wrap in timeout to allow UI to show "Processing..."
@@ -2441,7 +2496,7 @@ const downloadChartImage = async () => {
                 // 3. Exclude UI/Dashboard Elements
                 if (node.classList.contains('chart-controls')) return false;
                 if (node.classList.contains('chart-controls-overlay')) return false;
-                if (node.classList.contains('axis-inputs')) return false; 
+                if (node.classList.contains('axis-controls')) return false; 
                 if (node.classList.contains('info-sidebar')) return false;
 
                 // 4. Exclude Inputs/Buttons
@@ -2701,7 +2756,7 @@ const generateXLSX = (point, index) => {
 <style scoped>
 /* --- MAIN LAYOUT --- */
 .page-container { display: flex; flex-direction: column; height: calc(100vh - 60px); width: 100%; overflow: hidden; }
-.map-wrapper { position: relative; width: 100%; user-select: none; }
+.map-wrapper { position: relative; width: 100%; user-select: none; container-type: size; container-name: map-container }
 .chart-wrapper { width: 100%; background: white; position: relative; overflow: hidden; display: flex; flex-direction: column;}
 .chart-container { width: 100%; flex: 1; min-height: 0;}
 .chart-controls-overlay {
@@ -2724,6 +2779,20 @@ const generateXLSX = (point, index) => {
   border-bottom: 1px solid #ccc;
   flex-shrink: 0; /* Prevent the handle itself from squishing */
   z-index: 2000; /* Ensure it sits above map controls */
+  position: relative;
+  touch-action: none;
+}
+
+/* Add an invisible touch target, to make it easier to hit on a phone */
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -15px;    /* Extend 15px Up */
+  bottom: -15px; /* Extend 15px Down */
+  z-index: 2001; /* Sit on top of everything */
+  cursor: row-resize;
 }
 
 .resize-handle:hover { background-color: #e0e0e0; }
@@ -2777,7 +2846,7 @@ const generateXLSX = (point, index) => {
 
 /* --- RESPONSIVE LOGIC --- */
 /* If the screen height is less than 750px, switch to Compact Mode */
-@media (max-height: 900px) {
+@container map-container (height < 500px) {
   
   /* 1. Show the hamburger button */
   .menu-trigger {
@@ -2789,20 +2858,12 @@ const generateXLSX = (point, index) => {
     /* Hidden state */
     opacity: 0;
     visibility: hidden; /* Use visibility instead of pointer-events */
-    
     position: absolute;
     top: 0;
     right: 50px;
-    
     flex-direction: row-reverse; 
     align-items: flex-start;
-    
-    /* THE MAGIC SAUCE:
-       1. opacity: fade out over 0.3s... AFTER waiting 0.5s
-       2. visibility: switch to hidden... AFTER waiting 0.8s (0.5 + 0.3)
-       
-       This keeps the buttons interactive during the delay!
-    */
+    /* pretty transition */
     transition: 
       opacity 0.3s ease 0.5s, 
       visibility 0s linear 0.8s;
@@ -2810,11 +2871,8 @@ const generateXLSX = (point, index) => {
 
   /* 3. On Hover: Reveal the tools */
   .map-toolbar:hover .tools-wrapper {
-    /* Visible state */
     opacity: 1;
     visibility: visible;
-    
-    /* Show immediately (no delay) */
     transition: 
       opacity 0.2s ease 0s, 
       visibility 0s linear 0s;
@@ -3843,6 +3901,60 @@ const generateXLSX = (point, index) => {
 
 .feedback-close:hover {
   color: #333;
+}
+
+
+/* --- STATUS MESSAGE STYLES --- */
+/* Container Position */
+.status-toast {
+  position: absolute;
+  bottom: 30px;          /* Distance from bottom */
+  left: 50%;
+  transform: translateX(-50%); /* Center horizontally */
+  z-index: 9999;         /* Ensure it's above the map */
+  pointer-events: none;  /* Let clicks pass through to the map */
+}
+
+/* The Box Design */
+.status-content {
+  background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+  backdrop-filter: blur(4px);           /* Blur background behind it */
+  padding: 10px 24px;
+  border-radius: 50px;                  /* Pill shape */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  
+  color: #333;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Optional: Simple CSS Spinner */
+.message-display-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ddd;
+  border-top-color: #333; /* Dark spinner */
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Vue Transition Effects */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px); /* Slide up/down slightly */
 }
 
 /* Animations */
