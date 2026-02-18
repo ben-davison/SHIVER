@@ -94,7 +94,7 @@ import deploymentImg from '../assets/images/deployments.png';
               allowing us to develop an almost unbroken record of ice motion across the Antarctic Peninsula every 6-12 days at 200 x 200 m 
 			  resolution from October 2014-present. We supplement the Sentinel-1 observations with images from Sentinel-2 and the Landsat
 			  archive, which require clear skies and sunlight.
-			  <br>
+			  </p>
 			    <figure style="text-align: center; margin: 20px 0;">
 					<img src="../assets/images/velocity_photo1.png" alt="Example Sentinel-1 velocity field" style="max-width: 100%; border: 1px solid #ddd; border-radius: 4px;">
 					<figcaption style="font-size: 0.9rem; color: #666; margin-top: 5px;">
@@ -102,7 +102,6 @@ import deploymentImg from '../assets/images/deployments.png';
 						Our field sites on Flask Glacier are located at approximately -2370 km East, 1225 km North. 
 					</figcaption>
 				</figure>
-            </p>
           </div>
 		  
 		  

@@ -76,8 +76,9 @@ onMounted(() => {
 			<li><a href="#" @click.prevent="scrollToSection('post-processing')">5. Post-processing</a></li>
 			<li><a href="#" @click.prevent="scrollToSection('mosaics')">6. Mosaics</a></li>
 			<li><a href="#" @click.prevent="scrollToSection('automation')">7. Automation</a></li>
-			<li><a href="#" @click.prevent="scrollToSection('how-to-use')">8. SHIVER User Guide</a></li>
-			<li><a href="#" @click.prevent="scrollToSection('citation')">9. Citation & License</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('how-to-use-timeseries')">8. SHIVER Timeseries Explorer</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('how-to-use-datacube')">9. SHIVER Data Cube Extractor</a></li>
+			<li><a href="#" @click.prevent="scrollToSection('citation')">10. Citation & License</a></li>
           </ul>
         </nav>
       </aside>
@@ -87,7 +88,7 @@ onMounted(() => {
         <section id="introduction">
           <h1>Introduction</h1>
           <p class="intro-text">
-            Welcome to the technical documentation for <strong>SCADI</strong> (Sentinel-1 Cross-correlation for Accurate Determination of Ice velocity)
+            Welcome to the technical documentation for <strong>SHIFT</strong> (SHeffield Ice Flow Tracker)
             and <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR). This platform provides access to high-resolution ice velocity time-series data 
 			derived from Sentinel-1 Synthetic Aperture Radar (SAR) imagery.
           </p>
@@ -167,7 +168,7 @@ onMounted(() => {
 				</figcaption>
 			  </figure>
 			  <p>
-				For our processing in SCADI, we use Sentinel-1 Level-1 Single Look Complex (SLC) images. SLC images represent the 'raw' radar returns from the ground surface,
+				For our processing with SHIFT, we use Sentinel-1 Level-1 Single Look Complex (SLC) images. SLC images represent the 'raw' radar returns from the ground surface,
 				processed into a 2D image, but before those radar returns have been projected onto the ground surface. Since it has not been projected, the raw SLC image is in 
 				'slant range' or 'line-of-sight' geometry, as if you are viewing the surface from the perspective of the satellite antenna without knowing anything about the 
 				ground topography. As part of our processing, we also produce ground-projected radar amplitude images (as shown in Fig. 2.2).
@@ -197,7 +198,7 @@ onMounted(() => {
           </ul>
 		  
 		  <p>
-			For our processing in SCADI, we use images acquired in Interferometric Wide swath mode.
+			For our processing with SHIFT, we use images acquired in Interferometric Wide swath mode.
 		  </p>
 		  
 		  <figure style="text-align: center; margin: 20px 0;">
@@ -642,11 +643,13 @@ onMounted(() => {
         </section>
 		
 		
-        <section id="how-to-use">
-		  <h2>8. SHIVER User Guide</h2>
+        <section id="how-to-use-timeseries">
+		  <h2>8. SHIVER Timeseries Explorer</h2>
 		  <h3>8.1. Basic Usage</h3>
           <p>
-            Click anywhere on the map or upload a shapefile containing a point or points to view 
+		    The SHIVER Timeseries Explorer lets you quickly and easily visualize  and export ice velocity timeseries
+			anywhere we have data. To visualize the data, 
+            click anywhere on the map or upload a shapefile containing a point or points to view 
 			time-series of ice velocity in those locations. 
 			After selecting a point, you can click-and-drag it to modify the position. 
 			You can select up to ten points to compare different locations.
@@ -729,8 +732,8 @@ onMounted(() => {
 			See the <AppLink to="/documentation#mosaics" class="text-link">Mosaics section of our Documentation page</AppLink> for more details.
           </p>
           <ul>
-            <li><strong>raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
-            <li><strong>filt:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
+            <li><strong>Raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
+            <li><strong>Time-filtered:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
           </ul>
 		  <p>
             <strong>Smoothing parameters:</strong>
@@ -748,19 +751,22 @@ onMounted(() => {
 		  <p>
 			When you click a point on the map an icon will appear showing the extraction location or region. 
 			The icon will usually be a square with a point in the centre: the point shows where you  clicked and the 
-			square shows the region in which data were extracted. The size if this square is controlled by the 
+			square shows the region in which data were extracted. The size of this square is controlled by the 
 			Advanced Options 
 			(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> ) 
 			"Buffer" setting.
 		  </p>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
-            <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
+            <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>. You can
+			optionally overlay ice flow direction arrows and topography data.
 		  </p>
 		  <ul>
+            <li><strong>Topography:</strong> A hillshaded digital elevation model of the area (Howat et al., 2015, 2022) (</li>
             <li><strong>Speed:</strong> The average ice speed between October 2014 and November 2025, in metres per year.</li>
             <li><strong>Measurement count:</strong> The number of valid speed measurements available in each location, espressed as a percentage of the total number of measurements attempted in each location.</li>
 			<li><strong>Speed Trend:</strong> The linear trend in speed from October 2014 through November 2025, in metres per year per year.</li>
+			<li><strong>Flow direction arrows:</strong> The direction and magnitude of ice flow averaged between October 2014 and November 2025.</li>
 			<li><strong>Ice Margin:</strong> This uses simplified versions of the PROMICE 2022 ice mask (Luetzenburg et al., 2025) for Greenland, 
 			the ADD SCAR medium resolution Antarctic coastline (Gerrish et al., 2025) and the grounding line of Wallis et al. (2024)</li>
 			<p>
@@ -768,9 +774,15 @@ onMounted(() => {
 			</p>
 			<p>
 			Gerrish, L., Ireland, L., Fretwell, P., Cooper, P., & Skachkova, A. (2025). Medium resolution vector polylines of the Antarctic coastline (Version 7.11) [Data set]. NERC EDS UK Polar Data Centre. https://doi.org/10.5285/333065a9-633d-4005-ae41-fb7ae5ae7a91.
-			</P>
+			</p>
 			<p>
 			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
+			</p>
+			<p>
+				Howat, Ian, et al., 2022, “The Reference Elevation Model of Antarctica – Mosaics, Version 2”, https://doi.org/10.7910/DVN/EBW8UC, Harvard Dataverse, V1, [16/02/2026].
+			</p>
+			<p>
+				Howat, I., Negrete, A. & Smith, B. (2015). MEaSUREs Greenland Ice Mapping Project (GIMP) Digital Elevation Model. (NSIDC-0645, Version 1). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/NV34YUIXLP9W. [describe subset used if applicable]. Date Accessed 02-16-2026.
 			</p>
           </ul>
 		  <p>
@@ -782,7 +794,7 @@ onMounted(() => {
 		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
 		   </p>
 		   
-		   <h3>8.5. Interpreting the Chart</h3>
+		  <h3>8.5. Interpreting the Chart</h3>
 		  <p>
 			The retrieved data are displayed as both points and a line. 
 			Each point represents the average velocity in the selected location over a 6- or 12-day period centred on that time. 
@@ -851,7 +863,9 @@ onMounted(() => {
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
-            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed or velocity at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Error_U_m_yr:</strong> An estimate of the global uncertainty in easting ice velocity at this time period. Defined as the median absolute easting ice velocity over bedrock regions at that time.</li>
+            <li><strong>Error_V_m_yr:</strong> An estimate of the global uncertainty in northing ice velocity at this time period. Defined as the median absolute northing ice velocity over bedrock regions at that time.</li>
 			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
 			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
 			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
@@ -876,14 +890,153 @@ onMounted(() => {
 			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
 			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
           </ul>
-		
         </section>
 
+		<section id="how-to-use-datacube">
+		  <h2>9. SHIVER Data Cube Extractor</h2>
+		  <h3>9.1. Basic Usage</h3>
+          <p>
+			The Data Cube Extractor allows you to extract a grid of our 
+			velocity data covering any area and time-period in which we have observations.
+            Use the tools on the left or upload (
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="17 8 12 3 7 8" />
+				<line x1="12" y1="3" x2="12" y2="15" />
+			</svg>
+			) a file to choose your extraction location. You may only select one extraction area
+			at a time. 
+			You can also choose the time period, temporal frequency and variables to extract.
+          </p>
+		  <p>
+			Navigate to your preferred ice sheet by clicking the Greenland button 
+			( <greenlandIcon class="inline-icon"/> )
+			or the Antarctica button
+			( <antarcticaIcon class="inline-icon"/> )
+		  </p>
+		  
+          <h3>9.2. Uploading Files   
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="17 8 12 3 7 8" />
+					<line x1="12" y1="3" x2="12" y2="15" />
+				</svg>
+		  </h3>
+		  <p>
+			You can upload a file by clicking the
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="17 8 12 3 7 8" />
+				<line x1="12" y1="3" x2="12" y2="15" />
+			</svg>
+			symbol.
+		  </p>
+          <p>
+            <strong>Requirements:</strong>
+          </p>
+          <ul>
+            <li><strong>Format:</strong> KMZ, KML, GeoJSON or a zipped shapefile (containing .shp, .shx, .dbf, and .prj files).</li>
+            <li><strong>Projection:</strong> Must be in WGS84 (EPSG:4326) .</li>
+            <li><strong>Type:</strong> Polygon or Polyline geometries defining a single shape.</li>
+          </ul>
+		  
+          <h3>9.3. Interpreting the Map</h3>
+		  <p>
+			When you draw or upload an extraction region, it will be displayed as a yellow polygon. You can edit the shape of the polygon, rotate it
+			or remove it using the tools on the left. 
+		  </p>
+          <p>
+            Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
+            <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>. You can
+			optionally overlay ice flow direction arrows and topography data.
+		  </p>
+		  <ul>
+            <li><strong>Topography:</strong> A hillshaded digital elevation model of the area.</li>
+            <li><strong>Speed:</strong> The average ice speed between October 2014 and November 2025, in metres per year.</li>
+            <li><strong>Measurement count:</strong> The number of valid speed measurements available in each location, espressed as a percentage of the total number of measurements attempted in each location.</li>
+			<li><strong>Speed Trend:</strong> The linear trend in speed from October 2014 through November 2025, in metres per year per year.</li>
+			<li><strong>Flow direction arrows:</strong> The direction and magnitude of ice flow averaged between October 2014 and November 2025.</li>
+			<li><strong>Ice Margin:</strong> This uses simplified versions of the PROMICE 2022 ice mask (Luetzenburg et al., 2025) for Greenland, 
+			the ADD SCAR medium resolution Antarctic coastline (Gerrish et al., 2025) and the grounding line of Wallis et al. (2024)</li>
+			<p>
+			Luetzenburg, Gregor; Korsgaard, Niels J.; Deichmann, Anna K.; Socher, Tobias; Gleie, Karin; Scharffenberger, Thomas; Fahrner, Dominik; Nielsen, Eva B.; How, Penelope; Bjork, Anders A.; Kjeldsen, Kristian K.; Ahlstrom, Andreas P.; Fausto, Robert S., 2025, "PROMICE-2022 Ice Mask", https://doi.org/10.22008/FK2/O8CLRE, GEUS Dataverse, V3.
+			</p>
+			<p>
+			Gerrish, L., Ireland, L., Fretwell, P., Cooper, P., & Skachkova, A. (2025). Medium resolution vector polylines of the Antarctic coastline (Version 7.11) [Data set]. NERC EDS UK Polar Data Centre. https://doi.org/10.5285/333065a9-633d-4005-ae41-fb7ae5ae7a91.
+			</P>
+			<p>
+			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
+			</p>
+          </ul>
+		  <p>
+		    When viewing Antarctica, the outlines of glacier basins are shown as grey lines (Cook et al. 2014). If you zoom in sufficiently, glacier names from the
+			<AppLink to="https://apc.antarctica.ac.uk/gazetteers/go-to-gazetteers/" target="_blank" rel="noopener" class="text-link">British Antarctic Territory gazetteer</AppLink> 
+			will be displayed. 
+		   </p>
+		   <p>
+		   Cook AJ, Vaughan DG, Luckman AJ, Murray T. A new Antarctic Peninsula glacier basin inventory and observed area changes since the 1940s. Antarctic Science. 2014;26(6):614-624. doi:10.1017/S0954102014000200
+		   </p>
+		  
+		  <h3>9.4. Output</h3>
+		  <p>
+		    The retrieved data cubes will be in NetCDF format. 
+			Large files will be generated offline and a link emailed to you once they are prepared.
+		  </p>
+		  <p>
+            <strong>NetCDF naming convention:</strong> <br>
+			IceSheet_Frequency_StartTime_EndTime.nc <br>
+			e.g., Greenland_native_2018-01-01_2018-03-31.nc <br>
+			Is a data cube for Greenland at the 'native' temporal resolution of the Sentinel-1 measurements from the 1st of January 2018 to the 31st of March 2018.
+		  </p>
+		  <p>
+			<strong>Each NetCDF file could contain contain:</strong>
+			<br>
+			<em>Note: Only "x", "y", and "time" are exported by default. 
+			Other exported variables depend on the selected options. </em>
+		  </p>
+		  <ul>
+            <li><strong>x:</strong> The easting coordinates of the grid, in the local projection.</li>
+			<li><strong>y:</strong> The northing coordinates of the grid, in the local projection.</li>
+			<li><strong>time:</strong> The date of the measurement. For exports at the 'native' resolution, this represents the mid-date of the measurement epoch. For exports at other temporal resolution, this will be the beginning of the averaging period.</li>
+            <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
+            <li><strong>s_error:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
+			<li><strong>u_error:</strong> An estimate of the global uncertainty in the easting ice velocity at this time period. Defined as the median easting velocity over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
+			<li><strong>v_error:</strong> An estimate of the global uncertainty in the northing ice velocity at this time period. Defined as the median northing velocity over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
+			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable.</li>
+			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable.</li>
+			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable.</li>
+			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable.</li>
+			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable.</li>
+			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable.</li>
+          </ul>
+		  <p>
+			<em>If the data are exported at the native temporal resolution, there is an additional variable:</em>
+		  </p>
+		  <ul>
+            <li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
+		  </ul>
+		  <p>
+			<em>If the data are exported any temporal resolution other than native, there could be these additional variables:</em>
+		  </p>
+		  <ul>
+            <li><strong>s_error_std:</strong> The standard deviation of the global uncertainty in ice speed during the aggregation period.</li>
+			<li><strong>u_error_std:</strong> The standard deviation of the global uncertainty in the easting ice velocity during the aggregation period.</li>
+			<li><strong>v_error_std:</strong> The standard deviation of the global uncertainty in the northing ice velocity during the aggregation period.</li>
+			<li><strong>s_filt_std:</strong> The standard deviation of the horizontal ice surface speed in metres per year, from the time-filtered zarr store variable.</li>
+			<li><strong>s_raw_std:</strong> The standard deviation fo the horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable.</li>
+			<li><strong>u_filt_std:</strong> The standard deviation of the horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable.</li>
+			<li><strong>u_raw_std:</strong> The standard deviation of the horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable.</li>
+			<li><strong>v_filt_std:</strong> The standard deviation of the horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable.</li>
+			<li><strong>v_raw_std:</strong> The standard deviation of the horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable.</li>
+			<li><strong>measurement_count:</strong> The number of non-nan measurements in each aggregation period.</li>
+		  </ul>
+		  
+		</section>
 
         <section id="citation">
-          <h2>9. Citation & License</h2>
+          <h2>10. Citation & License</h2>
           The recommended citation for this data is 
-		  "Ice velocity generated using SCADI (Davison et al., 2020; Tuckett et al., 2019) and provided by the FRAM/SHIVER project (Kingslake/Sole)."
+		  "Ice velocity generated using SHIFT (Davison et al., 2020; Tuckett et al., 2019) and provided by the FRAM/SHIVER project (Kingslake/Sole)."
 		  <br>
 		  <blockquote class="citation-block">
 		  Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492. 
@@ -897,7 +1050,7 @@ onMounted(() => {
 		  Kingslake/Sole : Flow Response of Antarctic Ice to Meltwater/Sheffield Ice Velocity ExploreR
 		  </blockquote>
 		  <br>
-		  FRAM, SCADI and SHIVER were funded by NSFGEO-NERC grant #2053169.
+		  FRAM, SHIFT and SHIVER were funded by NSFGEO-NERC grant #2053169.
         </section>
 
       </main>
@@ -938,7 +1091,7 @@ onMounted(() => {
 			  <img :src="StanageLogo" alt="Stanage" class="partner-logo" />
 		   </AppLink>
 		  <br>
-		  SCADI and SHIVER are powered by the University of Sheffield HPC Stanage <br>
+		  SHIFT and SHIVER are powered by the University of Sheffield HPC Stanage <br>
         </div>
         
         <div class="partner-group">

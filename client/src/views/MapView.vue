@@ -27,7 +27,7 @@
 		
 		<div class="map-title-overlay">
 		  <h1 class="shiver-title">SHIVER</h1>
-		  <div class="shiver-subtitle">SHeffield Ice Velocity ExploreR</div>
+		  <div class="shiver-subtitle">Timeseries Explorer</div>
 		</div>
 		
 		<transition name="fade">
@@ -65,10 +65,21 @@
 				</div>
 			  </div>
 		</Transition>
+		
+		<l-tile-layer
+          :url="hillshadeUrl"
+          :opacity="1.0"
+		  :z-index="10" 
+          layer-type="overlay"
+          name="Topography"
+          :visible="false"
+		  :options="{ crossOrigin: 'anonymous' }"
+        ></l-tile-layer>
 
         <l-tile-layer
           :url="speedUrl"
-          :opacity="0.7"
+          :opacity="0.5"
+		  :z-index="30"
           layer-type="overlay"
           name="Ice Speed"
           :visible="overlayLayer === 'speed'"
@@ -77,7 +88,8 @@
 
         <l-tile-layer
           :url="countUrl"
-          :opacity="0.7"
+          :opacity="0.5"
+		  :z-index="30"
           layer-type="overlay"
           name="Measurement Count"
           :visible="overlayLayer === 'count'"
@@ -86,7 +98,8 @@
 		
         <l-tile-layer
           :url="trendUrl"
-          :opacity="0.7"
+          :opacity="0.5"
+		  :z-index="30"
           layer-type="overlay"
           name="Speed Trend"
           :visible="overlayLayer === 'trend'"
@@ -98,7 +111,7 @@
 			layer-type="overlay"
 			name="Flow direction arrows"
 			:opacity="1.0"
-			:z-index="10" 
+			:z-index="50" 
 			:visible="false"
 			:options="{ crossOrigin: 'anonymous' }"
 		  ></l-tile-layer>
@@ -175,7 +188,7 @@
 	  
       <div class="legend-container">
 
-        <div class="legend-box" v-if="overlayLayer !== 'none' || isFlowActive">
+        <div class="legend-box" v-if="overlayLayer !== 'none' || isFlowActive || showMargins">
         
 			<div v-if="overlayLayer !== 'none'" class="scalar-legend-group">
 				<div v-if="overlayLayer === 'speed'">
@@ -288,7 +301,7 @@
 				<label 
 				  class="panel-btn" 
 				  :class="{ 'active': isUploading }" 
-				  title="Upload File"
+				  title="Upload File (KML, KMZ, GeoJSON or zipped shapefile)"
 				>
 				  <input type="file" @change="handleFileUpload" accept=".zip,.geojson,.kml,.kmz" hidden :disabled="isUploading">
 				  <span v-if="isUploading" class="spinner-small"></span>
@@ -301,7 +314,7 @@
 
 				<button 
 				  class="panel-btn" 
-				  @click="showAdvanced = !showAdvanced" 
+				  @click="checkAuth(() => showAdvanced = !showAdvanced)"
 				  :class="{ 'active': showAdvanced }" 
 				  title="Advanced Options"
 				>
@@ -316,12 +329,12 @@
 			  </div>
 
 			  <div class="toolbar-group" v-if="selectedPoints.length > 0">
-				<button class="panel-btn" @click="handleDownload" :class="{ 'active': isDownloading }" :disabled="isDownloading" :title="xlsxDownloadLabel">
+				<button class="panel-btn" @click="checkAuth(handleDownload)" :class="{ 'active': isDownloading }" :disabled="isDownloading" :title="xlsxDownloadLabel">
 				   <span v-if="isDownloading" class="spinner-small"></span>
 				   <excelIcon v-else class="btn-icon-svg" />
 				</button>
 
-				<button class="panel-btn" @click="downloadChartImage" :class="{ 'active': isDownloadingChart }" :disabled="isDownloadingChart" :title="chartDownloadLabel">
+				<button class="panel-btn" @click="checkAuth(downloadChartImage)" :class="{ 'active': isDownloadingChart }" :disabled="isDownloadingChart" :title="chartDownloadLabel">
 				   <span v-if="isDownloadingChart" class="spinner-small"></span>
 				   <graphIcon v-else class="btn-icon-svg" />
 				</button>
@@ -571,12 +584,14 @@
       <div class="modal-content">
         <button class="modal-close" @click="showHelp = false">&times;</button>
         
-        <h2>How to use SHIVER</h2>
+        <h2>How to use SHIVER - Timeseries Explorer</h2>
         
         <div class="modal-body">
           <h3>1. Basic Usage</h3>
           <p>
-            Click anywhere on the map or upload a shapefile containing a point or points to view 
+		    The SHIVER Timeseries Explorer lets you quickly and easily visualize  and export ice velocity timeseries
+			anywhere we have data. To visualize the data, 
+            click anywhere on the map or upload a shapefile containing a point or points to view 
 			time-series of ice velocity in those locations. 
 			After selecting a point, you can click-and-drag it to modify the position. 
 			You can select up to ten points to compare different locations.
@@ -608,13 +623,13 @@
 			However, it can take a week or two for the new measurements to appear here.
 		  </p>
 		  <p>
-			We provide the data at two quality levels: 'raw' and 'filt'. For both quality levels, we have attempted to remove erroneous velocity measurements 
-			whilst preserving estimates that do represent the true ice surface velocity. The 'raw' data has had fewer outliers removed, whilst the 'filt' data
+			We provide the data at two quality levels: 'Raw' and 'Time-filtered'. For both quality levels, we have attempted to remove erroneous velocity measurements 
+			whilst preserving estimates that do represent the true ice surface velocity. The 'Raw' data has had fewer outliers removed, whilst the 'Time-filtered' data
 			has a more stringent outlier removal protocol:
 		  </p>
 		  <ul>
-            <li><strong>raw:</strong> Although this is labelled 'raw', this data has had outliers removed using information only from spatial variations in estimated ice motion at each epoch.</li>
-            <li><strong>filt:</strong>  In addition to the spatial filtering applied to the 'raw' data, the 'filt' data has additional outliers removed based on variations in ice speed and flow direction over time.</li>
+            <li><strong>raw:</strong> Although this is labelled 'Raw', this data has had outliers removed using information only from spatial variations in estimated ice motion at each epoch.</li>
+            <li><strong>filt:</strong>  In addition to the spatial filtering applied to the 'Raw' data, the 'Time-filtered' data has additional outliers removed based on variations in ice speed and flow direction over time.</li>
           </ul>
 		  <p>
 			Low-latency access to these data is enabled using cloud-optimized zarr stores. 
@@ -690,8 +705,8 @@
 			See the <AppLink to="/documentation#mosaics" class="text-link">Mosaics section of our Documentation page</AppLink> for more details.
           </p>
           <ul>
-            <li><strong>raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
-            <li><strong>filt:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
+            <li><strong>Raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
+            <li><strong>Time-filtered:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
           </ul>
 		  <p>
             <strong>Smoothing parameters:</strong>
@@ -709,19 +724,22 @@
 		  <p>
 			When you click a point on the map an icon will appear showing the extraction location or region. 
 			The icon will usually be a square with a point in the centre: the point shows where you  clicked and the 
-			square shows the region in which data were extracted. The size if this square is controlled by the 
+			square shows the region in which data were extracted. The size of this square is controlled by the 
 			Advanced Options 
 			(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.83a.488.488 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.488.488 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.488.488 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> ) 
 			"Buffer" setting.
 		  </p>
           <p>
             Use the layer controls in the top-left to toggle between <strong>Velocity</strong>, 
-            <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>.
+            <strong>Measurement Count</strong>, and <strong>Speed Trend</strong>. You can
+			optionally overlay ice flow direction arrows and topography data.
 		  </p>
 		  <ul>
+            <li><strong>Topography:</strong> A hillshaded digital elevation model of the area (Howat et al., 2015, 2022) (</li>
             <li><strong>Speed:</strong> The average ice speed between October 2014 and November 2025, in metres per year.</li>
             <li><strong>Measurement count:</strong> The number of valid speed measurements available in each location, espressed as a percentage of the total number of measurements attempted in each location.</li>
 			<li><strong>Speed Trend:</strong> The linear trend in speed from October 2014 through November 2025, in metres per year per year.</li>
+			<li><strong>Flow direction arrows:</strong> The direction and magnitude of ice flow averaged between October 2014 and November 2025.</li>
 			<li><strong>Ice Margin:</strong> This uses simplified versions of the PROMICE 2022 ice mask (Luetzenburg et al., 2025) for Greenland, 
 			the ADD SCAR medium resolution Antarctic coastline (Gerrish et al., 2025) and the grounding line of Wallis et al. (2024)</li>
 			<p>
@@ -729,9 +747,15 @@
 			</p>
 			<p>
 			Gerrish, L., Ireland, L., Fretwell, P., Cooper, P., & Skachkova, A. (2025). Medium resolution vector polylines of the Antarctic coastline (Version 7.11) [Data set]. NERC EDS UK Polar Data Centre. https://doi.org/10.5285/333065a9-633d-4005-ae41-fb7ae5ae7a91.
-			</P>
+			</p>
 			<p>
 			Wallis, B.J., Hogg, A.E., Zhu, Y. and Hooper, A., 2024. Change in grounding line location on the Antarctic Peninsula measured using a tidal motion offset correlation method. The Cryosphere, 18(10), pp.4723-4742. https://doi.org/10.5194/tc-18-4723-2024.
+			</p>
+			<p>
+				Howat, Ian, et al., 2022, “The Reference Elevation Model of Antarctica – Mosaics, Version 2”, https://doi.org/10.7910/DVN/EBW8UC, Harvard Dataverse, V1, [16/02/2026].
+			</p>
+			<p>
+				Howat, I., Negrete, A. & Smith, B. (2015). MEaSUREs Greenland Ice Mapping Project (GIMP) Digital Elevation Model. (NSIDC-0645, Version 1). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/NV34YUIXLP9W. [describe subset used if applicable]. Date Accessed 02-16-2026.
 			</p>
           </ul>
 		  <p>
@@ -812,7 +836,9 @@
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
-            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed or velocity at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time.</li>
+            <li><strong>Error_U_m_yr:</strong> An estimate of the global uncertainty in easting ice velocity at this time period. Defined as the median absolute easting ice velocity over bedrock regions at that time.</li>
+            <li><strong>Error_V_m_yr:</strong> An estimate of the global uncertainty in northing ice velocity at this time period. Defined as the median absolute northing ice velocity over bedrock regions at that time.</li>
 			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
 			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
 			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
@@ -845,7 +871,7 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted, inject } from 'vue';
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LRectangle, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
@@ -861,18 +887,7 @@ import excelIcon from '../components/icons/excelIcon.vue';
 import graphIcon from '../components/icons/graphIcon.vue';
 
 // --- API CONFIGURATION ---
-// 1. Get the URL (Localhost in dev, Ngrok in prod)
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-
-// 2. Create a custom Axios instance
-// This automatically adds the base URL and the Ngrok bypass header to all requests
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'ngrok-skip-browser-warning': 'true',  // <--- The key to fixing the 404/Block page
-    'Content-Type': 'application/json'
-  }
-});
+import apiClient, { API_URL } from '../api';
 
 // --- NATIVE GOOGLE ANALYTICS TRACKING ---
 const trackEvent = (eventName, params = {}) => {
@@ -1084,6 +1099,7 @@ const showMargins = ref(false);
 const mapHeightPercent = ref(60); 
 const isDragging = ref(false);
 const isFlowActive = ref(false);
+const isHillshadeActive = ref(false);
 const globalMaskData = ref(null);
 const globalOutlineData = ref(null);
 const isFetching = ref(false);
@@ -1097,8 +1113,29 @@ const TIME_DELAY_MS = 90000; // 1.5 Minutes
 const STORAGE_KEY = 'shiver_feedback_shown';
 const showFeedbackPopup = ref(false);
 const isMessageSpinnerRequired = ref(false);  // Optional: controls the spinner
+const requireLogin = inject('requireLogin');
 let timerInstance = null;
 let messageTimeout = null;
+
+// Limited use functions
+const MAX_FREE_CLICKS = 5;
+// Initialize from storage (so refreshing the page doesn't reset the count)
+const freeClicksUsed = ref(parseInt(sessionStorage.getItem('shiver_free_clicks') || '0'));
+
+
+// Generic checker function
+const checkAuth = (actionCallback) => {
+  const token = sessionStorage.getItem('shiver_token');
+  
+  if (token) {
+    // User is logged in, run the requested action
+    actionCallback();
+  } else {
+    // User is NOT logged in, open the modal
+    requireLogin();
+  }
+};
+
 
 // Drag features
 const isDragCooldown = ref(false);
@@ -1307,6 +1344,10 @@ const getSquareBounds = (lat, lon, bufferMeters) => {
 const startDrag = (e) => {
   if (e.cancelable) e.preventDefault();
   isDragging.value = true;
+  // Change the cursor for the whole body so it doesn't flicker if you drag fast
+  document.body.style.cursor = 'row-resize';
+  // Prevent text selection highlighting while dragging
+  document.body.style.userSelect = 'none';
   // Attach listeners to window so dragging continues even if mouse leaves the handle
   window.addEventListener('mousemove', onDrag);
   window.addEventListener('mouseup', stopDrag);
@@ -1319,23 +1360,24 @@ const onDrag = (e) => {
   if (!isDragging.value) return;
   
   // 1. Get Client Y (Unified for Mouse & Touch)
-  let clientY;
-  if (e.touches && e.touches.length > 0) {
-      // Touch Event
-      clientY = e.touches[0].clientY;
-      // Prevent scrolling the page while dragging the map
+  let currentY; 
+  if (e.type.includes('touch')) {
+      // Touch Event: clientY is nested inside touches[0]
+      currentY = e.touches[0].clientY;
+      
+      // Prevent scrolling the page while dragging
       if (e.cancelable) e.preventDefault(); 
   } else {
-      // Mouse Event
-      clientY = e.clientY;
+      // Mouse Event: clientY is on the root event
+      currentY = e.clientY;
   }
 
   const container = document.querySelector('.page-container');
   if (!container) return;
 
-  // 2. Calculate mouse Y position relative to the container top
+  // 2. Calculate position relative to container
   const containerRect = container.getBoundingClientRect();
-  const relativeY = e.clientY - containerRect.top;
+  const relativeY = currentY - containerRect.top;
   
   // Convert to percentage
   let newHeight = (relativeY / containerRect.height) * 100;
@@ -1350,14 +1392,15 @@ const onDrag = (e) => {
 
 const stopDrag = () => {
   isDragging.value = false;
+  // Revert cursor and text selection to default
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
   // Remove Mouse Listeners
   window.removeEventListener('mousemove', onDrag);
   window.removeEventListener('mouseup', stopDrag);
-  
   // Remove Touch Listeners
   window.removeEventListener('touchmove', onDrag);
   window.removeEventListener('touchend', stopDrag);
-  
   // Final resize trigger to ensure crisp rendering
   setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
 };
@@ -1447,6 +1490,7 @@ const speedUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/spe
 const countUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/count/{z}/{x}/{y}.png?t=${timestamp.value}`);
 const trendUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/trend/{z}/{x}/{y}.png?t=${timestamp.value}`);
 const vectorUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/vectors/{z}/{x}/{y}.png?t=${timestamp.value}` );
+const hillshadeUrl = computed(() => `${baseUrl}/api/tiles/${currentRegion.value}/hillshade/{z}/{x}/{y}.png?t=${timestamp.value}` );
 
 // --- LEGEND & LAYER LOGIC ---
 // Leaflet's <l-control-layers> handles the actual map toggling.
@@ -1456,12 +1500,13 @@ const iceEdgeStyle = { color: "black", weight: 2 };
 const groundingLineStyle = { color: "magenta", weight: 2 };
 
 const onOverlayAdd = (e) => {  
-  const rasterLayers = ['Ice Speed', 'Measurement Count', 'Speed Trend', 'Flow direction arrows'];
+  const rasterLayers = ['Ice Speed', 'Measurement Count', 'Speed Trend', 'Topography', 'Flow direction arrows'];
   if (rasterLayers.includes(e.name)) {
     // If clicking a raster layer, switch the active raster
 	if (e.name === 'Ice Speed') overlayLayer.value = 'speed';
     if (e.name === 'Measurement Count') overlayLayer.value = 'count';
     if (e.name === 'Speed Trend') overlayLayer.value = 'trend';
+	if (e.name === 'Topography') isHillshadeActive.value = true;
 	if (e.name === 'Flow direction arrows') isFlowActive.value = true;
   } 
   
@@ -1478,6 +1523,7 @@ const onOverlayRemove = (e) => {
   if (e.name === "Ice Speed" && overlayLayer.value === 'speed') overlayLayer.value = 'none';
   if (e.name === "Measurement Count" && overlayLayer.value === 'count') overlayLayer.value = 'none';
   if (e.name === "Speed Trend" && overlayLayer.value === 'trend') overlayLayer.value = 'none'; 
+  if (e.name === "Topography") isHillshadeActive.value = false; 
   if (e.name === "Flow direction arrows") isFlowActive.value = false; 
   
   // Margin data
@@ -1645,6 +1691,13 @@ const refetchAllPoints = async () => {
       win_daily: useSmoothing.win_daily,
       poly: useSmoothing.poly
     };
+	
+	// Auth header injection
+	const token = sessionStorage.getItem('shiver_token');
+    const config = {};
+    if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+    }
 
     // 4. Single Batch Request
     const response = await apiClient.post('/api/timeseries/json', payload);
@@ -1708,6 +1761,25 @@ const onMapClick = async (e) => {
       return;
   }
   
+  // Check free tier limit
+  const token = sessionStorage.getItem('shiver_token'); // Check if logged in
+
+  if (!token) {
+      // If they have already hit the limit
+      if (freeClicksUsed.value >= MAX_FREE_CLICKS) {
+          // Optional: Add a small delay or alert so they know WHY the modal is opening
+          alert(`You have used your ${MAX_FREE_CLICKS} free data inspections. Please log in to continue.`);
+          requireLogin(); // Open the App.vue Login Modal
+          return; // STOP HERE
+      }
+
+      // Otherwise, count this click
+      freeClicksUsed.value++;
+      sessionStorage.setItem('shiver_free_clicks', freeClicksUsed.value);
+      
+      console.log(`Free clicks used: ${freeClicksUsed.value}/${MAX_FREE_CLICKS}`);
+  }
+  
   // 2. PREPARE SETTINGS SNAPSHOT
   // Instead of updating global state, we create a specific settings object 
   // for THIS new point based on the current menu state.
@@ -1725,7 +1797,6 @@ const onMapClick = async (e) => {
     region: currentRegion.value,
     lat: e.latlng.lat.toFixed(4),
     lon: e.latlng.lng.toFixed(4),
-    // Optional: You can now log exactly what they requested
     buffer: newPointSettings.buffer
   });
     
@@ -1827,6 +1898,13 @@ const outlineStyle = () => {
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
+  
+  // Track uploads
+  trackEvent("timeseries_file_upload", {
+    event_category: "interaction",
+    event_label: "timeseries_file_upload",
+    region: currentRegion.value,
+  });
 
   // 1. Validation
   if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
@@ -1859,12 +1937,21 @@ const handleFileUpload = async (event) => {
   formData.append("win_raw", uploadSettings.smoothing.win_raw);
   formData.append("win_daily", uploadSettings.smoothing.win_daily);
   formData.append("poly", uploadSettings.smoothing.poly);
+  
+  // 1. Prepare Headers
+  const token = sessionStorage.getItem('shiver_token');
+  const config = { headers: {} };
+
+    if (token) {
+	    config.headers['Authorization'] = `Bearer ${token}`;
+    }
 
   try {
-    const response = await apiClient.post('/api/timeseries/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-
+  
+	// ping backend
+	const response = await axios.post(`${API_URL}/api/timeseries/upload`, formData, config);
+	
+	// read results
     const results = response.data;
     if (results.status === 'error') throw new Error(results.message);
 
@@ -1956,7 +2043,20 @@ const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
         win_daily: settings.smoothing.win_daily,
         poly: settings.smoothing.poly
     };
-    const response = await apiClient.post('/api/timeseries/json', payload);
+	
+	// 2. Prepare Headers (CORRECT WAY)
+	const token = sessionStorage.getItem('shiver_token');
+	const config = {
+		headers: {}
+	};
+	
+	if (token) {
+		config.headers['Authorization'] = `Bearer ${token}`;
+	}
+  
+	
+	// Response
+    const response = await apiClient.post('/api/timeseries/json', payload, config);
     const rawData = response.data;
     const firstKey = Object.keys(rawData)[0];
     const siteData = rawData[firstKey];
@@ -2534,16 +2634,48 @@ const downloadChartImage = async () => {
           if (typeof updateChart === 'function') await updateChart();
       }
 
-      // 4. Save/Zip
+      // 4. Save/Zip & Logging Preparation
+      let blobToLog = null;
+      let nameToLog = "";
+
       if (filesToSave.length === 1) {
-        saveAs(filesToSave[0].blob, filesToSave[0].name);
+        // --- SINGLE FILE CASE ---
+        const f = filesToSave[0];
+        saveAs(f.blob, f.name);
         statusMessage.value = "Chart downloaded.";
-      } else {
+        
+        // Prepare logging data
+        blobToLog = f.blob;
+        nameToLog = f.name;
+
+      } else if (filesToSave.length > 1) {
+        // --- ZIP FILE CASE ---
         statusMessage.value = "Compressing...";
+        const zip = new JSZip(); // Ensure JSZip is instantiated if not already done outside loop
         filesToSave.forEach(f => zip.file(f.name, f.blob));
+        
         const content = await zip.generateAsync({type:"blob"});
-        saveAs(content, `Velocity_Charts_${currentRegion.value}.zip`);
+        const zipName = `Velocity_Charts_${currentRegion.value || 'Region'}.zip`;
+        
+        saveAs(content, zipName);
         statusMessage.value = "All charts downloaded.";
+
+        // Prepare logging data
+        blobToLog = content;
+        nameToLog = zipName;
+      }
+
+      // 5. Log the Download (Backend)
+      const token = sessionStorage.getItem('shiver_token');
+      
+      if (token && blobToLog) {
+          apiClient.post('/api/users/log', { // Note: Verify this endpoint path*
+             interaction_type: 'chart_export', // Matches your DB string
+             filename: nameToLog,
+             file_size_mb: blobToLog.size / (1024 * 1024)
+          }, {
+             headers: { Authorization: `Bearer ${token}` }
+          }).catch(e => console.error("Logging failed", e));
       }
 
     } catch (error) {
@@ -2642,6 +2774,18 @@ const handleDownload = async () => {
     }
 
     saveAs(content, zipName);
+	
+	// log downloads for each user
+    const token = sessionStorage.getItem('shiver_token');
+    if (token) {
+        apiClient.post('/api/users/log', {
+            interaction_type: 'data_download',
+            filename: zipName,
+            file_size_mb: content.size / (1024 * 1024)
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        }).catch(e => console.error("Logging failed", e));
+    }
 
   } catch (e) {
     statusMessage.value = "Zip Error.";
@@ -2791,7 +2935,7 @@ const generateXLSX = (point, index) => {
   right: 0;
   top: -15px;    /* Extend 15px Up */
   bottom: -15px; /* Extend 15px Down */
-  z-index: 2001; /* Sit on top of everything */
+  z-index: 2500; /* Sit on top of everything */
   cursor: row-resize;
 }
 
@@ -3070,7 +3214,7 @@ const generateXLSX = (point, index) => {
 .btn-remove-icon:hover { color: #e74c3c; }
 
 /* --- MOBILE RESPONSIVENESS FOR BOTTOM-DASHBOARD --- */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   
   /* 1. Stack the dashboard vertically */
   .bottom-dashboard {
@@ -4056,5 +4200,7 @@ const generateXLSX = (point, index) => {
     background: transparent !important;
     padding-top: 0px !important; /* Centers buttons vertically in the margin space */
 }
+
+
 
 </style>

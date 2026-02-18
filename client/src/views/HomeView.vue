@@ -83,8 +83,8 @@ const goToFram = () => {
             <p>Instant visualisation and extraction of velocity timeseries. Utilizing cloud-based architecture for low-latency data access.</p>
           </div>
           <div class="feature-card" @click="goToDocs">
-            <h3>Sentinel-1 Cross-correlation for Accurate Determination of Ice velocity (SCADI)</h3>
-            <p>SCADI is our processing system to generate the ice velocity measurements explored in SHIVER.
+            <h3>SHeffield Ice Flow Tracker (SHIFT)</h3>
+            <p>SHIFT is our processing system to generate the ice velocity measurements explored in SHIVER.
 			With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.</p>
           </div>
         </div>
@@ -126,7 +126,7 @@ const goToFram = () => {
 			  <img :src="StanageLogo" alt="Stanage" class="partner-logo" />
 		   </a>
 		  <br>
-		  SCADI and SHIVER are powered by the University of Sheffield HPC Stanage <br>
+		  SHIFT and SHIVER are powered by the University of Sheffield HPC Stanage <br>
         </div>
         
         <div class="partner-group">
@@ -145,7 +145,7 @@ const goToFram = () => {
           <h4>How to cite</h4>
           <p>
 		  The recommended citation for this data is 
-		  "Ice velocity generated using SCADI (Davison et al., 2020; Tuckett et al., 2019) and provided by the FRAM/SHIVER project (Kingslake/Sole)."
+		  "Ice velocity generated using SHIFT (Davison et al., 2020; Tuckett et al., 2019) and provided by the FRAM/SHIVER project (Kingslake/Sole)."
 		  <br><br>
 		  Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492. 
 		  <br><br>

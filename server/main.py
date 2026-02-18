@@ -11,11 +11,12 @@ import matplotlib.cm as cm
 import cmcrameri.cm as cmc
 from PIL import Image
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 import uvicorn
 
 # --- IMPORTS FOR TILING ---
@@ -28,10 +29,15 @@ import mercantile
 
 # --- BACKEND FUNCTIONS --- 
 from utils.extract_zarr_ts import get_glacier_timeseries
+import models
+from routers import auth, cube, users
+from models import get_db, User, DownloadLog
+from dependencies import get_current_user_optional
+
 
 # --- CREDENTIALS ---
 from dotenv import load_dotenv #
-load_dotenv() # Load the variables from .env immediately
+load_dotenv() # Load the variables from .env 
 
 # --- CONFIGURATION: TIFF PATHS (ADDED) ---
 current_os = platform.system()
@@ -39,9 +45,13 @@ current_os = platform.system()
 if current_os == "Windows":
     base_path_gr = Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/multiyear/20141011_20250826")
     base_path_ant = Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/multiyear/20141125_20250805")
+    hillshade_path_gr = Path("R:/aux_data/DEM")
+    hillshade_path_ant = Path("R:/aux_data/DEM")
 else:
     base_path_gr = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/multiyear/20141011_20250826")
     base_path_ant = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/multiyear/20141125_20250805")
+    hillshade_path_gr = Path("/mnt/parscratch/users/gg1bjd/SCADI/web/hillshade")
+    hillshade_path_ant = Path("/mnt/parscratch/users/gg1bjd/SCADI/web/hillshade")
 
 TIFF_PATHS = {
     "Greenland": {
@@ -49,14 +59,16 @@ TIFF_PATHS = {
         "u"    : base_path_gr / "U_median_20141011_20250826_200m_timefiltered_cog.tif",
         "v"    : base_path_gr / "V_median_20141011_20250826_200m_timefiltered_cog.tif",
         "count": base_path_gr / "perc_finite_px_20141011_20250826_200m_timefiltered_cog.tif",
-        "trend": base_path_gr.parent / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif"
+        "trend": base_path_gr.parent / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif",
+        "hillshade": hillshade_path_gr / "DEM_90m_hillshade_clipped_cog.tif"
     },
     "Antarctica": {
         "speed": base_path_ant / "S_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "u":     base_path_ant / "U_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "v":     base_path_ant / "V_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "count": base_path_ant / "perc_finite_px_20141125_20250805_200m_timefiltered_cog.tif",
-        "trend": base_path_ant.parent / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif"
+        "trend": base_path_ant.parent / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif",
+        "hillshade": hillshade_path_ant / "REMA_100m_peninsula_hillshade_cog.tif"
     }
 }
 
@@ -119,12 +131,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",                 # Local Vue testing
+        "http://localhost:8000",
         "https://ben-davison.github.io",         # Public Frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
 )
+
+# Create the database tables in your dev environment
+models.Base.metadata.create_all(bind=models.engine)
+
+# --- Activate the new routes ---
+app.include_router(cube.router)
+app.include_router(auth.router)
+app.include_router(users.router)
 
 # --- CONFIG: STATIC FILES ---
 # Mounts the 'static' folder to serve GeoJSON/CSS/JS files
@@ -288,6 +310,33 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
     """
     Dynamic Tile Server: Region-specific limits & Transparency rules.
     """
+    # --- DEBUGGING BLOCK START ---
+    print(f"\n--- REQUEST: {region} / {layer_type} ---")
+    
+    # 1. Check Dictionary Lookups
+    if region not in TIFF_PATHS:
+        print(f"❌ Error: Region '{region}' not found in TIFF_PATHS keys: {list(TIFF_PATHS.keys())}")
+        raise HTTPException(status_code=404, detail=f"Region '{region}' not configured")
+        
+    if layer_type not in TIFF_PATHS[region]:
+        print(f"❌ Error: Layer '{layer_type}' not found for region '{region}'. Available: {list(TIFF_PATHS[region].keys())}")
+        raise HTTPException(status_code=404, detail=f"Layer '{layer_type}' not found")
+
+    # 2. Check File Path
+    file_path = TIFF_PATHS[region][layer_type]
+    print(f"📂 Looking for file at: {file_path}")
+    print(f"   Absolute path: {file_path.absolute()}")
+
+    if not file_path.exists():
+        print(f"❌ FILE MISSING! Python cannot see this file.")
+        # Common Windows Pitfall: Check if the drive is accessible
+        if str(file_path).startswith("R:"):
+            print("   ⚠️ Note: You are using the R: drive. If this is a network drive, ensure the terminal running Python has permissions to see it.")
+        raise HTTPException(status_code=404, detail=f"File not found on server at: {file_path}")
+    
+    print("✅ File found. Attempting to read COG...")
+    # --- DEBUGGING BLOCK END ---
+    
     if region not in TIFF_PATHS or layer_type not in TIFF_PATHS[region]:
         raise HTTPException(status_code=404, detail="Layer not found")
     
@@ -303,7 +352,10 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
             except TileOutsideBounds:
                 return Response(content=Image.new('RGBA', (256, 256), (0, 0, 0, 0)).tobytes("png"), media_type="image/png")
 
-            data = img.data[0].astype('float32')
+            if layer_type == "hillshade":
+                data = img.data[0].astype('uint8')
+            else:
+                data = img.data[0].astype('float32')
 
             alpha_mask = np.zeros(data.shape, dtype=np.uint8)
             
@@ -324,6 +376,9 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
                 
                 # Make areas with a weak trend very transparent
                 alpha_mask[(data > -0.5) & (data < 0.5)] = 40
+                
+            elif layer_type == "hillshade":
+                alpha_mask[data > 0] = 255
                 
             else:
                 # --- COUNT LOGIC ---
@@ -363,6 +418,10 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
 
                 norm = (data - min_v) / (max_v - min_v)
                 use_custom = False # We will use matplotlib 'bwr'
+            
+            elif layer_type == "hillshade":
+                norm = data.astype(float) / 255.0
+                use_custom = False
 
             else:
                 # Count Layer
@@ -396,6 +455,8 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
                     # This matches the "positive = red" requirement
                     #cm_data = cm.bwr(norm) 
                     cm_data = cmc.vik(norm)
+                elif layer_type == "hillshade":
+                    cm_data = cmc.grayC(norm)
                 else:
                     # 'viridis' for Count
                     cm_data = cm.viridis(norm)
@@ -438,11 +499,37 @@ def authenticate(payload: LoginRequest):
         raise HTTPException(status_code=401, detail="Incorrect password")
 
 @app.post("/api/timeseries/json")
-def extract_from_json(payload: RoiRequest):
+def extract_from_json(
+    payload: RoiRequest,
+    # logging dependencies
+    db: Session = Depends(get_db), 
+    user: Optional[User] = Depends(get_current_user_optional)
+):
     """
     Extracts time series for coordinates provided in JSON body.
     """
     print(f"JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer} | Vars: {payload.variable} | Qual: {payload.quality}")
+    
+    # --- LOGGING LOGIC ---
+    if user:
+        try:
+            # Create a label (e.g. "Map Selection (1 points)")
+            count = len(payload.roi)
+            log_name = f"Map Selection ({count} points)"
+            
+            # Create the log entry
+            log = DownloadLog(
+                user_id=user.id,
+                interaction_type="map_click",
+                filename=log_name,
+                file_size_mb=0.005 * count # Small estimate (5KB per point)
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            # We wrap this in try/except so logging errors don't break the actual data fetch
+            print(f"⚠️ Logging failed: {e}")
+    
     try:
         results = get_glacier_timeseries(
             location_input=payload.roi,
@@ -471,8 +558,30 @@ async def upload_shapefile(
     gap_fill: int = Form(24),
     win_raw: int = Form(25),
     win_daily: int = Form(25),
-    poly: int = Form(2)
+    poly: int = Form(2),
+    # logging dependencies
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user_optional)
 ):
+    
+    # 1. LOGGING LOGIC
+    if user:
+        try:
+            # Estimate file size (file.size might be unavailable in spool, so we guess 0.5MB or check)
+            # Or use: file.file.seek(0, 2); size = file.file.tell(); file.file.seek(0)
+            size_mb = 0.5 
+            
+            log = DownloadLog(
+                user_id=user.id,
+                interaction_type="file_upload",
+                filename=file.filename,
+                file_size_mb=size_mb
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            print(f"⚠️ Logging failed: {e}")
+            
     suffix = os.path.splitext(file.filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         shutil.copyfileobj(file.file, tmp)
