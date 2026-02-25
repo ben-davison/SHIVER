@@ -823,13 +823,16 @@ const downloadCube = async () => {
       variables: selectedVariables.value,
       frequency: frequency.value
     };
+	
+	// Grab the token directly from sessionStorage
+    const token = sessionStorage.getItem('shiver_token');
 
     // We request 'blob' because 90% of the time it will be a file.
     // If it is JSON (202 Accepted), we will convert the blob to text manually.
     const response = await apiClient.post('/api/cube/download', payload, {
       responseType: 'blob', 
       headers: { 
-        'Authorization': `Bearer ${auth.token}` 
+        'Authorization': `Bearer ${token}` 
       }
     });
 
