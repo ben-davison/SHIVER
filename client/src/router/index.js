@@ -20,11 +20,10 @@ const router = createRouter({
     return { top: 0 }
   },
   
-  // Define routes
+  // Define routes { path: '/cube', name: 'cube', component: CubeView, meta: { requiresAuth: true } },
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/map', name: 'map', component: MapView },
-	{ path: '/cube', name: 'cube', component: CubeView, meta: { requiresAuth: true } },
     { path: '/documentation', name: 'documentation', component: DocumentationView },
     { path: '/fram', name: 'fram', component: FramView },
     { path: '/people', name: 'people', component: PeopleView },

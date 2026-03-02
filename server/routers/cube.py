@@ -46,7 +46,7 @@ async def process_large_cube(payload: CubeRequest, user_email: str, target_freq:
             date_range=(payload.date_start, payload.date_end),
             variables=payload.variables,
             frequency=target_freq,
-            max_size_mb=5000 # Allow larger limits for background jobs
+            max_size_mb=50 # Allow larger limits for background jobs
         )
         
         # 2. Generate a Download Link
@@ -144,7 +144,7 @@ def download_cube(request: Request, payload: CubeRequest, background_tasks: Back
                 date_range=(payload.date_start, payload.date_end),
                 variables=payload.variables,
                 frequency=target_freq,
-                max_size_mb=LARGE_FILE_THRESHOLD_MB + 1000
+                max_size_mb=LARGE_FILE_THRESHOLD_MB + 5
             )
             
             filename = f"{region}_{payload.frequency}_{payload.date_start}_{payload.date_end}.nc"

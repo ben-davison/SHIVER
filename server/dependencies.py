@@ -26,7 +26,7 @@ MAIL_SERVER = os.getenv("MAIL_SERVER")
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
 
 # Threshold for "Large" files in Megabytes
-LARGE_FILE_THRESHOLD_MB = 1000
+LARGE_FILE_THRESHOLD_MB = 50
 
 # This tells FastAPI that the token comes from the /auth/login endpoint
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
