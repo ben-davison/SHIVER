@@ -1,38 +1,29 @@
 <script setup>
 import { ref } from 'vue';
+import apiClient, { API_URL } from '../api';
 
 const password = ref('');
 const error = ref(false);
 const isLoading = ref(false); // Add a loading state
 const emit = defineEmits(['login-success']);
 
-// Get the API URL from the environment (defined in .env.production)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
 const checkLogin = async () => {
   error.value = false;
   isLoading.value = true;
 
   try {
-    // Send the password to your PC to be checked
-    const response = await fetch(`${API_URL}/api/auth`, {
-	  method: 'POST',
-	  headers: { 
-		'Content-Type': 'application/json',
-		'ngrok-skip-browser-warning': 'true' // <--- ADD THIS LINE
-	  },
-	  body: JSON.stringify({ password: password.value })
-	});
+    // apiClient automatically knows the API_URL and sets the headers!
+    const response = await apiClient.post('/api/auth', { 
+      password: password.value 
+    });
 
-    if (response.ok) {
+    if (response.status === 200) {
       emit('login-success');
-    } else {
-      error.value = true; // 401 Unauthorized
     }
   } catch (e) {
     console.error("Login Error:", e);
-    error.value = true;
-    alert("Could not connect to the server. Is your PC/Ngrok running?");
+    // Axios throws an error for 401s automatically
+    error.value = true; 
   } finally {
     isLoading.value = false;
   }

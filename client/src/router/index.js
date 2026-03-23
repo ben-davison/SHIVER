@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import HomeView from '../views/HomeView.vue'
 import MapView from '../views/MapView.vue'
+import CubeView from '../views/CubeView.vue'
 import DocumentationView from '../views/DocumentationView.vue'
 import FramView from '../views/FramView.vue'
 import PeopleView from '../views/PeopleView.vue'
@@ -23,6 +24,7 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/map', name: 'map', component: MapView },
+	 { path: '/cube', name: 'cube', component: CubeView, meta: { requiresAuth: true } },
     { path: '/documentation', name: 'documentation', component: DocumentationView },
     { path: '/fram', name: 'fram', component: FramView },
     { path: '/people', name: 'people', component: PeopleView },

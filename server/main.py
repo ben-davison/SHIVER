@@ -48,10 +48,10 @@ if current_os == "Windows":
     hillshade_path_gr = Path("R:/aux_data/DEM")
     hillshade_path_ant = Path("R:/aux_data/DEM")
 else:
-    base_path_gr = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/multiyear/20141011_20250826")
-    base_path_ant = Path("/mnt/parscratch/users/gg1bjd/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/multiyear/20141125_20250805")
-    hillshade_path_gr = Path("/mnt/parscratch/users/gg1bjd/SCADI/web/hillshade")
-    hillshade_path_ant = Path("/mnt/parscratch/users/gg1bjd/SCADI/web/hillshade")
+    base_path_gr = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
+    base_path_ant = Path("/home/sa_gg1bjd/web_HPC/data/Antarctica/overlays")
+    hillshade_path_gr = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
+    hillshade_path_ant = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
 
 TIFF_PATHS = {
     "Greenland": {
@@ -59,7 +59,7 @@ TIFF_PATHS = {
         "u"    : base_path_gr / "U_median_20141011_20250826_200m_timefiltered_cog.tif",
         "v"    : base_path_gr / "V_median_20141011_20250826_200m_timefiltered_cog.tif",
         "count": base_path_gr / "perc_finite_px_20141011_20250826_200m_timefiltered_cog.tif",
-        "trend": base_path_gr.parent / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif",
+        "trend": base_path_gr / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif",
         "hillshade": hillshade_path_gr / "DEM_90m_hillshade_clipped_cog.tif"
     },
     "Antarctica": {
@@ -67,7 +67,7 @@ TIFF_PATHS = {
         "u":     base_path_ant / "U_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "v":     base_path_ant / "V_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
         "count": base_path_ant / "perc_finite_px_20141125_20250805_200m_timefiltered_cog.tif",
-        "trend": base_path_ant.parent / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif",
+        "trend": base_path_ant / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif",
         "hillshade": hillshade_path_ant / "REMA_100m_peninsula_hillshade_cog.tif"
     }
 }
@@ -88,7 +88,7 @@ def load_custom_palette(path: Path):
     Returns numpy array of shape (N, 3).
     """
     if not path.exists():
-        print(f"⚠️ Palette not found: {path}")
+        print(f"  Palette not found: {path}")
         return None
 
     colors = []
@@ -107,11 +107,11 @@ def load_custom_palette(path: Path):
         
         # Convert to numpy array (N rows, 3 columns)
         palette_arr = np.array(colors, dtype=np.uint8)
-        print(f"✅ Loaded {len(palette_arr)} colors from {path.name}")
+        print(f"  Loaded {len(palette_arr)} colors from {path.name}")
         return palette_arr
 
     except Exception as e:
-        print(f"❌ Error loading palette {path.name}: {e}")
+        print(f"  Error loading palette {path.name}: {e}")
         return None
 
 # Load Palettes
@@ -131,7 +131,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",                 # Local Vue testing
+        "http://localhost:5174",
         "http://localhost:8000",
+        "http://127.0.0.1:5174",
         "https://ben-davison.github.io",         # Public Frontend
     ],
     allow_credentials=True,
@@ -292,7 +294,7 @@ async def get_vector_tile(region: str, z: int, x: int, y: int):
         return Response(content=buf.read(), media_type="image/png")
 
     except Exception as e:
-        print(f"🔥 Vector Error: {e}")
+        print(f"Vector Error: {e}")
         return _empty_tile()
 
 def _empty_tile():
@@ -315,26 +317,26 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
     
     # 1. Check Dictionary Lookups
     if region not in TIFF_PATHS:
-        print(f"❌ Error: Region '{region}' not found in TIFF_PATHS keys: {list(TIFF_PATHS.keys())}")
+        print(f"Error: Region '{region}' not found in TIFF_PATHS keys: {list(TIFF_PATHS.keys())}")
         raise HTTPException(status_code=404, detail=f"Region '{region}' not configured")
         
     if layer_type not in TIFF_PATHS[region]:
-        print(f"❌ Error: Layer '{layer_type}' not found for region '{region}'. Available: {list(TIFF_PATHS[region].keys())}")
+        print(f"Error: Layer '{layer_type}' not found for region '{region}'. Available: {list(TIFF_PATHS[region].keys())}")
         raise HTTPException(status_code=404, detail=f"Layer '{layer_type}' not found")
 
     # 2. Check File Path
     file_path = TIFF_PATHS[region][layer_type]
-    print(f"📂 Looking for file at: {file_path}")
+    print(f"   Looking for file at: {file_path}")
     print(f"   Absolute path: {file_path.absolute()}")
 
     if not file_path.exists():
-        print(f"❌ FILE MISSING! Python cannot see this file.")
+        print("FILE MISSING! Python cannot see this file.")
         # Common Windows Pitfall: Check if the drive is accessible
         if str(file_path).startswith("R:"):
-            print("   ⚠️ Note: You are using the R: drive. If this is a network drive, ensure the terminal running Python has permissions to see it.")
+            print("   Note: You are using the R: drive. If this is a network drive, ensure the terminal running Python has permissions to see it.")
         raise HTTPException(status_code=404, detail=f"File not found on server at: {file_path}")
     
-    print("✅ File found. Attempting to read COG...")
+    print("  File found. Attempting to read COG...")
     # --- DEBUGGING BLOCK END ---
     
     if region not in TIFF_PATHS or layer_type not in TIFF_PATHS[region]:
@@ -490,7 +492,7 @@ def authenticate(payload: LoginRequest):
     
     if not secret:
         # Fallback if you forgot to create the .env file
-        print("⚠️ Warning: No password set in .env file")
+        print("  Warning: No password set in .env file")
         raise HTTPException(status_code=500, detail="Server misconfiguration")
 
     if payload.password == secret:
@@ -528,7 +530,7 @@ def extract_from_json(
             db.commit()
         except Exception as e:
             # We wrap this in try/except so logging errors don't break the actual data fetch
-            print(f"⚠️ Logging failed: {e}")
+            print(f"  Logging failed: {e}")
     
     try:
         results = get_glacier_timeseries(
@@ -544,7 +546,7 @@ def extract_from_json(
         )
         return results
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"  Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -580,7 +582,7 @@ async def upload_shapefile(
             db.add(log)
             db.commit()
         except Exception as e:
-            print(f"⚠️ Logging failed: {e}")
+            print(f"  Logging failed: {e}")
             
     suffix = os.path.splitext(file.filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -606,5 +608,5 @@ async def upload_shapefile(
             except PermissionError: pass
 
 if __name__ == "__main__":
-    print("🚀 FastAPI Server starting on http://localhost:8000")
+    print("FastAPI Server starting on http://localhost:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000, timeout_keep_alive=30)

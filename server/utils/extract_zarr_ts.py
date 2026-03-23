@@ -16,13 +16,13 @@ if current_os == "Windows":
     desktop_ant_path = Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
 
     if desktop_gr_path.exists():
-        print("🖥️  Environment: Windows (Desktop - Full Data)")
+        print("Environment: Windows (Desktop - Full Data)")
         DATA_STORES = {
             'Greenland': {'path': desktop_gr_path, 'crs': "EPSG:3413"},
             'Antarctica': {'path': desktop_ant_path, 'crs': "EPSG:3031"}
         }
     else:
-        print("💻  Environment: Windows (Laptop - Mini Data)")
+        print("Environment: Windows (Laptop - Mini Data)")
         DATA_STORES = {
             'Greenland': {
                 'path': Path("D:/work/Fellowship_Leeds/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/mini_date_pair.zarr"),
@@ -34,10 +34,10 @@ if current_os == "Windows":
             }
         }
 else:
-    stanage_gr_grio1_path = Path("/shared/grio1/Shared/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair.zarr")
-    stanage_ant_grio1_path = Path("/shared/grio1/Shared/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
+    stanage_gr_grio1_path = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/mini_date_pair.zarr")
+    stanage_ant_grio1_path = Path("/home/sa_gg1bjd/web_HPC/data/Antarctica/mini_date_pair.zarr")
     
-    print("🚀 Environment: Linux (HPC Production)")
+    print("Environment: Linux (HPC Production)")
     if stanage_gr_grio1_path.exists():
         DATA_STORES = {
             'Greenland': {'path': stanage_gr_grio1_path, 'crs': "EPSG:3413"},

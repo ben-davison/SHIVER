@@ -380,7 +380,7 @@
 			>
 			  <span v-if="isDownloading" class="spinner-small"></span>
 			  <span v-else>
-				{{ estimatedSize > 100 ? 'Request via Email' : 'Download NetCDF' }}
+				{{ estimatedSize > 2000 ? 'Request via Email' : 'Download NetCDF' }}
 			  </span>
 			</button>
 		  </div>
@@ -698,9 +698,9 @@ const frequency = ref('monthly');
 const selectedVariables = ref(['s_filt']);
 
 // Cube limits
-const MAX_SPATIAL_PIXELS = 10000;
-const MAX_AREA_SQM = 400000000; // 10,000 sq km
-const MAX_VOLUME_MB = 100;
+const MAX_SPATIAL_PIXELS = 5000000;
+const MAX_AREA_SQM = 10000000000; // 10,000 sq km
+const MAX_VOLUME_MB = 2000;
 
 const availableVariables = [
   { id: 's_filt', name: 'Speed (Time-filtered)' },
