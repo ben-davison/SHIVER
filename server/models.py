@@ -23,6 +23,7 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     reset_token = Column(String, nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
     downloads = relationship("DownloadLog", back_populates="user")
 
 

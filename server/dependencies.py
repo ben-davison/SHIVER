@@ -8,6 +8,7 @@ from models import get_db, User
 import os
 from typing import Optional
 from dotenv import load_dotenv
+import redis
 
 # Load the .env file
 load_dotenv()
@@ -24,6 +25,18 @@ MAIL_FROM = os.getenv("MAIL_FROM")
 MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_SERVER = os.getenv("MAIL_SERVER")
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
+
+# --- REDIS CONFIGURATION ---
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+
+# Initialize a global Redis client
+redis_client = redis.Redis(
+    host=REDIS_HOST, 
+    port=REDIS_PORT, 
+    db=0, 
+    decode_responses=True
+)
 
 # Threshold for "Large" files in Megabytes
 LARGE_FILE_THRESHOLD_MB = 2000

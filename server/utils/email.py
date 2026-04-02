@@ -37,11 +37,11 @@ async def send_cube_ready_email(email_to: str, download_link: str, region: str):
     
     try:
         # Connect to Gmail and send
-        print(f"📧 Sending email to {email_to}...")
+        print(f"Sending email to {email_to}...")
         await fm.send_message(message) 
-        print(f"✅ Email successfully sent!")
+        print(f"Email successfully sent!")
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"Failed to send email: {e}")
         
 
 async def send_password_reset_email(email_to: str, token: str):
@@ -54,12 +54,13 @@ async def send_password_reset_email(email_to: str, token: str):
     <p>We received a request to reset your password.</p>
     <p>Click the link below to set a new password:</p>
     <p>
-      <a href="{reset_link}" style="padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px;">
+      <a href="{reset_link}" style="padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0px;">
         Reset Password
       </a>
     </p>
-    <p>Or copy this link: {reset_link}</p>
-    <p>If you did not request this, please ignore this email.</p>
+    <p>Or copy this link: <br><a href="{reset_link}">{reset_link}</a></p>
+    <p><strong>Please note:</strong> This password reset link will expire in 1 hour.</p>
+    <p>If you did not request this, please ignore this email. Your password will remain unchanged.</p>
     """
 
     message = MessageSchema(
@@ -72,8 +73,8 @@ async def send_password_reset_email(email_to: str, token: str):
     fm = FastMail(conf)
     
     try:
-        print(f"📧 Sending reset email to {email_to}...")
+        print(f"Sending reset email to {email_to}...")
         await fm.send_message(message) 
-        print(f"✅ Reset email sent!")
+        print(f"Reset email sent!")
     except Exception as e:
-        print(f"❌ Failed to send reset email: {e}")
+        print(f"Failed to send reset email: {e}")
