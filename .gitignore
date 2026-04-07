@@ -85,3 +85,4 @@ create_dev_user.py
 .env.development
 .env.production
 tests/
+requirements.txt

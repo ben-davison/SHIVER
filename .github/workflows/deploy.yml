@@ -20,6 +20,8 @@ jobs:
           node-version: 20
 
       - name: Install and Build
+        env:
+          VITE_API_URL: https://shiver.shef.ac.uk
         run: |
           cd client
           npm install
