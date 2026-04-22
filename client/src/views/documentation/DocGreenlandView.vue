@@ -191,7 +191,7 @@ onMounted(() => {
 	  <AppLink to="https://datadryad.org/dataset/doi:10.7280/D11H3X" target="_blank" rel="noopener" class="text-link">2010-2017</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 2.8: Overview of the Greenland Mouginot annual data.">
-			<img src="../../assets/documentation/greenland/verification_maps_mouginot_annual.png" alt="Mouginot annual data overview">
+			<img src="../../assets/documentation/greenland/verification_maps_Mouginot_annual.png" alt="Mouginot annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
