@@ -10,100 +10,16 @@ from datetime import datetime
 
 # Import your existing paths
 from utils.extract_zarr_ts import DATA_STORES 
-
-# --- estimate cube size ---
-def estimate_cube_size(geojson_geometry, date_range, variables, frequency):
-    """
-    Opens the Zarr (lazy), subsets metadata, and returns estimated size in MB.
-    Does NOT load actual data.
-    """
-    # 1. Parse Geometry & Detect Region
-    user_shape = shape(geojson_geometry)
-    
-    if user_shape.centroid.y < 0:
-        region = "Antarctica"
-        target_crs = "EPSG:3031"
-    else:
-        region = "Greenland"
-        target_crs = "EPSG:3413"
-        
-    store_info = DATA_STORES.get(region)
-    if not store_info:
-        raise ValueError(f"Region not found for lat: {user_shape.centroid.y}")
-
-
-    # 2. Project Geometry to Data CRS
-    gdf = gpd.GeoDataFrame({'geometry': [user_shape]}, crs="EPSG:4326")
-    gdf_proj = gdf.to_crs(target_crs)
-    minx, miny, maxx, maxy = gdf_proj.total_bounds
-    
-    # 3. Open Zarr Store (Lazy Load)
-    ds = xr.open_zarr(store_info['path'], consolidated=True, chunks=None)
-    
-    # 4. Variable Selection
-    available_vars = [v for v in variables if v in ds]
-    ds = ds[available_vars]
-
-    # 5. Spatial Subsetting (Bounding Box)
-    # We do this FIRST to reduce the data we have to sort/process
-    buffer = 200 
-    y_slice = slice(maxy + buffer, miny - buffer) if ds.y[0] > ds.y[-1] else slice(miny - buffer, maxy + buffer)
-    subset = ds.sel(
-        x=slice(minx - buffer, maxx + buffer), 
-        y=y_slice
-    )
-    
-    # 6. Sort and crop time
-    subset = subset.sortby("time")
-    subset = subset.sel(time=slice(date_range[0], date_range[1]))
-    
-    
-    # 7. Estimate data volume 
-    raw_nbytes = subset.nbytes 
-    if raw_nbytes == 0:
-        return 0
-
-    # Adjust depending on frequency of output
-    if frequency == "native":
-        return raw_nbytes / (1024 * 1024)
-
-    native_steps = subset.time.size
-    if native_steps == 0: return 0
-
-    # Calculate how many steps the target frequency produces
-    try:
-        # Generate the theoretical date range
-        # Note: 'frequency' must be a valid pandas offset alias (MS, QS, AS, etc.)
-        # We use the start/end from the user request
-        target_range = pd.date_range(start=date_range[0], end=date_range[1], freq=frequency)
-        target_steps = len(target_range)
-    except Exception:
-        # Fallback if frequency string is weird: assume no reduction
-        target_steps = native_steps
-
-    if target_steps == 0: target_steps = 1
-    
-    # Ratio: e.g., if Native has 100 steps and Annual has 2, ratio is 0.02
-    ratio = target_steps / native_steps
-    
-    # Apply ratio to size
-    estimated_mb = (raw_nbytes * ratio) / (1024 * 1024)
-    
-    # If resampling, reduce size roughly by ratio of time steps
-    # (This is optional, nbytes on the raw subset is a safe "Upper Bound")
-    return estimated_mb
-
-
+from utils.citations import generate_citation_text
 
 
 # --- Extract the cube ---
 def generate_netcdf_cube(
     geojson_geometry: dict,
     date_range: tuple[str, str], 
-    variables: list[str] = ["s_filt", "u_filt", "v_filt", "s_raw", "u_raw", "v_raw"], # Adjusted to match your defaults
-    frequency: str = "native",
-    max_size_mb: int = 500
-) -> str:
+    variables: list[str] = ["s_filt", "u_filt", "v_filt", "s_raw", "u_raw", "v_raw"], 
+    frequency: str = "native"
+) -> tuple[str, str, str,  str]:
     """
     Generates a QGIS-ready NetCDF file for a specific ROI and time period.
     Handles unsorted dates and duplicates automatically.
@@ -207,7 +123,7 @@ def generate_netcdf_cube(
             all_touched=True
         )
     except Exception as e:
-        print(f"⚠️ Clipping failed: {e}. Returning unclipped bounding box.")
+        print(f"Clipping failed: {e}. Returning unclipped bounding box.")
     # -----------------------------------
 
     
@@ -325,9 +241,56 @@ def generate_netcdf_cube(
         elif 'v_' in lower_name or var_name == 'v':
             subset[var_name].attrs['long_name'] = "ice surface northing velocity"
             subset[var_name].attrs['units'] = "m yr-1"
-               
+            
+    
+    # C. Generate Citation Text (Hardcoded to SHIFT)
+    citation_text = generate_citation_text(["SHIFT"], region)
+    
+    # 1. SHIVER Row
+    shiver_citations = (
+        "SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX\n"
+        "SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX\n"
+        "SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5283/essd.XXXXXXX"
+    )
+    
+    summary_rows = [{
+        "Data Source": "SHIVER",
+        "First Date": "",
+        "Last Date": "",
+        "Mode Temporal Resolution (days)": "",
+        "Epochs (Measurements)": "",
+        "Citation": shiver_citations
+    }]
+    
+    first_date = pd.to_datetime(subset.time.values.min()).strftime('%Y-%m-%d') if subset.time.size > 0 else date_range[0]
+    last_date = pd.to_datetime(subset.time.values.max()).strftime('%Y-%m-%d') if subset.time.size > 0 else date_range[1]
+    
+    mode_res = "N/A"
+    # Note: If user requested monthly/annual frequency, time_separation might not exist here.
+    if "time_separation" in subset:
+        mode_vals = pd.Series(subset["time_separation"].values).dropna().mode()
+        if not mode_vals.empty:
+            mode_res = round(float(mode_vals.iloc[0]), 2)
+            
+    epochs = len(subset.time)
+    
+    # Get the SHIFT citation
+    full_cite = generate_citation_text(["SHIFT"], region)
+    delimiter = "cite these original sources:\n\n* "
+    clean_cite = full_cite.split(delimiter)[1].strip() if delimiter in full_cite else full_cite.split("* ")[-1].strip()
+    
+    summary_rows = [{
+        "Data Source": "SHIFT",
+        "First Date": first_date,
+        "Last Date": last_date,
+        "Mode Temporal Resolution (days)": mode_res+1,
+        "Epochs (Measurements)": epochs,
+        "Citation": clean_cite
+    }]
+    
+    csv_text = pd.DataFrame(summary_rows).to_csv(index=False)
                 
-    # C. Global Attributes (Point 1)
+    # D. Global Attributes (Point 1)
     time_start = pd.to_datetime(subset.time.values.min()).strftime('%Y%m%d')
     time_end = pd.to_datetime(subset.time.values.max()).strftime('%Y%m%d')
     
@@ -342,16 +305,10 @@ def generate_netcdf_cube(
         'time_coverage_end': time_end,
         'keywords': f"{region}, velocity, Sentinel-1",
         'Conventions': 'CF-1.8, ACDD-1.3',
-        'date_created': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        'date_created': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'acknowledgment': citation_text
     }
-    
-    estimated_mb = subset.nbytes / (1024 * 1024) # MB
-    
-    if estimated_mb > max_size_mb:
-        raise ValueError(
-            f"Resulting data cube is too large ({estimated_mb:.0f} MB). "
-            f"Please reduce area or time range."
-        )
+        
     
     # 8. QGIS Compatibility
     # Ensure a CRS variable exists (rioxarray magic)
@@ -362,10 +319,25 @@ def generate_netcdf_cube(
     # Prepare encoding for compression
     encoding = {}
     for var in subset.data_vars:
-        encoding[var] = {'zlib': True, 'complevel': 5, 'shuffle': True, '_FillValue': -9999.0}
+        # Handle string arrays (like data_source) safely without float _FillValues
+        if subset[var].dtype.kind in 'UOS': 
+            encoding[var] = {'zlib': True, 'complevel': 5}
+        else:
+            encoding[var] = {'zlib': True, 'complevel': 5, 'shuffle': True, '_FillValue': -9999.0}
+            
+        # Specific override for measurement_count to save space
         if var == "measurement_count":
-             encoding[var]['dtype'] = 'int16' # Force integer type to save space
+             encoding[var]['dtype'] = 'int16'
              encoding[var]['_FillValue'] = -1
+             
+    # Force identical time encoding across ALL data cubes
+    # This prevents the int64/scipy crash and guarantees consistency
+    encoding['time'] = {
+        'units': 'days since 1950-01-01',
+        'calendar': 'proleptic_gregorian',
+        'dtype': 'float64',
+        '_FillValue': None
+    }
         
     # Get the directory of this script, then go up to 'server/static/exports'
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -382,8 +354,7 @@ def generate_netcdf_cube(
     output_path = os.path.join(export_dir, filename)
 
     # Save to this specific path
-    subset.to_netcdf(output_path)
-    
-    print(f"✅ Saved cube to: {output_path}")
+    subset.to_netcdf(output_path, encoding=encoding, engine='netcdf4', format='NETCDF4')    
+    print(f"Saved cube to: {output_path}")
 
-    return output_path, region
+    return output_path, region, citation_text, csv_text

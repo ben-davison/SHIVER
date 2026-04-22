@@ -11,10 +11,11 @@ import matplotlib.cm as cm
 import cmcrameri.cm as cmc
 from PIL import Image
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.responses import Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import uvicorn
@@ -25,52 +26,31 @@ from rio_tiler.errors import TileOutsideBounds
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import mercantile
 
 # --- BACKEND FUNCTIONS --- 
 from utils.extract_zarr_ts import get_glacier_timeseries
+from utils.extract_multi_zarr_ts import get_multi_glacier_timeseries
+from utils.zarr_metadata import load_zarr_metadata, clear_zarr_metadata
 import models
-from routers import auth, cube, users
+from routers import auth, cube, multiSourceCube, users, analysis
 from models import get_db, User, DownloadLog
 from dependencies import get_current_user_optional
+from config import TIFF_PATHS
 
 
 # --- CREDENTIALS ---
 from dotenv import load_dotenv #
-load_dotenv() # Load the variables from .env 
+load_dotenv() # Load the variables from .env immediately
 
-# --- CONFIGURATION: TIFF PATHS (ADDED) ---
-current_os = platform.system()
+# --- LIFESPAN MANAGER ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Load the data into memory
+    load_zarr_metadata()
+    yield
+    # Shutdown: Clear it out
+    clear_zarr_metadata()
 
-if current_os == "Windows":
-    base_path_gr = Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/multiyear/20141011_20250826")
-    base_path_ant = Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/multiyear/20141125_20250805")
-    hillshade_path_gr = Path("R:/aux_data/DEM")
-    hillshade_path_ant = Path("R:/aux_data/DEM")
-else:
-    base_path_gr = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
-    base_path_ant = Path("/home/sa_gg1bjd/web_HPC/data/Antarctica/overlays")
-    hillshade_path_gr = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
-    hillshade_path_ant = Path("/home/sa_gg1bjd/web_HPC/data/Greenland/overlays")
-
-TIFF_PATHS = {
-    "Greenland": {
-        "speed": base_path_gr / "S_median_20141011_20250826_200m_timefiltered_cog.tif",
-        "u"    : base_path_gr / "U_median_20141011_20250826_200m_timefiltered_cog.tif",
-        "v"    : base_path_gr / "V_median_20141011_20250826_200m_timefiltered_cog.tif",
-        "count": base_path_gr / "perc_finite_px_20141011_20250826_200m_timefiltered_cog.tif",
-        "trend": base_path_gr / "speed_linear_trend_20141017_20251224_200m_raw_smoothed_spatial3x3_sig_masked.tif",
-        "hillshade": hillshade_path_gr / "DEM_90m_hillshade_clipped_cog.tif"
-    },
-    "Antarctica": {
-        "speed": base_path_ant / "S_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
-        "u":     base_path_ant / "U_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
-        "v":     base_path_ant / "V_median_20141125_20250805_200m_timefiltered_cog_masked.tif",
-        "count": base_path_ant / "perc_finite_px_20141125_20250805_200m_timefiltered_cog.tif",
-        "trend": base_path_ant / "speed_linear_trend_20141201_20251227_200m_raw_smoothed_spatial3x3_sig_masked.tif",
-        "hillshade": hillshade_path_ant / "REMA_100m_peninsula_hillshade_cog.tif"
-    }
-}
 
 # Get the directory where main.py is located
 current_dir = Path(__file__).resolve().parent
@@ -88,7 +68,7 @@ def load_custom_palette(path: Path):
     Returns numpy array of shape (N, 3).
     """
     if not path.exists():
-        print(f"  Palette not found: {path}")
+        print(f"Palette not found: {path}")
         return None
 
     colors = []
@@ -107,11 +87,11 @@ def load_custom_palette(path: Path):
         
         # Convert to numpy array (N rows, 3 columns)
         palette_arr = np.array(colors, dtype=np.uint8)
-        print(f"  Loaded {len(palette_arr)} colors from {path.name}")
+        print(f"Loaded {len(palette_arr)} colors from {path.name}")
         return palette_arr
 
     except Exception as e:
-        print(f"  Error loading palette {path.name}: {e}")
+        print(f"Error loading palette {path.name}: {e}")
         return None
 
 # Load Palettes
@@ -123,7 +103,8 @@ for region, path in PALETTE_FILES.items():
 app = FastAPI(
     title="Ice Velocity API",
     description="High-performance API for extracting glacier velocity time-series from Zarr.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # --- CONFIG: CORS ---
@@ -147,8 +128,10 @@ models.Base.metadata.create_all(bind=models.engine)
 
 # --- Activate the new routes ---
 app.include_router(cube.router)
+app.include_router(multiSourceCube.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(analysis.router)
 
 # --- CONFIG: STATIC FILES ---
 # Mounts the 'static' folder to serve GeoJSON/CSS/JS files
@@ -166,6 +149,15 @@ class RoiRequest(BaseModel):
     win_raw: int = 25
     win_daily: int = 25
     poly: int = 2
+    
+class MultiRoiRequest(BaseModel):
+    roi: List[List[float]]
+    buffer: int = 500
+    sources: Optional[List[str]] = None
+    gap_fill: int = 24
+    win_raw: int = 25
+    win_daily: int = 25
+    poly: int = 2
 
 class LoginRequest(BaseModel):
     password: str
@@ -178,40 +170,69 @@ def health_check():
     return {"status": "active", "engine": "FastAPI"}
 
 
-# --- VECTOR TILE ENDPOINT ---
-@app.get("/api/tiles/{region}/vectors/{z}/{x}/{y}.png")
-async def get_vector_tile(region: str, z: int, x: int, y: int):
+
+# --- VECTOR WMS ENDPOINT - POLAR PROJECTIONS ---
+@app.get("/api/wms/{region}/vectors")
+async def get_wms_vector(region: str, req: Request):
+    """
+    Dynamic WMS Server for Vector Overlays.
+    No rotation required: The map and the data share the same polar stereographic grid!
+    """
+    params = {k.lower(): v for k, v in req.query_params.items()}
+    
+    if params.get("request", "").lower() != "getmap":
+        return Response("Only GetMap is supported", status_code=400)
+
+    bbox_str = params.get("bbox")
+    width = int(params.get("width", 256))
+    height = int(params.get("height", 256))
+    target_crs = params.get("crs", params.get("srs", "EPSG:4326"))
+
+    if not bbox_str:
+        return Response("Missing BBOX", status_code=400)
+
+    minx, miny, maxx, maxy = map(float, bbox_str.split(","))
+
     try:
         if region not in TIFF_PATHS:
             raise HTTPException(status_code=404, detail=f"Region '{region}' not found")
         
         paths = TIFF_PATHS[region]
 
-        # 1. Read Data
+        # 1. Read Data using .part() for the bounding box
         try:
-            with Reader(paths["u"]) as src_u: u_data = src_u.tile(x, y, z)
-            with Reader(paths["v"]) as src_v: v_data = src_v.tile(x, y, z)
-            with Reader(paths["speed"]) as src_s: s_data = src_s.tile(x, y, z)
+            with Reader(paths["u"]) as src_u: 
+                u_img = src_u.part(bbox=(minx, miny, maxx, maxy), bounds_crs=target_crs, dst_crs=target_crs, width=width, height=height)
+            with Reader(paths["v"]) as src_v: 
+                v_img = src_v.part(bbox=(minx, miny, maxx, maxy), bounds_crs=target_crs, dst_crs=target_crs, width=width, height=height)
         except TileOutsideBounds:
-            return _empty_tile()
+            return _empty_wms(width, height)
 
         # 2. Extract Arrays & Handle NaNs
-        U = np.nan_to_num(u_data.data[0], nan=0.0)
-        V = np.nan_to_num(v_data.data[0], nan=0.0)
-        S = np.nan_to_num(s_data.data[0], nan=0.0)
+        U = np.nan_to_num(u_img.data[0], nan=0.0)
+        V = np.nan_to_num(v_img.data[0], nan=0.0)
         
-        # 3. Filter Logic (Speed >= 20 and not 0)
-        if region == "Greenland":
-            valid_pixels = (S >= 20) & (S != 0) & (U != -9999) & (V != -9999)
-        else:
-            valid_pixels = (S >= 20) & (S != 0) & (U != -9999) & (V != -9999) & (S <= 3000) & (abs(U) <= 3000) & (abs(V) <= 3000)
+        # Calculate dynamic speed (magnitude) using hypotenuse
+        S = np.hypot(U, V)
+        
+        # 3. Filter Logic
+        # Mask out completely empty pixels and very slow ice (< 20 m/yr) to declutter
+        valid_pixels = (S >= 20) & (U != -9999) & (V != -9999)
+        
+        # --- MAGNITUDE CAPPING ---
+        max_speed = 1000.0
+        cap_mask = S > max_speed
+        
+        # Scale U and V down proportionately where the speed exceeds max_speed
+        scale_factor = max_speed / S[cap_mask]
+        U[cap_mask] = U[cap_mask] * scale_factor
+        V[cap_mask] = V[cap_mask] * scale_factor
         
         # 4. Decimate (16x16 grid)
-        step = 16 
+        step = 16
         h, w = U.shape
         
-        # Create Pixel Grid (0 to 256)
-        # We need the centers of the pixels for accurate rotation
+        # Create Pixel Grid using the dynamic width/height
         xs = np.arange(0, w, step) + step / 2
         ys = np.arange(0, h, step) + step / 2
         X, Y = np.meshgrid(xs, ys)
@@ -222,70 +243,32 @@ async def get_vector_tile(region: str, z: int, x: int, y: int):
         mask_sub = valid_pixels[::step, ::step]
 
         if not np.any(mask_sub):
-            return _empty_tile()
+            return _empty_wms(width, height)
 
-        # --- 5. ROTATION (Grid North -> True North) ---
-        # Get the lat/lon bounds of this specific tile
-        bounds = mercantile.bounds(x, y, z)
-        
-        # Generate Longitude grid for the decimated pixels
-        # Linearly interpolate longitude from West to East edge of tile
-        lons_row = np.linspace(bounds.west, bounds.east, U_sub.shape[1])
-        # Broadcast to full grid (shape: 16x16)
-        Lons = np.tile(lons_row, (U_sub.shape[0], 1))
+        # --- NO ROTATION NEEDED ---
+        # The U and V components are naturally aligned with the map's grid.
+        U_masked = np.ma.masked_where(~mask_sub, U_sub)
+        V_masked = np.ma.masked_where(~mask_sub, V_sub)
 
-        # Calculate Rotation Angle (Theta)
-        # EPSG:3413 (Greenland) Central Meridian is -45 degrees
-        # EPSG:3031 (Antarctica) Central Meridian is 0 degrees
-        if region == "Greenland":
-            central_meridian = -45.0
-            theta = (Lons - central_meridian) * (np.pi / 180.0)
-        else:
-            central_meridian = 0.0
-            theta = (Lons - central_meridian) * (np.pi / 180.0)
-
-        # Apply Rotation
-        # u_geo = u_grid * cos(theta) + v_grid * sin(theta)
-        # v_geo = -u_grid * sin(theta) + v_grid * cos(theta)
-        U_rot = U_sub * np.cos(theta) - V_sub * np.sin(theta)
-        V_rot = V_sub * np.cos(theta) + U_sub * np.sin(theta)
-
-        # 6. Masking
-        U_masked = np.ma.masked_where(~mask_sub, U_rot)
-        V_masked = np.ma.masked_where(~mask_sub, V_rot)
-
-        # 7. Plotting
+        # 5. Plotting
         dpi = 100
-        fig = Figure(figsize=(2.56, 2.56), dpi=dpi, facecolor=(0,0,0,0))
+        # Dynamically size the figure based on WMS request width/height
+        fig = Figure(figsize=(width/dpi, height/dpi), dpi=dpi, facecolor=(0,0,0,0))
         canvas = FigureCanvas(fig)
         ax = fig.add_axes([0, 0, 1, 1])
         ax.set_axis_off() 
         ax.set_xlim(0, w)
-        ax.set_ylim(h, 0) # Invert Y
+        ax.set_ylim(h, 0) # Invert Y for Matplotlib
 
-        # STYLE SETTINGS
-        # scale=2000: 2000 m/yr = 1 unit length. Adjust this number to change global arrow size.
-        # width=0.010: Thinner shaft
-        # headlength=3: Shorter head (reveals more tail)
-        # headaxislength=2.5: Makes the back of the head less "swept back"
+        # You can now standardize the scale factor across both ice sheets if desired
         if region == "Greenland":
             ax.quiver(X, Y, U_masked, V_masked, 
-                      color='black', 
-                      headlength=2, 
-                      headaxislength=2.5, 
-                      headwidth=3.0,
-                      pivot='middle',
-                      scale=2250,   
-                      width=0.0075)  # Thinner arrows
+                      color='black', headlength=2, headaxislength=2.5, headwidth=3.0,
+                      pivot='middle', scale=5000, width=0.0075) 
         else:
             ax.quiver(X, Y, U_masked, V_masked, 
-                      color='black', 
-                      headlength=2, 
-                      headaxislength=2.5, 
-                      headwidth=3.0,
-                      pivot='middle',
-                      scale=5000,   
-                      width=0.0075)  # Thinner arrows
+                      color='black', headlength=2, headaxislength=2.5, headwidth=3.0,
+                      pivot='middle', scale=5000, width=0.0075) 
 
         buf = io.BytesIO()
         canvas.print_png(buf)
@@ -294,28 +277,57 @@ async def get_vector_tile(region: str, z: int, x: int, y: int):
         return Response(content=buf.read(), media_type="image/png")
 
     except Exception as e:
-        print(f"Vector Error: {e}")
-        return _empty_tile()
+        print(f"Vector WMS Error: {e}")
+        return _empty_wms(width, height)
 
-def _empty_tile():
-    empty_img = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+    except Exception as e:
+        print(f"Vector WMS Error: {e}")
+        return _empty_wms(width, height)
+
+# Helper function for transparent tiles
+def _empty_wms(width: int, height: int):
+    empty_img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     buf = io.BytesIO()
     empty_img.save(buf, format="PNG")
     buf.seek(0)
     return Response(content=buf.read(), media_type="image/png")
-        
-        
 
-# 2D overlays
-@app.get("/api/tiles/{region}/{layer_type}/{z}/{x}/{y}.png")
-async def tile(region: str, layer_type: str, z: int, x: int, y: int):
+
+
+# 2D overlays - WMS Polar Projections
+@app.get("/api/wms/{region}")
+async def get_wms_overlay(region: str, req: Request):
     """
-    Dynamic Tile Server: Region-specific limits & Transparency rules.
-    """
-    # --- DEBUGGING BLOCK START ---
-    print(f"\n--- REQUEST: {region} / {layer_type} ---")
+    Dynamic WMS Server for Polar Projections: Region-specific limits & Transparency rules.
+    Accepts standard WMS parameters (BBOX, WIDTH, HEIGHT, CRS, LAYERS).
+    """    
+    # 1. Parse WMS Query Parameters (case-insensitive)
+    params = {k.lower(): v for k, v in req.query_params.items()}
     
-    # 1. Check Dictionary Lookups
+    if params.get("request", "").lower() != "getmap":
+        return Response("Only GetMap is supported", status_code=400)
+
+    # In WMS, 'layers' tells us which variable to load (e.g., 'count', 'speed')
+    layer_type = params.get("layers", "count")
+    bbox_str = params.get("bbox")
+    width = int(params.get("width", 256))
+    height = int(params.get("height", 256))
+    
+    # Leaflet will pass EPSG:3413 (Greenland) or EPSG:3031 (Antarctica)
+    target_crs = params.get("crs", params.get("srs", "EPSG:4326"))
+    
+    # Set defaults
+    nodata_val = 0 if layer_type in ["landsat_mosaic", "default_speed"] else None
+    read_indexes = (1, 2, 3) if layer_type in ["landsat_mosaic", "default_speed"] else None
+
+    if not bbox_str:
+        return Response("Missing BBOX", status_code=400)
+
+    minx, miny, maxx, maxy = map(float, bbox_str.split(","))
+
+    print(f"\n--- WMS REQUEST: {region} / {layer_type} ---")
+    
+    # 2. Check Dictionary Lookups
     if region not in TIFF_PATHS:
         print(f"Error: Region '{region}' not found in TIFF_PATHS keys: {list(TIFF_PATHS.keys())}")
         raise HTTPException(status_code=404, detail=f"Region '{region}' not configured")
@@ -324,36 +336,80 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
         print(f"Error: Layer '{layer_type}' not found for region '{region}'. Available: {list(TIFF_PATHS[region].keys())}")
         raise HTTPException(status_code=404, detail=f"Layer '{layer_type}' not found")
 
-    # 2. Check File Path
+    # 3. Check File Path
     file_path = TIFF_PATHS[region][layer_type]
-    print(f"   Looking for file at: {file_path}")
+    print(f"Looking for file at: {file_path}")
     print(f"   Absolute path: {file_path.absolute()}")
 
     if not file_path.exists():
-        print("FILE MISSING! Python cannot see this file.")
-        # Common Windows Pitfall: Check if the drive is accessible
+        print(f"FILE MISSING! Python cannot see this file.")
         if str(file_path).startswith("R:"):
-            print("   Note: You are using the R: drive. If this is a network drive, ensure the terminal running Python has permissions to see it.")
+            print("   Note: You are using the R: drive. Ensure the terminal running Python has permissions to see it.")
         raise HTTPException(status_code=404, detail=f"File not found on server at: {file_path}")
     
-    print("  File found. Attempting to read COG...")
-    # --- DEBUGGING BLOCK END ---
-    
-    if region not in TIFF_PATHS or layer_type not in TIFF_PATHS[region]:
-        raise HTTPException(status_code=404, detail="Layer not found")
-    
-    file_path = TIFF_PATHS[region][layer_type]
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+    print("File found. Attempting to read bounding box...")
 
     try:
         with Reader(file_path) as cog:
             try:
-                img = cog.tile(x, y, z)
+                # Use .part() instead of .tile() for WMS bounding boxes
+                img = cog.part(
+                    bbox=(minx, miny, maxx, maxy),
+                    bounds_crs=target_crs,
+                    dst_crs=target_crs,
+                    width=width,
+                    height=height,
+                    indexes=read_indexes,
+                    nodata=nodata_val
+                )
             except TileOutsideBounds:
-                return Response(content=Image.new('RGBA', (256, 256), (0, 0, 0, 0)).tobytes("png"), media_type="image/png")
+                return Response(content=Image.new('RGBA', (width, height), (0, 0, 0, 0)).tobytes("png"), media_type="image/png")
 
+            if layer_type == "landsat_mosaic":
+                # Intercept the array to apply normalization and gamma stretch
+                if img.data.dtype == 'float32' or img.data.dtype == np.float32:
+                    data_max = np.nanmax(img.data)
+                    
+                    # 1. Normalize data to a 0.0 - 1.0 range 
+                    if data_max <= 2.0:
+                        norm_data = np.clip(img.data, 0.0, 1.0)
+                    else:
+                        norm_data = np.clip(img.data / 4000.0, 0.0, 1.0)
+                    
+                    # 2. Apply Gamma Stretch
+                    gamma = 2.0 if region == "Greenland" else 1.2 
+                    stretched_data = np.power(norm_data, 1.0 / gamma)
+                    
+                    # 3. Convert to 8-bit RGB array
+                    stretched_8bit = (stretched_data * 255).astype(np.uint8)
+                    rgb_array = np.transpose(stretched_8bit, (1, 2, 0))
+                    
+                    # 4. Create the Alpha Mask
+                    alpha_mask = (np.sum(img.data, axis=0) > 0).astype(np.uint8) * 255
+                    
+                    # 5. Assemble final RGBA image
+                    rgba_image = np.zeros((height, width, 4), dtype=np.uint8)
+                    rgba_image[..., 0:3] = rgb_array
+                    rgba_image[..., 3] = alpha_mask 
+                    
+                    # 6. Save and return using PIL
+                    pil_img = Image.fromarray(rgba_image)
+                    buf = io.BytesIO()
+                    pil_img.save(buf, format="PNG")
+                    return Response(content=buf.getvalue(), media_type="image/png")
+                    
+                else:
+                    # Fallback for non-float data
+                    rendered_img = img.render(img_format="PNG", nodata=0)
+                    return Response(content=rendered_img, media_type="image/png")
+
+            # --- PRECOLOURED SPEED OVERVIEW --- 
+            if layer_type == "default_speed":
+                # Render directly to PNG, forcing 0 as NoData so the background is transparent
+                rendered_img = img.render(img_format="PNG", nodata=0)
+                return Response(content=rendered_img, media_type="image/png")
+            
+            # --- HILLSHADE --- #
             if layer_type == "hillshade":
                 data = img.data[0].astype('uint8')
             else:
@@ -368,12 +424,10 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
                 alpha_mask[data >= 20] = 255
                 
                 # Slow/Stagnant ice (0-20 m/yr) -> Semi-transparent
-                # This de-emphasizes noise in stable areas
                 alpha_mask[(data > 0) & (data < 20)] = 60
                 
             elif layer_type == "trend":
-                 # Mask out NaNs or arbitrary nodata values (often -9999 or similar)
-                 # Adjust this condition if your trend file uses specific nodata values
+                 # Mask out NaNs
                 alpha_mask[~np.isnan(data)] = 255
                 
                 # Make areas with a weak trend very transparent
@@ -382,16 +436,16 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
             elif layer_type == "hillshade":
                 alpha_mask[data > 0] = 255
                 
+            elif layer_type == "range":
+                alpha_mask[data > 0] = 255
+                
             else:
                 # --- COUNT LOGIC ---
-                # For data density, we want to see everything that exists.
-                # If we make low counts transparent, the deep purple of Viridis 
-                # will vanish against the map background.
                 alpha_mask[data > 0] = 255
 
 
             # --- 2. DATA PROCESSING ---
-            if layer_type == "speed":
+            if layer_type == "dynamic_speed":
                 # --- DYNAMIC LIMITS ---
                 if region == "Antarctica":
                     max_v = 2000.0
@@ -413,28 +467,37 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
             elif layer_type == "trend":
                 # --- TREND LOGIC ---
                 # Diverging Scale: -10 to +10 m/yr^2
-                if region == "Antarctica":
-                    min_v, max_v = -15, 15
-                else:
-                    min_v, max_v = -2.5, 2.5
+                min_v, max_v = -15, 15
+                #if region == "Antarctica":
+                #    min_v, max_v = -15, 15
+                #else:
+                #    min_v, max_v = -2.5, 2.5
 
                 norm = (data - min_v) / (max_v - min_v)
-                use_custom = False # We will use matplotlib 'bwr'
+                use_custom = False 
             
             elif layer_type == "hillshade":
                 norm = data.astype(float) / 255.0
                 use_custom = False
+                
+            elif layer_type == "range":
+                min_v, max_v = 0, 50
+                norm = (data - min_v) / (max_v - min_v)
+                use_custom = False
 
             else:
                 # Count Layer
-                min_v, max_v = 0, 90
+                if region == "Antarctica":
+                    min_v, max_v = 0, 200
+                else:
+                    min_v, max_v = 0, 750
+                    
                 norm = (data - min_v) / (max_v - min_v)
                 use_custom = False
 
             norm = np.clip(norm, 0, 1)
 
             # --- 3. COLOR PAINTING ---
-            height, width = data.shape
             rgba_image = np.zeros((height, width, 4), dtype=np.uint8)
 
             if use_custom:
@@ -453,14 +516,12 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
                     rgba_image[..., 2] = idx_byte
             else:
                 if layer_type == "trend":
-                    # 'bwr' = Blue-White-Red (0=Blue, 0.5=White, 1=Red)
-                    # This matches the "positive = red" requirement
-                    #cm_data = cm.bwr(norm) 
                     cm_data = cmc.vik(norm)
                 elif layer_type == "hillshade":
                     cm_data = cmc.grayC(norm)
+                elif layer_type == "range":
+                    cm_data = cm.magma(norm)
                 else:
-                    # 'viridis' for Count
                     cm_data = cm.viridis(norm)
                 
                 # Convert to 0-255 uint8 and assign RGB channels
@@ -479,9 +540,10 @@ async def tile(region: str, layer_type: str, z: int, x: int, y: int):
             return Response(content=buf.getvalue(), media_type="image/png")
             
     except Exception as e:
-        print(f"Tile Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Tile error: {str(e)}")
-               
+        print(f"WMS Tile Error: {e}")
+        raise HTTPException(status_code=500, detail=f"WMS Tile error: {str(e)}")
+
+
  
 @app.post("/api/auth")
 def authenticate(payload: LoginRequest):
@@ -492,13 +554,14 @@ def authenticate(payload: LoginRequest):
     
     if not secret:
         # Fallback if you forgot to create the .env file
-        print("  Warning: No password set in .env file")
+        print("⚠️ Warning: No password set in .env file")
         raise HTTPException(status_code=500, detail="Server misconfiguration")
 
     if payload.password == secret:
         return {"status": "success"}
     else:
         raise HTTPException(status_code=401, detail="Incorrect password")
+
 
 @app.post("/api/timeseries/json")
 def extract_from_json(
@@ -530,7 +593,7 @@ def extract_from_json(
             db.commit()
         except Exception as e:
             # We wrap this in try/except so logging errors don't break the actual data fetch
-            print(f"  Logging failed: {e}")
+            print(f"Logging failed: {e}")
     
     try:
         results = get_glacier_timeseries(
@@ -546,8 +609,55 @@ def extract_from_json(
         )
         return results
     except Exception as e:
-        print(f"  Error: {str(e)}")
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+        
+        
+
+@app.post("/api/timeseries/multi/json")
+def extract_multi_from_json(
+    payload: MultiRoiRequest,
+    db: Session = Depends(get_db), 
+    user: Optional[User] = Depends(get_current_user_optional)
+):
+    """
+    Extracts time series from the multi-source Zarr store for coordinates provided in JSON body.
+    """
+    print(f"Multi-Source JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer}")
+    
+    # --- LOGGING LOGIC ---
+    if user:
+        try:
+            count = len(payload.roi)
+            log_name = f"Multi-Source Map Selection ({count} points)"
+            
+            log = DownloadLog(
+                user_id=user.id,
+                interaction_type="map_click_multi", # Differentiated interaction type
+                filename=log_name,
+                file_size_mb=0.005 * count 
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            print(f"Logging failed: {e}")
+    
+    try:
+        # We will build this utility function next
+        results = get_multi_glacier_timeseries(
+            location_input=payload.roi,
+            buffer=payload.buffer,
+            sources=payload.sources,
+            gap_fill=payload.gap_fill,
+            win_raw=payload.win_raw,
+            win_daily=payload.win_daily,
+            poly=payload.poly
+        )
+        return results
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+        
 
 
 @app.post("/api/timeseries/upload")
@@ -582,7 +692,7 @@ async def upload_shapefile(
             db.add(log)
             db.commit()
         except Exception as e:
-            print(f"  Logging failed: {e}")
+            print(f"⚠️ Logging failed: {e}")
             
     suffix = os.path.splitext(file.filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -601,6 +711,64 @@ async def upload_shapefile(
         return results
     except Exception as e:
         print(f"Error processing file: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        if os.path.exists(tmp_path):
+            try: os.remove(tmp_path)
+            except PermissionError: pass
+        
+
+@app.post("/api/timeseries/multi/upload")
+async def upload_multi_shapefile(
+    file: UploadFile = File(...), 
+    buffer: float = Form(500),
+    sources: List[str] = Form([]), 
+    gap_fill: int = Form(24),
+    win_raw: int = Form(25),
+    win_daily: int = Form(25),
+    poly: int = Form(2),
+    # logging dependencies
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user_optional)
+):
+    
+    # 1. LOGGING LOGIC
+    if user:
+        try:
+            size_mb = 0.5 
+            
+            log = DownloadLog(
+                user_id=user.id,
+                interaction_type="file_upload_multi", # Differentiated interaction type
+                filename=file.filename,
+                file_size_mb=size_mb
+            )
+            db.add(log)
+            db.commit()
+        except Exception as e:
+            print(f"Logging failed: {e}")
+            
+    suffix = os.path.splitext(file.filename)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+
+    try:
+        print(f"Multi-Source File Upload: {tmp_path} | Buf: {buffer} | Sources: {sources}")
+        
+        # Call the multi-source extraction function instead of the single-source one!
+        results = get_multi_glacier_timeseries(
+            location_input=tmp_path, 
+            buffer=buffer, 
+            sources=sources, 
+            gap_fill=gap_fill, 
+            win_raw=win_raw, 
+            win_daily=win_daily, 
+            poly=poly
+        )
+        return results
+    except Exception as e:
+        print(f"Error processing multi-source file: {e}")
         return {"status": "error", "message": str(e)}
     finally:
         if os.path.exists(tmp_path):

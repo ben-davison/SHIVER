@@ -109,53 +109,6 @@ import deploymentImg from '../assets/images/deployments.png';
       </div>
     </main>
 
-    <footer class="partners-footer">
-      <div class="footer-content">
-	  
-        <div class="partner-group">
-          <h4>Lead Institutions</h4>
-		   <a href="https://sheffield.ac.uk/" target="_blank" rel="noopener noreferrer">
-			  <img :src="sheffieldLogo" alt="University of Sheffield" class="partner-logo" />
-		   </a>
-		   <br>
-		   <a href="https://lamont.columbia.edu/" target="_blank" rel="noopener noreferrer">
-			  <img :src="LDEOLogo" alt="LDEO" class="partner-logo" />
-		   </a>
-        </div>
-        
-        <div class="partner-group">
-          <h4>Funded By</h4>
-		  <a href="https://www.ukri.org/councils/nerc/" target="_blank" rel="noopener noreferrer">
-			  <img :src="UKRILogo" alt="UKRI" class="partner-logo" />
-		   </a>
-		  <br>
-		  <a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2053169" target="_blank" rel="noopener noreferrer">
-			  <img :src="NSFLogo" alt="NSF" class="partner-logo" />
-		   </a>
-		  <br>
-		  The FRAM project is funded by NSFGEO-NERC <br>
-		  Grant Number: #2053169, "Investigating the <br> 
-		  Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
-        </div>
-        
-        <div class="partner-group">
-          <h4>Contact</h4>
-          <p>
-		  SHIVER Project Team<br>
-		  School of Geography and Planning, University of Sheffield, UK <br>
-		  Email: shiver@sheffield.ac.uk
-		  <br><br>
-		  FRAM Project Team<br>
-		  Lamont-Doherty Earth Observatory, Columbia University, USA
-		  </p>
-        </div>
-		
-      </div>
-      <div class="copyright">
-        &copy; {{ new Date().getFullYear() }} SHIVER Project. Licensed under GNU GPL-3.0.
-      </div>
-    </footer>
-
   </div>
 </template>
 

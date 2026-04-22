@@ -1,14 +1,24 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import HomeView from '../views/HomeView.vue'
-import MapView from '../views/MapView.vue'
-import CubeView from '../views/CubeView.vue'
-import DocumentationView from '../views/DocumentationView.vue'
+import MapView from '../views/MultiSourceMap.vue'
+import CubeView from '../views/MultiSourceCube.vue'
 import FramView from '../views/FramView.vue'
 import PeopleView from '../views/PeopleView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
+
+// Documentation pages
+import DocumentationLayout from '../views/documentation/DocumentationLayout.vue'
+import DocOverviewView from '../views/documentation/DocOverviewView.vue'
+import DocGreenlandView from '../views/documentation/DocGreenlandView.vue'
+import DocAntarcticView from '../views/documentation/DocAntarcticView.vue'
+import DocShiftView from '../views/documentation/DocShiftView.vue'
+import DocDataCubeGenView from '../views/documentation/DocDataCubeGenView.vue'
+import DocTimeseriesExplorerView from '../views/documentation/DocTimeseriesExplorerView.vue'
+import DocCubeExtractorView from '../views/documentation/DocCubeExtractorView.vue'
+import DocCitationView from '../views/documentation/DocCitationView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -24,8 +34,22 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/map', name: 'map', component: MapView },
-	 { path: '/cube', name: 'cube', component: CubeView, meta: { requiresAuth: true } },
-    { path: '/documentation', name: 'documentation', component: DocumentationView },
+	{ path: '/cube', name: 'cube', component: CubeView, meta: { requiresAuth: true } },
+    { 
+      path: '/documentation', 
+      component: DocumentationLayout, // Parent layout component
+      children: [
+        { path: '', redirect: { name: 'doc-overview' } }, // Redirect base to overview
+        { path: 'overview', name: 'doc-overview', component: DocOverviewView },
+        { path: 'greenland', name: 'doc-greenland', component: DocGreenlandView },
+        { path: 'antarctic', name: 'doc-antarctic', component: DocAntarcticView },
+        { path: 'shift', name: 'doc-shift', component: DocShiftView }, // Your old 1-7 sections
+        { path: 'datacubegen', name: 'doc-datacubegen', component: DocDataCubeGenView },
+		{ path: 'timeseriesexplore', name: 'doc-timeseriesexplore', component: DocTimeseriesExplorerView },
+		{ path: 'cubeextract', name: 'doc-cubeextract', component: DocCubeExtractorView },
+        { path: 'citation', name: 'doc-citation', component: DocCitationView }
+      ]
+    },
     { path: '/fram', name: 'fram', component: FramView },
     { path: '/people', name: 'people', component: PeopleView },
 	{ path: '/login', name: 'login', component: LoginView },

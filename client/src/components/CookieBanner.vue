@@ -3,8 +3,10 @@
     <div class="cookie-content">
       <h3>Cookies are tasty. Please accept cookies</h3>
       <p>
-        These help us to see which functions are being used and demonstrate that the site is useful.
-        If you don't want cookies, consider completing this short form instead.
+        This allows us to use Google Analytics to track which of our SHIVER functions are being used.
+        If you don't want cookies, please consider completing  
+		<AppLink to="https://docs.google.com/forms/d/e/1FAIpQLSfsFX-w19UXjlVDpY7PeQlo0_482tHYPTVuatWup-B3OdZOrA/viewform?usp=publish-editor" target="_blank" rel="noopener" class="text-link">this short form</AppLink> 
+		instead.
       </p>
     </div>
     <div class="cookie-buttons">
@@ -19,6 +21,8 @@ import { ref, onMounted } from 'vue';
 
 const isOpen = ref(false);
 const GA_MEASUREMENT_ID = "G-4YGWRB6RCZ";
+const EXPIRATION_DAYS = 7;
+const EXPIRATION_MS = EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
 
 // Helper: Load Google Analytics Manually
 const loadGoogleAnalytics = () => {
@@ -45,24 +49,54 @@ const loadGoogleAnalytics = () => {
 };
 
 const acceptCookies = () => {
-  localStorage.setItem('cookie_consent', 'accepted');
+  const consentData = {
+    value: 'accepted',
+    timestamp: new Date().getTime()
+  };
+  localStorage.setItem('cookie_consent', JSON.stringify(consentData));
   loadGoogleAnalytics();
   isOpen.value = false;
 };
 
 const declineCookies = () => {
-  localStorage.setItem('cookie_consent', 'declined');
+  const consentData = {
+    value: 'declined',
+    timestamp: new Date().getTime()
+  };
+  localStorage.setItem('cookie_consent', JSON.stringify(consentData));
   isOpen.value = false;
 };
 
 onMounted(() => {
-  const consent = localStorage.getItem('cookie_consent');
+  const consentString = localStorage.getItem('cookie_consent');
   
-  if (consent === 'accepted') {
-    // If they already accepted in the past, load GA immediately
-    loadGoogleAnalytics();
-  } else if (!consent) {
-    // If no choice made yet, show banner
+  if (consentString) {
+    try {
+      // Parse the JSON object
+      const consent = JSON.parse(consentString);
+      const now = new Date().getTime();
+      
+      // 1. Check if the consent has expired
+      if (now - consent.timestamp > EXPIRATION_MS) {
+        localStorage.removeItem('cookie_consent');
+        isOpen.value = true; // Time is up, show the banner
+        return;
+      }
+
+      // 2. If not expired, honor their choice
+      if (consent.value === 'accepted') {
+        loadGoogleAnalytics();
+      }
+      
+    } catch (error) {
+      // 3. Fallback: Catching old string formats
+      // If a user has the old 'accepted' string saved, JSON.parse will fail.
+      // This wipes the old format and shows the banner so they can save the new format.
+      localStorage.removeItem('cookie_consent');
+      isOpen.value = true;
+    }
+  } else {
+    // No consent found at all, show banner
     isOpen.value = true;
   }
 });

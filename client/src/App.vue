@@ -1,20 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, provide, watch } from 'vue';
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
-import LoginOverlay from './components/LoginOverlay.vue'; 
 import UserLoginModal from './components/UserLoginModal.vue';
 import CookieBanner from './components/CookieBanner.vue'; // Import it here
+import AppFooter from './components/AppFooter.vue'; 
 
-// --- STATE 1: BETA ACCESS (Site-wide Gatekeeper) ---
-// This checks if they have passed the "Beta" password screen
-const hasBetaAccess = ref(sessionStorage.getItem('shiver_auth') === 'true');
-
-const grantBetaAccess = () => {
-  hasBetaAccess.value = true;
-  sessionStorage.setItem('shiver_auth', 'true');
-};
-
-// --- STATE 2: USER LOGIN (Database Account) ---
+// --- USER LOGIN (Database Account) ---
 // This checks if they have logged into their personal account
 const isUserLoggedIn = ref(false);
 const showUserLoginModal = ref(false);
@@ -40,7 +31,6 @@ provide('requireLogin', openLoginModal);
 const handleLogout = () => {
     sessionStorage.removeItem('shiver_token');
     isUserLoggedIn.value = false;
-    // We do NOT remove 'shiver_auth', so they stay in the beta site
     showUserLoginModal.value = false;
 };
 
@@ -59,6 +49,14 @@ watch(() => route.query.login, (newVal) => {
 });
 
 
+// --- 2. FOOTER VISIBILITY LOGIC --- //
+// Hide the footer on fullscreen map interfaces
+const showFooter = computed(() => {
+  const hiddenRoutes = ['/map', '/cube']; 
+  return !hiddenRoutes.includes(route.path);
+});
+
+
 // --- MOBILE MENU LOGIC ---
 const isMenuOpen = ref(false);
 const toggleMenu = () => {isMenuOpen.value = !isMenuOpen.value; };
@@ -67,9 +65,8 @@ const closeMenu = () => { isMenuOpen.value = false; };
 </script>
 
 <template>
-  <LoginOverlay v-if="!hasBetaAccess" @login-success="grantBetaAccess" />
 
-  <div v-else class="app-container">
+  <div class="app-container">
     
     <UserLoginModal 
         v-if="showUserLoginModal" 
@@ -86,14 +83,28 @@ const closeMenu = () => { isMenuOpen.value = false; };
 
         <nav class="desktop-nav">
           <RouterLink to="/" active-class="active-link">Home</RouterLink>
+		  
           <div class="nav-dropdown">
-            <RouterLink to="/map" class="dropdown-trigger" active-class="active-link">Explore Data</RouterLink>
-            <div class="dropdown-content">
-              <RouterLink to="/map" active-class="active-sublink">Timeseries</RouterLink>
-              <RouterLink to="/cube" active-class="active-sublink">Data Cubes</RouterLink>
-            </div>
+				<RouterLink to="/map" class="dropdown-trigger" active-class="active-link">Explore Data</RouterLink>
+				<div class="dropdown-content">
+				  <RouterLink to="/map" active-class="active-sublink">Timeseries</RouterLink>
+				  <RouterLink to="/cube" active-class="active-sublink">Data Cubes</RouterLink>
+				</div>
           </div>
-          <RouterLink to="/documentation" active-class="active-link">Documentation</RouterLink>
+		  
+          <div class="nav-dropdown">
+				<RouterLink to="/documentation" class="dropdown-trigger" active-class="active-link" :class="{ 'active-link': $route.path.startsWith('/documentation') }">Documentation</RouterLink>
+				<div class="dropdown-content">
+				  <RouterLink to="/documentation/overview" active-class="active-sublink">Overview</RouterLink>
+				  <RouterLink to="/documentation/greenland" active-class="active-sublink">Greenland Data</RouterLink>
+				  <RouterLink to="/documentation/antarctic" active-class="active-sublink">Antarctic Data</RouterLink>
+				  <RouterLink to="/documentation/shift" active-class="active-sublink">SHIFT Algorithms</RouterLink>
+				  <RouterLink to="/documentation/datacubegen" active-class="active-sublink">Data Cube Generation</RouterLink>
+				  <RouterLink to="/documentation/timeseriesexplore" active-class="active-sublink">SHIVER Timeseries Explorer</RouterLink>
+				  <RouterLink to="/documentation/citation" active-class="active-sublink">Citation & License</RouterLink>
+				</div>
+		  </div>
+		  
           <RouterLink to="/fram" active-class="active-link">FRAM Project</RouterLink>
           <RouterLink to="/people" active-class="active-link">People</RouterLink>
         </nav>
@@ -149,7 +160,11 @@ const closeMenu = () => { isMenuOpen.value = false; };
     </header>
 
     <RouterView />
-    <CookieBanner />
+	
+	<CookieBanner />
+	
+	<AppFooter v-if="showFooter" />
+	
   </div>
 </template>
 

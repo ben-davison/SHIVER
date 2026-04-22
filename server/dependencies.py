@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 import jwt
 from jwt.exceptions import PyJWTError
 from models import get_db, User
@@ -26,20 +27,28 @@ MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
 MAIL_SERVER = os.getenv("MAIL_SERVER")
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
 
+# --- CUBE LIMITS PER DAY ---
+MAX_CUBES_PER_DAY = 5
+
 # --- REDIS CONFIGURATION ---
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 
-# Initialize a global Redis client
-redis_client = redis.Redis(
-    host=REDIS_HOST, 
-    port=REDIS_PORT, 
-    db=0, 
-    decode_responses=True
-)
+# If we are on Windows, use the fake in-memory Redis
+if os.name == 'nt':
+    import fakeredis
+    redis_client = fakeredis.FakeRedis(decode_responses=True)
+    print("WARNING: Using FakeRedis for local development.")
 
-# Threshold for "Large" files in Megabytes
-LARGE_FILE_THRESHOLD_MB = 2000
+# Otherwise, connect to the real Redis
+else:
+    redis_client = redis.Redis(
+        host=REDIS_HOST, 
+        port=REDIS_PORT, 
+        db=0, 
+        decode_responses=True
+    )
+
 
 # This tells FastAPI that the token comes from the /auth/login endpoint
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -93,3 +102,30 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
         
     return user
+
+
+# --- TRACK NUMBER OF DATA CUBE REQUESTS PER DAY --- 
+def check_daily_cube_limit(user = Depends(get_current_user)):
+    """
+    Synchronous FastAPI dependency to check daily data cube limits via Redis.
+    """
+    # 1. Generate a date-specific key. We will use email to match your auth logic.
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    redis_key = f"datacubes:{user.email}:{today}"
+    
+    # 2. Atomically increment the daily count
+    # Because you set decode_responses=True in your config, this returns an int
+    requests_today = redis_client.incr(redis_key)
+    
+    # 3. If it's the first request today, set expiration to 24 hours (86400 seconds)
+    if requests_today == 1:
+        redis_client.expire(redis_key, 86400)
+        
+    # 4. Check against your limit
+    if requests_today > MAX_CUBES_PER_DAY:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"You have reached your daily limit of {MAX_CUBES_PER_DAY} data cubes. Please try again tomorrow."
+        )
+        
+    return True

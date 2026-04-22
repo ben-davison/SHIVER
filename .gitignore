@@ -86,3 +86,4 @@ create_dev_user.py
 .env.production
 tests/
 requirements.txt
+data/

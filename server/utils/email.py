@@ -24,6 +24,7 @@ async def send_cube_ready_email(email_to: str, download_link: str, region: str):
       </a>
     </p>
     <p>Or copy this link: {download_link}</p>
+    <p>This link will expire in 48 hours.</p>
     """
 
     message = MessageSchema(
@@ -43,6 +44,36 @@ async def send_cube_ready_email(email_to: str, download_link: str, region: str):
     except Exception as e:
         print(f"Failed to send email: {e}")
         
+        
+async def send_cube_failed_email(email_to: str, region: str, error_reason: str = "An unexpected server error occurred."):
+    html = f"""
+    <div style="font-family: sans-serif; color: #333;">
+        <h3 style="color: #f44336;">SHIVER Data Cube Generation Failed</h3>
+        <p>We are sorry, but your requested data cube for <b>{region}</b> could not be generated.</p>
+        
+        <div style="background-color: #fce4e4; border: 1px solid #fccacb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>Reason for failure:</strong><br/>
+            {error_reason}
+        </div>
+        
+        <p>Please adjust your request parameters and try again. If the issue persists, contact the SHIVER support team.</p>
+    </div>
+    """
+
+    message = MessageSchema(
+        subject="SHIVER Data Extraction Failed",
+        recipients=[email_to],
+        body=html,
+        subtype="html"
+    )
+
+    fm = FastMail(conf)
+    try:
+        await fm.send_message(message) 
+        print(f"Failure email sent to {email_to}")
+    except Exception as e:
+        print(f"Failed to send failure email: {e}")
+        
 
 async def send_password_reset_email(email_to: str, token: str):
     # CHANGE THIS if your frontend runs on a different port/domain in production
@@ -54,13 +85,12 @@ async def send_password_reset_email(email_to: str, token: str):
     <p>We received a request to reset your password.</p>
     <p>Click the link below to set a new password:</p>
     <p>
-      <a href="{reset_link}" style="padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0px;">
+      <a href="{reset_link}" style="padding: 10px 20px; background: #e74c3c; color: white; text-decoration: none; border-radius: 5px;">
         Reset Password
       </a>
     </p>
-    <p>Or copy this link: <br><a href="{reset_link}">{reset_link}</a></p>
-    <p><strong>Please note:</strong> This password reset link will expire in 1 hour.</p>
-    <p>If you did not request this, please ignore this email. Your password will remain unchanged.</p>
+    <p>Or copy this link: {reset_link}</p>
+    <p>If you did not request this, please ignore this email.</p>
     """
 
     message = MessageSchema(
