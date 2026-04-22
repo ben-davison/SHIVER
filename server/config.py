@@ -19,6 +19,8 @@ if current_os == "Windows":
 else:
     base_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland")
     base_path_ant = Path("/mnt/grio1/Shared/SHIVER/data/Antarctica")
+    overlay_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland/overlays")
+    overlay_path_ant = Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/overlays")
     landsat_mosaic_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland/image_mosaic/greenland_tiles_20m")
     ZARR_PATHS = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed.zarr"),
@@ -31,23 +33,23 @@ else:
 
 TIFF_PATHS = {
     "Greenland": {
-        "default_speed": base_path_gr / "Greenland_Speed_Hillshaded_COG.tif",
-        "u"    : base_path_gr / "Greenland_U_Merged_COG.tif", 
-        "v"    : base_path_gr / "Greenland_V_Merged_COG.tif", 
-        "count": base_path_gr / "Greenland_AllSources_Epoch_Count.tif",
-        "trend": base_path_gr / "Greenland_AllSources_Linear_Trend_masked.tif",
-        "hillshade": base_path_gr / "Greenland_Hillshade_COG.tif",
-        "range": base_path_gr / "Greenland_Ensemble_Median_Spread_COG.tif",
+        "default_speed": overlay_path_gr / "Greenland_Speed_Hillshaded_COG.tif",
+        "u"    : overlay_path_gr / "Greenland_U_Merged_COG.tif", 
+        "v"    : overlay_path_gr / "Greenland_V_Merged_COG.tif", 
+        "count": overlay_path_gr / "Greenland_AllSources_Epoch_Count.tif",
+        "trend": overlay_path_gr / "Greenland_AllSources_Linear_Trend_masked.tif",
+        "hillshade": overlay_path_gr / "Greenland_Hillshade_COG.tif",
+        "range": overlay_path_gr / "Greenland_Ensemble_Median_Spread_COG.tif",
         "landsat_mosaic": landsat_mosaic_path_gr / "greenland_20m_mosaic.vrt"
     },
     "Antarctica": {
-        "default_speed": base_path_ant / "Antarctica_Speed_Hillshaded_COG.tif",
-        "u":     base_path_ant / "Antarctica_U_Merged_COG.tif", 
-        "v":     base_path_ant / "Antarctica_V_Merged_COG.tif", 
-        "count": base_path_ant / "Antarctica_AllSources_Epoch_Count.tif",
-        "trend": base_path_ant / "Antarctica_AllSources_Linear_Trend_masked.tif",
-        "hillshade": base_path_ant / "Antarctica_Hillshade_COG.tif",
-        "range": base_path_ant / "Antarctica_Ensemble_Median_Spread.tif",
+        "default_speed": overlay_path_ant / "Antarctica_Speed_Hillshaded_COG.tif",
+        "u":     overlay_path_ant / "Antarctica_U_Merged_COG.tif", 
+        "v":     overlay_path_ant / "Antarctica_V_Merged_COG.tif", 
+        "count": overlay_path_ant / "Antarctica_AllSources_Epoch_Count.tif",
+        "trend": overlay_path_ant / "Antarctica_AllSources_Linear_Trend_masked.tif",
+        "hillshade": overlay_path_ant / "Antarctica_Hillshade_COG.tif",
+        "range": overlay_path_ant / "Antarctica_Ensemble_Median_Spread.tif",
     }
 }
     

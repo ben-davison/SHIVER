@@ -554,7 +554,7 @@ def authenticate(payload: LoginRequest):
     
     if not secret:
         # Fallback if you forgot to create the .env file
-        print("⚠️ Warning: No password set in .env file")
+        print("Warning: No password set in .env file")
         raise HTTPException(status_code=500, detail="Server misconfiguration")
 
     if payload.password == secret:
@@ -692,7 +692,7 @@ async def upload_shapefile(
             db.add(log)
             db.commit()
         except Exception as e:
-            print(f"⚠️ Logging failed: {e}")
+            print(f"Logging failed: {e}")
             
     suffix = os.path.splitext(file.filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
