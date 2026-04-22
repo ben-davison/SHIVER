@@ -60,17 +60,7 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
       </div>
 	
 		<div class="partner-group">
-		  <h4>How to cite</h4>
-		  <p>
-		  The recommended citation for this data is 
-		  "Ice velocity generated using SHIFT (Davison et al., 2020; Tuckett et al., 2019) and provided by the FRAM/SHIVER project (Kingslake/Sole)."
-		  <br><br>
-		  Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492. 
-		  <br><br>
-		  Tuckett, P.A., Ely, J.C., Sole, A.J., Livingstone, S.J., Davison, B.J., Melchior van Wessem, J. and Howard, J., 2019. Rapid accelerations of Antarctic Peninsula outlet glaciers driven by surface melt. Nature Communications 10, 4311. https://doi.org/10.1038/s41467-019-12039-2.
-		  <br><br>
-		  Kingslake/Sole : Flow Response of Antarctic Ice to Meltwater/Sheffield Ice Velocity ExploreR
-		  </p>
+		  <h4><AppLink to="/documentation/citation" class="text-link">How to cite</AppLink></h4>
 		</div>
 	  
 	  <div class="partner-group">

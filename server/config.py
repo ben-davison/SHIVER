@@ -19,6 +19,7 @@ if current_os == "Windows":
 else:
     base_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland")
     base_path_ant = Path("/mnt/grio1/Shared/SHIVER/data/Antarctica")
+    landsat_mosaic_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland/image_mosaic/greenland_tiles_20m")
     ZARR_PATHS = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed.zarr"),
         "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed.zarr")

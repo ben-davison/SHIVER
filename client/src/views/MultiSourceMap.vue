@@ -2886,7 +2886,8 @@ const buildChartConfig = (plotKey) => {
             
             sourceGroups[source].x.push(new Date(dateStr));
             sourceGroups[source].y.push(rawSpeed);
-            sourceGroups[source].dt.push(rootData.dt ? rootData.dt[i] : 0);
+            //sourceGroups[source].dt.push(rootData.dt ? rootData.dt[i] : 0);
+			sourceGroups[source].dt.push(rootData.dt && rootData.dt[i] !== null ? Number(rootData.dt[i]) + 1 : 0);
             sourceGroups[source].error.push(activeErrorArray ? activeErrorArray[i] : 0);
             sourceGroups[source].custom.push(customData[i]);
         });

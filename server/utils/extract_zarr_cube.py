@@ -6,11 +6,24 @@ import numpy as np
 import os
 import rioxarray 
 import uuid
+import platform
+from pathlib import Path
 from datetime import datetime
 
 # Import your existing paths
 from utils.extract_zarr_ts import DATA_STORES 
 from utils.citations import generate_citation_text
+
+current_os = platform.system()
+
+# Set export directory
+if current_os == "Windows":
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    export_dir = os.path.join(base_dir, "static", "exports")
+    os.makedirs(export_dir, exist_ok=True)
+else: 
+    export_dir = Path("/mnt/grio1/Shared/SHIVER/data/exports")
+    os.makedirs(export_dir, exist_ok=True)
 
 
 # --- Extract the cube ---
@@ -340,11 +353,9 @@ def generate_netcdf_cube(
     }
         
     # Get the directory of this script, then go up to 'server/static/exports'
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    export_dir = os.path.join(base_dir, "static", "exports")
-    
-    # Create the folder if it doesn't exist
-    os.makedirs(export_dir, exist_ok=True)
+    #base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    #export_dir = os.path.join(base_dir, "static", "exports")
+    #os.makedirs(export_dir, exist_ok=True)
     
     # Generate a short random ID (8 chars)
     unique_id = uuid.uuid4().hex[:8]
