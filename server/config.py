@@ -7,6 +7,8 @@ current_os = platform.system()
 if current_os == "Windows":
     base_path_gr = Path("R:/aux_data/overlays/Greenland")
     base_path_ant = Path("R:/aux_data/overlays/Antarctica")
+    overlay_path_gr = Path("R:/aux_data/overlays/Greenland")
+    overlay_path_ant = Path("R:/aux_data/overlays/Antarctica")
     landsat_mosaic_path_gr = Path("R:/aux_data/image_mosaic/Greenland/GEE_S2/greenland_tiles_20m")
     ZARR_PATHS = {
         "Greenland": Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed.zarr"),

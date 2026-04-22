@@ -15,7 +15,7 @@ if current_os == "Windows":
 else:
     ZARR_PATHS = {
         "Antarctica": r"/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_optimized.zarr",
-        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed.zarr"
+        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_optimized.zarr"
     }
 
 
