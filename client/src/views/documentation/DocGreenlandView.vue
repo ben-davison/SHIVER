@@ -63,7 +63,7 @@ onMounted(() => {
 	
 	<section id="shift">
       <h2>2.2. SHIFT</h2>
-	  <p>The SHIFT data provide 12-day snapshots of ice speed in West Greenland derived from feature intensity of Sentinel-1 image pairs from 2014 to 2026. 
+	  <p>The SHIFT data provide 12-day snapshots of ice speed in West Greenland derived from intensity tracking of Sentinel-1 image pairs from 2014 to 2026. 
 	  The SHIFT processing pipeline is described in detail in the <AppLink to="/documentation/shift" class="text-link">SHIFT Documentation Page</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 2.2: Overview of the Greenland SHIFT data.">

@@ -42,9 +42,11 @@ const handleLogin = async () => {
     emit('close'); 
 
   } catch (err) {
-    if (err.response && err.response.status === 400) {
-        errorMsg.value = "Invalid email or password.";
+    if (err.response && (err.response.status === 400 || err.response.status === 429)) {
+        // Dynamically display the exact detail string we sent from FastAPI
+        errorMsg.value = err.response.data.detail;
     } else {
+        // Fallback for 500 server errors or actual lost connections
         errorMsg.value = "Login failed. Please check your connection.";
     }
   } finally {
@@ -115,8 +117,8 @@ const togglePasswordVisibility = () => {
       <h2 v-else-if="viewMode === 'register'">Create Account</h2>
       <h2 v-else>Reset Password</h2>
       
-      <p class="subtext" v-if="viewMode === 'login'">Access your download history and data cubes.</p>
-      <p class="subtext" v-else-if="viewMode === 'register'">Join SHIVER to manage your data downloads.</p>
+      <p class="subtext" v-if="viewMode === 'login'">Login to access all SHIVER functions.</p>
+      <p class="subtext" v-else-if="viewMode === 'register'">Join SHIVER to access all ice sheet velocity data.</p>
       <p class="subtext" v-else>Enter your email to receive a password reset link.</p>
 
       <div v-if="successMsg" class="success-banner">{{ successMsg }}</div>

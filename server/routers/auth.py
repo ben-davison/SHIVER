@@ -57,13 +57,21 @@ class PasswordResetConfirm(BaseModel):
     @classmethod
     def validate_password(cls, v: str) -> str:
         if len(v) < 10:
-            raise ValueError("Password must be at least 10 characters long.")
+            error_message = f"Invalid password. Password must be at least 10 characters long, contain at least one alphabetic letter, at least one numeric digit and at least one special character."
+            raise HTTPException(status_code=400, detail=error_message)
+            #raise ValueError("Password must be at least 10 characters long.")
         if not re.search(r'[A-Za-z]', v):
-            raise ValueError("Password must contain at least one alphabetic letter.")
+            error_message = f"Invalid password. Password must be at least 10 characters long, contain at least one alphabetic letter, at least one numeric digit and at least one special character."
+            raise HTTPException(status_code=400, detail=error_message)
+            #raise ValueError("Password must contain at least one alphabetic letter.")
         if not re.search(r'\d', v):
-            raise ValueError("Password must contain at least one numeric digit.")
+            error_message = f"Invalid password. Password must be at least 10 characters long, contain at least one alphabetic letter, at least one numeric digit and at least one special character."
+            raise HTTPException(status_code=400, detail=error_message)
+            #raise ValueError("Password must contain at least one numeric digit.")
         if not re.search(r'[^A-Za-z0-9]', v):
-            raise ValueError("Password must contain at least one special character.")
+            error_message = f"Invalid password. Password must be at least 10 characters long, contain at least one alphabetic letter, at least one numeric digit and at least one special character."
+            raise HTTPException(status_code=400, detail=error_message)
+            #raise ValueError("Password must contain at least one special character.")
         return v
     
 
@@ -140,7 +148,14 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
                 detail="Too many failed attempts. Account locked for 10 minutes."
             )
             
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        # Calculate remaining attempts
+        remaining = 5 - attempts
+        
+        # Display error message
+        error_message = f"Invalid username or password. {remaining} attempts remaining."
+        
+            
+        raise HTTPException(status_code=400, detail=error_message)
     
     # 3. Handle Successful Login
     # Clear any previous failed attempts so they start with a clean slate

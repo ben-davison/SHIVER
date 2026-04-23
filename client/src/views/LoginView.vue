@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-box">
       <h2>Access Data Cubes</h2>
-      <p>Please log in to generate custom data products.</p>
+      <p>Please log in to access all SHIVER functions.</p>
       
       <form @submit.prevent="handleLogin">
         <input v-model="email" type="email" placeholder="Email" required />

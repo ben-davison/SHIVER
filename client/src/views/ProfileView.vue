@@ -45,9 +45,8 @@ onMounted(async () => {
 });
 
 const logout = () => {
-  sessionStorage.removeItem('shiver_auth');
   sessionStorage.removeItem('shiver_token');
-  window.location.href = "/"; // Hard reload to clear state
+  window.location.href = "import.meta.env.BASE_URL"; // Hard reload to clear state
 };
 </script>
 
