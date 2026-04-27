@@ -235,7 +235,7 @@ onMounted(() => {
 	  <AppLink to="https://cds.climate.copernicus.eu/datasets/satellite-greenland-ice-sheet-velocity?tab=download" target="_blank" rel="noopener" class="text-link">here</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 2.10: Overview of the Greenland ENVEO annual data.">
-			<img src="../../assets/documentation/greenland/verification_maps_ENVEO.png" alt="ENVEO annual data overview">
+			<img src="../../assets/documentation/greenland/verification_maps_ENVEO_annual.png" alt="ENVEO annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
