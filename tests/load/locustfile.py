@@ -6,9 +6,7 @@ class WebsiteUser(HttpUser):
     """
     A simulated user that spawns on the website.
     """
-    # When a user finishes a task, they wait between 1 and 5 seconds
-    # before doing the next one (simulating thinking time).
-    wait_time = between(1, 5)
+    # Simulate a user viewing the map, clicking, and waiting for layers to render
+    wait_time = between(19, 30) 
     
-    # Assign the behaviors defined in user_flows.py
     tasks = [StandardUserBehavior]

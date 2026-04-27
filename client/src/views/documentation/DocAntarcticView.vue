@@ -58,7 +58,7 @@ onMounted(() => {
 	  <p>A summary of these data sources is shown in Figure 3.1 and each of the data sources are detailed in the sections below.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.1: Timeseries overview of Antarctic ice speed data sources.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_timeline.png" alt="Data source timeline overview">
+			<img src="../../assets/documentation/antarctica/verification_timeline.png" alt="Data source timeline overview">
       </ZoomableFigure>
 	  <br>
     </section>
@@ -69,7 +69,7 @@ onMounted(() => {
 	  The SHIFT processing pipeline is described in detail in the <AppLink to="/documentation/shift" class="text-link">SHIFT Documentation Page</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.2: Overview of the Greenland SHIFT data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_SHIFT.png" alt="SHIFT data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_SHIFT.png" alt="SHIFT data overview">
       </ZoomableFigure>
 	  
 	  See our <AppLink to="/documentation/citation" class="text-link">Citation Documentation</AppLink> for citation details.
@@ -77,14 +77,14 @@ onMounted(() => {
 	</section>
 	
 	
-	<section id="enveo">
+	<section id="enveo_monthly">
       <h2>3.3. ENVEO monthly</h2>
 	  <p>The ENVEO monthly data provide monthly averages of ice speed over the Antarctic margin derived from intensity and coherence tracking of Sentinel-1 
 	  image pairs from 2014 to 2021. The ENVEO velocity processing pipeline is described in detail in <AppLink to="https://www.sciencedirect.com/science/article/pii/S0034425725004961" target="_blank" rel="noopener" class="text-link">Wuite et al. (2026)</AppLink>, 
 	  and the mosaics can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.3: Overview of the Antarctica ENVEO monthly data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_monthly.png" alt="ENVEO monthly data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_monthly.png" alt="ENVEO monthly data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -101,7 +101,7 @@ onMounted(() => {
 	  and the image pair data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.4: Overview of the ENVEO Pine Island data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_Sentinel1_PIG.png" alt="ENVEO Pine Island data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_Sentinel-1_PIG.png" alt="ENVEO Pine Island data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -122,7 +122,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.5: Overview of the ENVEO ERS data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_ERS.png" alt="ENVEO ERS data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_ERS.png" alt="ENVEO ERS data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -145,7 +145,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.6: Overview of the ENVEO TSX data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_TSX.png" alt="ENVEO TSX data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_TSX.png" alt="ENVEO TSX data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -162,7 +162,7 @@ onMounted(() => {
 	  The data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.7: Overview of the ENVEO ALOS data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_ALOS.png" alt="ENVEO ALOS data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_ALOS.png" alt="ENVEO ALOS data overview">
       </ZoomableFigure>
 	  <br>
 	</section>
@@ -177,7 +177,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.8: Overview of the ENVEO TSX & Sentinel-1 data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_TSX_S1.png" alt="ENVEO TSX & Sentinel-1 data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_TSX_Sentinel-1.png" alt="ENVEO TSX & Sentinel-1 data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -196,7 +196,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.9: Overview of the ENVEO TSX & PALSAR data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ENVEO_TSX_PALSAR.png" alt="ENVEO TSX & PALSAR data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_TSX_PALSAR.png" alt="ENVEO TSX & PALSAR data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -215,7 +215,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://nsidc.org/data/nsidc-0761/versions/1" target="_blank" rel="noopener" class="text-link">NSIDC (0761)</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.10: Overview of the MEaSUREs multi-year data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_MEaSUREs_multiyear.png" alt="MEaSUREs multi-year data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_MEaSUREs_multiyear.png" alt="MEaSUREs multi-year data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -237,7 +237,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://nsidc.org/data/nsidc-0720/versions/1" target="_blank" rel="noopener" class="text-link">NSIDC (0720)</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.11: Overview of the MEaSUREs annual data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_MEaSUREs_annual.png" alt="MEaSUREs annual data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_MEaSUREs_annual.png" alt="MEaSUREs annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -259,7 +259,7 @@ onMounted(() => {
 	  and the data can be downloaded from <AppLink to="https://nsidc.org/data/nsidc-0545/versions/1" target="_blank" rel="noopener" class="text-link">NSIDC (0545)</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.12: Overview of the MEaSUREs ASE data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_MEaSUREs_ASE.png" alt="MEaSUREs ASE data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_MEaSUREs_ASE.png" alt="MEaSUREs ASE data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -280,7 +280,7 @@ onMounted(() => {
 	  to download from <AppLink to="https://nsidc.org/apps/itslive/" target="_blank" rel="noopener" class="text-link">the ITS_LIVE website</AppLink>.</p>
 	  
 	  <ZoomableFigure caption="Fig. 3.13: Overview of the Antarctica ITS_LIVE annual data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ITS_LIVE_annual.png" alt="ITS_LIVE annual data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ITS_LIVE_annual.png" alt="ITS_LIVE annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -298,7 +298,7 @@ onMounted(() => {
 	  </p>
 	  
 	  <ZoomableFigure caption="Fig. 3.14: Overview of the ESA CCI annual data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_ESA_CCI_annual.png" alt="ESA CCI annual data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_ESA_CCI_annual.png" alt="ESA CCI annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -316,7 +316,7 @@ onMounted(() => {
 	  </p>
 	  
 	  <ZoomableFigure caption="Fig. 3.15: Overview of the SID annual data.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_SID_annual.png" alt="SID annual data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_SID_annual.png" alt="SID annual data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -338,7 +338,7 @@ onMounted(() => {
 	  </p>
 	  
 	  <ZoomableFigure caption="Fig. 3.16: Overview of the Joughin Sentinel-1 data over Pine Island Glacier.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_Joughin_Sentinel1.png" alt="Joughin Sentinel-1 Pine Island data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_Joughin_Sentinel-1.png" alt="Joughin Sentinel-1 Pine Island data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -359,7 +359,7 @@ onMounted(() => {
 	  </p>
 	  
 	  <ZoomableFigure caption="Fig. 3.17: Overview of the Joughin TerraSAR-X data over Pine Island Glacier.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_Joughin_TSX.png" alt="Joughin TerraSAR-X Pine Island data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_Joughin_TSX.png" alt="Joughin TerraSAR-X Pine Island data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -379,7 +379,7 @@ onMounted(() => {
 	  </p>
 	  
 	  <ZoomableFigure caption="Fig. 3.18: Overview of the Li et al. data over Totten Glacier.">
-			<img src="../../assets/documentation/antarctica/Antarctica_verification_maps_Li_Totten.png" alt="Li et al. Totten Glacier data overview">
+			<img src="../../assets/documentation/antarctica/verification_maps_Li_Totten.png" alt="Li et al. Totten Glacier data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">

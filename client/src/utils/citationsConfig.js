@@ -17,11 +17,6 @@ export const citationsConfig = {
 				"PROMICE data: Solgaard, Anne Munck; Kusk, Anders, 2026, Greenland Ice Velocity from Sentinel-1 Edition 5, https://doi.org/10.22008/FK2/K70OPK, GEUS Dataverse, V6",
 				"PROMICE method: Solgaard, A., Kusk, A., Merryman Boncori, J.P., Dall, J., Mankoff, K.D., Ahlstrøm, A.P., Andersen, S.B., Citterio, M., Karlsson, N.B., Kjeldsen, K.K. and Korsgaard, N.J., 2021. Greenland ice velocity maps from the PROMICE project. Earth System Science Data, 13(7), pp.3491-3512. DOI: https://doi.org/10.5194/essd-13-3491-2021.",
 		  ],
-		  "MEaSUREs": [
-				"MEaSUREs monthly data: Joughin, I. (2023). MEaSUREs Greenland Monthly Ice Sheet Velocity Mosaics from SAR and Landsat. (NSIDC-0731, Version 5). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/EGKZX6FXXM4P. Date Accessed 04-21-2026.",
-				"MEaSUREs monthly method: Joughin, I., B. Smith, I. Howat, T. Scambos, and T. Moon. 2010. Greenland flow variability from icesheet-wide velocity mapping, Journal of Glaciology. 56. 415-430. https://doi.org/10.3189/002214310792447734",
-				"MEaSUREs monthly method: Joughin, I., B. Smith, and I. Howat. 2018. Greenland Ice Mapping Project: ice flow velocity variation at sub-monthly to decadal timescales, The Cryosphere. 12. 2211-2227. https://doi.org/10.5194/tc-12-2211-2018."
-		  ],
 		  "MEaSUREs_monthly": [
 				"MEaSUREs monthly data: Joughin, I. (2023). MEaSUREs Greenland Monthly Ice Sheet Velocity Mosaics from SAR and Landsat. (NSIDC-0731, Version 5). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/EGKZX6FXXM4P. Date Accessed 04-21-2026.",
 				"MEaSUREs monthly method: Joughin, I., B. Smith, I. Howat, T. Scambos, and T. Moon. 2010. Greenland flow variability from icesheet-wide velocity mapping, Journal of Glaciology. 56. 415-430. https://doi.org/10.3189/002214310792447734",
@@ -31,6 +26,11 @@ export const citationsConfig = {
 				"MEaSUREs quarterly data: Joughin, I. (2023). MEaSUREs Greenland Quarterly Ice Sheet Velocity Mosaics from SAR and Landsat. (NSIDC-0727, Version 5). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/V5KW64S63OSN. Date Accessed 04-21-2026.",
 				"MEaSUREs quarterly method: Joughin, I., B. Smith, I. Howat, T. Scambos, and T. Moon. 2010. Greenland flow variability from icesheet-wide velocity mapping, Journal of Glaciology. 56. 415-430. https://doi.org/10.3189/002214310792447734",
 				"MEaSUREs quarterly method: Joughin, I., B. Smith, and I. Howat. 2018. Greenland Ice Mapping Project: ice flow velocity variation at sub-monthly to decadal timescales, The Cryosphere. 12. 2211-2227. https://doi.org/10.5194/tc-12-2211-2018."
+		  ],
+		  "MEaSUREs_winter": [
+				"MEaSUREs winter data: Joughin, I., Smith, B., Howat, I. & Scambos, T. (2015). MEaSUREs Greenland Ice Sheet Velocity Map from InSAR Data. (NSIDC-0478, Version 2). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/OC7B04ZM9G6Q. Date Accessed 04-23-2026.",
+				"MEaSUREs winter method: Joughin, I., B. Smith, I. Howat, T. Scambos, and T. Moon. 2010. Greenland flow variability from icesheet-wide velocity mapping, Journal of Glaciology. 56. 415-430. https://doi.org/10.3189/002214310792447734",
+				"MEaSUREs winter method: Joughin, I., B. Smith, and I. Howat. 2018. Greenland Ice Mapping Project: ice flow velocity variation at sub-monthly to decadal timescales, The Cryosphere. 12. 2211-2227. https://doi.org/10.5194/tc-12-2211-2018."
 		  ],
 		  "MEaSUREs_annual": [
 				"MEaSUREs annual data: Joughin, I. (2023). MEaSUREs Greenland Annual Ice Sheet Velocity Mosaics from SAR and Landsat. (NSIDC-0725, Version 5). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/USBL3Z8KF9C3. Date Accessed 04-21-2026.",
@@ -42,9 +42,6 @@ export const citationsConfig = {
 		  ],
 		  "Mouginot_annual": [
 				"Mouginot annual method: Mouginot, J., Rignot, E., Scheuchl, B. and Millan, R., 2017. Comprehensive annual ice sheet velocity mapping using Landsat-8, Sentinel-1, and RADARSAT-2 data. Remote Sensing, 9(4), p.364. DOI: https://doi.org/10.3390/rs9040364. "
-		  ],
-		  "ENVEO": [
-				"ENVEO annual method: Wuite, J., (2026): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026)."
 		  ],
 		  "ENVEO_annual": [
 				"ENVEO annual method: Wuite, J., (2026): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026)."
@@ -105,9 +102,6 @@ export const citationsConfig = {
 			"ENVEO_monthly": [
 				"ENVEO monthly method: Wuite, J., Nagler, T., Hetzenecker, M. and Rott, H., 2026. Ten years of polar ice velocity mapping using Copernicus Sentinel-1. Remote Sensing of Environment, 332, p.115092. DOI: https://doi.org/10.1016/j.rse.2025.115092."
 			],
-			"ENVEO_Sentinel1_PIG": [
-				"ENVEO Sentinel-1 (PIG) method: Wuite, J., Nagler, T., Hetzenecker, M. and Rott, H., 2026. Ten years of polar ice velocity mapping using Copernicus Sentinel-1. Remote Sensing of Environment, 332, p.115092. DOI: https://doi.org/10.1016/j.rse.2025.115092."
-			],
 			"ENVEO_Sentinel-1_PIG": [
 				"ENVEO Sentinel-1 (PIG) method: Wuite, J., Nagler, T., Hetzenecker, M. and Rott, H., 2026. Ten years of polar ice velocity mapping using Copernicus Sentinel-1. Remote Sensing of Environment, 332, p.115092. DOI: https://doi.org/10.1016/j.rse.2025.115092."
 			],
@@ -117,9 +111,6 @@ export const citationsConfig = {
 			],
 			"ENVEO_TSX": [
 				"ENVEO TSX method: Rott, H., Abdel Jaber, W., Wuite, J., Scheiblauer, S., Floricioiu, D., Van Wessem, J.M., Nagler, T., Miranda, N. and Van Den Broeke, M.R., 2018. Changing pattern of ice flow and mass balance for glaciers discharging into the Larsen A and B embayments, Antarctic Peninsula, 2011 to 2016. The Cryosphere, 12(4), pp.1273-1291. DOI: https://doi.org/10.5194/tc-12-1273-2018."
-			],
-			"ENVEO_TSX_S1": [
-				"ENVEO TSX & Sentinel-1 method: Rott, H., Abdel Jaber, W., Wuite, J., Scheiblauer, S., Floricioiu, D., Van Wessem, J.M., Nagler, T., Miranda, N. and Van Den Broeke, M.R., 2018. Changing pattern of ice flow and mass balance for glaciers discharging into the Larsen A and B embayments, Antarctic Peninsula, 2011 to 2016. The Cryosphere, 12(4), pp.1273-1291. DOI: https://doi.org/10.5194/tc-12-1273-2018."
 			],
 			"ENVEO_TSX_Sentinel-1": [
 				"ENVEO TSX & Sentinel-1 method: Rott, H., Abdel Jaber, W., Wuite, J., Scheiblauer, S., Floricioiu, D., Van Wessem, J.M., Nagler, T., Miranda, N. and Van Den Broeke, M.R., 2018. Changing pattern of ice flow and mass balance for glaciers discharging into the Larsen A and B embayments, Antarctic Peninsula, 2011 to 2016. The Cryosphere, 12(4), pp.1273-1291. DOI: https://doi.org/10.5194/tc-12-1273-2018."
@@ -151,9 +142,6 @@ export const citationsConfig = {
 			],
 			"ESA_CCI_annual": [
 				"ESA CCI annual data: Wuite, J., (2026): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026)."
-			],
-			"Joughin_Sentinel1": [
-				"Joughin Sentinel-1 (quarterly) method: Joughin, I., Shapero, D., Smith, B., Dutrieux, P. and Barham, M., 2021. Ice-shelf retreat drives recent Pine Island Glacier speedup. Science Advances, 7(24), p.eabg3080. DOI: 10.1126/sciadv.abg3080."
 			],
 			"Joughin_Sentinel-1": [
 				"Joughin Sentinel-1 (quarterly) method: Joughin, I., Shapero, D., Smith, B., Dutrieux, P. and Barham, M., 2021. Ice-shelf retreat drives recent Pine Island Glacier speedup. Science Advances, 7(24), p.eabg3080. DOI: 10.1126/sciadv.abg3080."

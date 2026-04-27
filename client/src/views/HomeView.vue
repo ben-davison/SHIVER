@@ -51,7 +51,7 @@ const goToFram = () => {
           <h1 class="main-title">SHIVER</h1>
           <p class="subtitle">SHeffield Ice Velocity ExploreR</p>
           <p class="tagline">
-            High-resolution measurements of glacier flow in Greenland and Antarctica using Sentinel-1 SAR imagery.
+            Explore the flow response of Greenland and Antarctica to climate change.
           </p>
           
           <div class="action-buttons">
@@ -65,12 +65,16 @@ const goToFram = () => {
       <div class="content-wrapper">
         <h2>Monitoring Ice Flow in a Warming World</h2>
         <p>
-          Glaciers in Greenland and Antarctica can accelerate, thin and retreat in response to changes in air and ocean temperature. 
-		  In the <RouterLink to="/fram" class="text-link"><strong>FRAM Project</strong></RouterLink>, 
-		  we are using the Sentinel-1 satellites to monitor changes in glacier flow speed in near real-time.
-		  <RouterLink to="/map" class="text-link"><strong>SHIVER</strong></RouterLink>
-		  provides an interactive platform for visualizing and extracting our measurements of ice flow
-		  across west Greenland and the Antarctica Peninsula. 
+          Glacier flow transports ice into the ocean, causing global sea level rise. 
+		  Increases in air and ocean temperature can lead to acceleration of ice flow and faster sea level rise. 
+		  Therefore, measurements of ice flow are crucial for monitoring and understanding the response of 
+		  Greenland and Antarctica to climate change.
+		</p>
+		<p>
+		  In response to this need, researchers have used the abundance of satellite imagery to measure ice sheet
+		  flow. <RouterLink to="/map" class="text-link"><strong>SHIVER</strong></RouterLink>
+		  provides an interactive platform for exploring, visualizing and extracting these measurements, to
+		  accelerate scientific discovery and share these measurements with the world.
         </p>
         
         <div class="features-grid">
@@ -80,11 +84,11 @@ const goToFram = () => {
           </div>
           <div class="feature-card" @click="goToMap">
             <h3>Sheffield Ice Velocity ExploreR (SHIVER)</h3>
-            <p>Instant visualisation and extraction of velocity timeseries. Utilizing cloud-based architecture for low-latency data access.</p>
+            <p>SHIVER utilizes cloud-based architecture to provide instant visualisation and extraction of ice sheet velocity data.</p>
           </div>
           <div class="feature-card" @click="goToDocs">
             <h3>SHeffield Ice Flow Tracker (SHIFT)</h3>
-            <p>SHIFT is our processing system to generate the ice velocity measurements explored in SHIVER.
+            <p>SHIFT is our processing system to generate the some of the ice velocity measurements available in SHIVER.
 			With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.</p>
           </div>
         </div>

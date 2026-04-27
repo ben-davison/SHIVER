@@ -1449,38 +1449,40 @@ const selectedZarrStore = ref('multi'); // Can be 'single' or 'multi'
 // Dictionary of data sources, labelled as stored in the zarr store
 const REGION_SOURCES = {
   'Greenland': [
-    'PROMICE', 'SHIFT', 'MEaSUREs', 'ENVEO', 'Mouginot_annual', 'ITS_LIVE_annual', 
+    'PROMICE', 'SHIFT', 'MEaSUREs_monthly', 'MEaSUREs_quarterly', 'MEaSUREs_winter', 
+	'MEaSUREs_annual', 'ENVEO_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
     'ESA_CCI_winter', 'ESA_CCI_Sentinel-1', 'ESA_CCI_Sentinel-2', 'ESA_CCI_CSK', 
     'ESA_CCI_ERS1-2_Envisat', 'ESA_CCI_ERS2_1995-1996', 'ESA_CCI_PALSAR', 'ESA_CCI_ERS1_1991-1992'
   ],
   'Antarctica': [
     'ENVEO_monthly', 'ITS_LIVE_annual', 'MEaSUREs_annual', 'MEaSUREs_multiyear', 
-    'MEaSUREs_ASE', 'SID_annual', 'ESA_CCI_annual', 'Joughin_Sentinel1', 'Joughin_TSX', 
-    'Li_Totten', 'ENVEO_Sentinel1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_ALOS', 
-    'ENVEO_TSX_S1', 'ENVEO_TSX_PALSAR', 'SHIFT'
+    'MEaSUREs_ASE', 'SID_annual', 'ESA_CCI_annual', 'Joughin_Sentinel-1', 'Joughin_TSX', 
+    'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_ALOS', 
+    'ENVEO_TSX_Sentinel-1', 'ENVEO_TSX_PALSAR', 'SHIFT'
   ]
 };
-// Dinctionary linking actual data source name to advanced options display names. 
-// Only required for some data sources. Other just swap underscores for spaces
+// Dinctionary linking actual data source name to advanced options display names. Only required for some data sources. Other just swap underscores for spaces
 const SOURCE_DISPLAY_NAMES = {
     'ESA_CCI_ERS1-2_Envisat': 'ESA CCI ERS-1/2 & Envisat',
     'ESA_CCI_ERS2_1995-1996': 'ESA CCI ERS-2 (1995-1996)',
     'ESA_CCI_ERS1_1991-1992': 'ESA CCI ERS-1 (1991-1992)',
-	'ESA_CCI_winter': 'ESA CCI (winter mean)',
-	'ESA_CCI_annual': 'ESA CCI (annual mean)',
+	'ESA_CCI_winter': 'ESA CCI (winter)',
+	'ESA_CCI_annual': 'ESA CCI (annual)',
 	'SID_annual': 'SID (annual)',
 	'ITS_LIVE_annual': 'ITS_LIVE (annual)',
     'Mouginot_annual': 'Mouginot (annual)',
-	'MEaSUREs': 'MEaSUREs (monthly)',
+	'MEaSUREs_monthly': 'MEaSUREs (monthly)',
 	'MEaSUREs_annual': 'MEaSUREs (annual)',
+	'MEaSUREs_quarterly': 'MEaSUREs (quarterly)',
+	'MEaSUREs_winter': 'MEaSUREs (winter)',
 	'MEaSUREs_multiyear': 'MEaSUREs (multi-year)',
 	'MEaSUREs_ASE': 'MEaSUREs (ASE only)',
 	'ENVEO_monthly': 'ENVEO (monthly)',
-	'ENVEO': 'ENVEO (annual)',
+	'ENVEO_annual': 'ENVEO (annual)',
     'ENVEO_TSX_PALSAR': 'ENVEO TSX & PALSAR',
-	'ENVEO_TSX_S1': 'ENVEO TSX & Sentinel-1',
-	'ENVEO_Sentinel1_PIG': 'ENVEO Sentinel-1 pairs (Pine Island)',
-	'Joughin_Sentinel1': 'Joughin Sentinel-1 (quarterly)',
+	'ENVEO_TSX_Sentinel-1': 'ENVEO TSX & Sentinel-1',
+	'ENVEO_Sentinel-1_PIG': 'ENVEO Sentinel-1 pairs (Pine Island)',
+	'Joughin_Sentinel-1': 'Joughin Sentinel-1 (quarterly)',
 };
 const formatSourceName = (rawName) => {
     if (rawName === 'all') { return 'All Sources'; }

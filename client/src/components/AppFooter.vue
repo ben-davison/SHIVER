@@ -59,10 +59,6 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
         </p>
       </div>
 	
-		<div class="partner-group">
-		  <h4><AppLink to="/documentation/citation" class="text-link">How to cite</AppLink></h4>
-		</div>
-	  
 	  <div class="partner-group">
 		  <h4>Work with us</h4>
 		  <p>
@@ -70,6 +66,10 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
 		  <br>
 			Get in touch for custom velocity products or if you find any bugs: shiver@sheffield.ac.uk
 		  </p>
+		</div>
+		
+		<div class="partner-group">
+		  <h4><AppLink to="/documentation/citation" class="text-link">How to cite</AppLink></h4>
 		</div>
     </div>
     

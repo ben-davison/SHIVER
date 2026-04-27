@@ -48,18 +48,21 @@ const handleHashNav = async (targetPath, sectionId) => {
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'introduction')">1. Introduction</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'shift')">2. SHIFT</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'promice')">3. PROMICE</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures')">4. MEaSUREs</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'itslive_annual')">5. ITS_LIVE Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'mouginot_annual')">6. Mouginot Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'enveo_annual')">7. ENVEO Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_winter')">8. ESA CCI Winter</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers1_1991')">9. ESA CCI ERS-1</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers2_1995')">10. ESA CCI ERS-2</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_palsar')">11. ESA CCI PALSAR</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers_env')">12. ESA CCI ERS & Envisat</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_csk')">13. ESA CCI CSK</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel2')">14. ESA CCI Sentinel-2</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel1')">15. ESA CCI Sentinel-1</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_monthly')">4. MEaSUREs monthly</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_quarterly')">5. MEaSUREs quarterly</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_winter')">6. MEaSUREs winter</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_annual')">7. MEaSUREs annual</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'itslive_annual')">8. ITS_LIVE Annual</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'mouginot_annual')">9. Mouginot Annual</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'enveo_annual')">10. ENVEO Annual</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_winter')">11. ESA CCI Winter</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers1_1991')">12. ESA CCI ERS-1</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers2_1995')">13. ESA CCI ERS-2</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_palsar')">14. ESA CCI PALSAR</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers_env')">15. ESA CCI ERS & Envisat</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_csk')">16. ESA CCI CSK</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel2')">17. ESA CCI Sentinel-2</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel1')">18. ESA CCI Sentinel-1</a></li>
               </ul>
             </li>
             
@@ -68,7 +71,7 @@ const handleHashNav = async (targetPath, sectionId) => {
 			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/antarctic'">
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'introduction')">1. Introduction</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'shift')">2. SHIFT</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo')">3. ENVEO Monthly</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_monthly')">3. ENVEO Monthly</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_pig')">4. ENVEO (Pine Island)</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_ers')">5. ENVEO ERS</a></li>
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_tsx')">6. ENVEO TSX</a></li>
