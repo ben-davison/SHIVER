@@ -1,4 +1,5 @@
 # File: web/tests/load/user_flows.py
+import os
 from locust import task, TaskSet
 import random
 import time
@@ -86,7 +87,7 @@ class StandardUserBehavior(TaskSet):
         # Set up headers for future authenticated requests
         self.auth_headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
 
-    @task(10)
+    @task(int(os.getenv("WEIGHT_TIMESERIES", 20)))
     def request_timeseries(self):
         """
         Interaction 1: Click map to extract timeseries (MultiRoiRequest)
@@ -113,7 +114,7 @@ class StandardUserBehavior(TaskSet):
             name="1. Timeseries Extraction"
         )
 
-    @task(10)
+    @task(int(os.getenv("WEIGHT_WMS_BASIC", 10)))
     def request_wms_basic(self):
         """
         Interaction 2a: Basic WMS (Speed, Trend, Count)
@@ -128,7 +129,7 @@ class StandardUserBehavior(TaskSet):
         url = f"/api/wms/{self.region_name}?t={t}&service=WMS&request=GetMap&layers={layer}&styles=&format=image%2Fpng&transparent=true&version=1.1.1&width=256&height=256&srs={epsg}&bbox={bbox}"
         self.client.get(url, name="2a. WMS: Basic Layers")
 
-    @task(5)
+    @task(int(os.getenv("WEIGHT_WMS_COG", 5)))
     def request_wms_analysis_cog(self):
         """
         Interaction 2b: Analysis WMS (Pre-computed COG Average)
@@ -142,7 +143,7 @@ class StandardUserBehavior(TaskSet):
         url = f"/api/analysis/wms/{self.region_name}?variable=speed&source={source}&vmin=-500&vmax=3000&t={t}&epoch=average&service=WMS&request=GetMap&layers=analysis_layer&styles=&format=image%2Fpng&transparent=true&version=1.1.1&width=256&height=256&srs={epsg}&bbox={bbox}"
         self.client.get(url, name="2b. WMS: Analysis COG (Average)")
 
-    @task(5)
+    @task(int(os.getenv("WEIGHT_WMS_ZARR", 4)))
     def request_wms_analysis_zarr(self):
         """
         Interaction 2c: Analysis WMS (Single Zarr Time-slice)
@@ -157,7 +158,7 @@ class StandardUserBehavior(TaskSet):
         url = f"/api/analysis/wms/{self.region_name}?variable=speed&source={source}&vmin=-500&vmax=3000&t={t}&epoch={epoch}&service=WMS&request=GetMap&layers=analysis_layer&styles=&format=image%2Fpng&transparent=true&version=1.1.1&width=256&height=256&srs={epsg}&bbox={bbox}"
         self.client.get(url, name="2c. WMS: Analysis Zarr (Single Epoch)")
 
-    @task(2)
+    @task(int(os.getenv("WEIGHT_WMS_DIFF", 2)))
     def request_wms_analysis_differencing(self):
         """
         Interaction 2d: Analysis WMS (On-the-fly Differencing)
@@ -173,7 +174,7 @@ class StandardUserBehavior(TaskSet):
         url = f"/api/analysis/wms/{self.region_name}?variable=speed&source={source1}&vmin=-1000&vmax=1000&t={t}&epoch=1&compareepoch=1&comparesource={source2}&service=WMS&request=GetMap&layers=analysis_layer&styles=&format=image%2Fpng&transparent=true&version=1.1.1&width=256&height=256&srs={epsg}&bbox={bbox}"
         self.client.get(url, name="2d. WMS: Analysis Differencing")
 
-    @task(1)
+    @task(int(os.getenv("WEIGHT_DATACUBE", 1)))
     def request_datacube_download(self):
         """
         Interaction 3: Background NetCDF Extraction (MultiCubeRequest)

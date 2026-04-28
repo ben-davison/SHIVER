@@ -8,7 +8,7 @@ from datetime import datetime
 # CONFIGURATION
 PROCESS_NAME = "python" # "python" for Flask/Django, "node" for Node.js
 # Save results to the sibling "results" directory
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "results/server_stats.csv")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../results/server_stats.csv")
 
 def get_process_memory():
     total_mem = 0

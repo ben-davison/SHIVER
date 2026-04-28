@@ -1,40 +1,25 @@
 # SHIVER: SHeffield Ice Velocity ExploreR
 
-**SHIVER** is an interactive web application designed for the rapid visualization and extraction of high-resolution ice velocity time series data in West Greenland and on the Antarctica Peninsula. 
+__Low-latency access to ice velocity measurements for Greenland and Antarctica__
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Vue](https://img.shields.io/badge/frontend-Vue.js%203-4FC08D)
-![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688)
-![Leaflet](https://img.shields.io/badge/map-Leaflet-e6e600)
+![License](https://img.shields.io/badge/license-GNU&GPL-blue.svg)
 
-## ?? Key Features
+**SHIVER** is a user-friendly, interactive platform for exploring, visualizing and extracting ice velocity measurements of Greenland and Antarctica.
 
-* **Multi-Region Support:** Seamlessly switch between Greenland (EPSG:3413) and Antarctica (EPSG:3031) projections.
-* **Interactive Mapping:** * View tile-served layers for Ice Speed, Measurement Counts, and Acceleration Trends.
-    * Dynamic glacier basin outlines (Antarctica) with zoom-dependent labeling.
-    * Ice margins and grounding line overlays.
-* **Time-Series Extraction:**
-    * **Point & Click:** Instant generation of velocity time series for any location on the ice sheet.
-    * **Batch Upload:** Upload Shapefiles, GeoJSON, or KML files to extract data for multiple glaciers simultaneously.
-* **Advanced Data Processing:**
-    * Toggle between **Raw** and **Filtered** datasets.
-    * Customizable **Smoothing Parameters** (Savitzky-Golay filter, Gap filling, Window sizes).
-    * Visualize Velocity components (Speed, u, v).
-* **Export Capabilities:**
-    * Download processed data as CSV (individual) or ZIP (batch).
-    * Export high-quality plots as PNGs.
+The velocity datasets incorporated into SHIVER are described in the SHIVER [`Greenland`](https://ben-davison.github.io/SHIVER/#/documentation/greenland) and [`Antarctica`](https://ben-davison.github.io/SHIVER/#/documentation/Antarctica) data source documentation. 
 
-## ??? Technology Stack
+You can use SHIVER to:
 
-### Frontend
-* **Framework:** Vue.js 3 (Vite)
-* **Mapping:** Leaflet & Vue-Leaflet
-* **Visualization:** Plotly.js
-* **HTTP Client:** Axios
+* **Visualize and download** time-series of ice velocity at any location in the Greenland and Antarctic ice sheets.
+* **Calculate speed trends** at any location and time-period, through any and all data sources, on-the-fly.
+* **Explore maps of flow speed** from any time-period and data source.
+* **Generate maps of speed change** across any time-period and any combination of data sources, on-the-fly.
+* **Generate and download** your own 3-D data cubes of ice velocity.
 
-### Backend
-* **Server:** FastAPI (Python)
-* **Data Handling:** Xarray, Pandas, Zarr
-* **Geospatial:** Rio-tiler (Tile serving), GeoPandas, Shapely
-* **Signal Processing:** Scipy (Savgol filter)
+And much more! 
 
+The SHIVER functionality is described in more detail in our [`SHIVER documentation pages`](https://ben-davison.github.io/SHIVER/#/documentation). 
+
+Contact: b.j.davison@sheffield.ac.uk
+
+[`SHIVER:`](https://ben-davison.github.io/SHIVER/) https://ben-davison.github.io/SHIVER/

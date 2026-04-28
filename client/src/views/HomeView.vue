@@ -65,16 +65,16 @@ const goToFram = () => {
       <div class="content-wrapper">
         <h2>Monitoring Ice Flow in a Warming World</h2>
         <p>
-          Glacier flow transports ice into the ocean, causing global sea level rise. 
+          Glacier flow transports ice into the ocean, contributing to global sea level rise. 
 		  Increases in air and ocean temperature can lead to acceleration of ice flow and faster sea level rise. 
-		  Therefore, measurements of ice flow are crucial for monitoring and understanding the response of 
-		  Greenland and Antarctica to climate change.
+		  Therefore, measurements of ice flow are crucial for understanding the response of 
+		  Greenland and Antarctica to climate change and for monitoring their contribution to sea level rise.
 		</p>
 		<p>
 		  In response to this need, researchers have used the abundance of satellite imagery to measure ice sheet
 		  flow. <RouterLink to="/map" class="text-link"><strong>SHIVER</strong></RouterLink>
-		  provides an interactive platform for exploring, visualizing and extracting these measurements, to
-		  accelerate scientific discovery and share these measurements with the world.
+		  provides an interactive platform for exploring, visualizing and extracting these measurements, with the aim
+          of accelerating scientific discovery and educating interested parties.
         </p>
         
         <div class="features-grid">

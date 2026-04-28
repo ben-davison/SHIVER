@@ -91,8 +91,8 @@ onMounted(() => {
 	   </p>
 	   <p>
 			<strong>Note: The ESA_CCI_Sentinel-1, ESA_CCI_Sentinel-2 and ESA_CCI_ERS1-2_Envisat over selected glacier sites in Greenland require separate citations for each
-			glacier site. Our dataset compilation method combines all of those glacier sites into one datasource. We therefore provide the citation information for all glacier sites
-			included in this data source if any are intersected. You shoud remove the unnecessary citations in your work.</strong>
+			glacier site. Our dataset compilation method combines all of those glacier sites into one datasource. Our automated citation generator will therefore provide the 
+			citation information for all glacier sites even if only one is intersected. You should remove the unnecessary citations when incorporating them into your work.</strong>
 	   </p>
     </section>
 
