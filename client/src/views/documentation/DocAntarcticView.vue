@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import ZoomableFigure from '../../components/ZoomableFigure.vue'
@@ -68,7 +68,7 @@ onMounted(() => {
 	  <p>The SHIFT data provide 6- and 12-day snapshots of ice speed over the Antarctic Peninsula derived from feature intensity of Sentinel-1 image pairs from 2014 to 2026. 
 	  The SHIFT processing pipeline is described in detail in the <AppLink to="/documentation/shift" class="text-link">SHIFT Documentation Page</AppLink>.</p>
 	  
-	  <ZoomableFigure caption="Fig. 3.2: Overview of the Greenland SHIFT data.">
+	  <ZoomableFigure caption="Fig. 3.2: Overview of the Antarctic SHIFT data.">
 			<img src="../../assets/documentation/antarctica/verification_maps_SHIFT.png" alt="SHIFT data overview">
       </ZoomableFigure>
 	  
@@ -83,7 +83,7 @@ onMounted(() => {
 	  image pairs from 2014 to 2021. The ENVEO velocity processing pipeline is described in detail in <AppLink to="https://www.sciencedirect.com/science/article/pii/S0034425725004961" target="_blank" rel="noopener" class="text-link">Wuite et al. (2026)</AppLink>, 
 	  and the mosaics can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
-	  <ZoomableFigure caption="Fig. 3.3: Overview of the Antarctica ENVEO monthly data.">
+	  <ZoomableFigure caption="Fig. 3.3: Overview of the ENVEO monthly data.">
 			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_monthly.png" alt="ENVEO monthly data overview">
       </ZoomableFigure>
 	  
@@ -126,7 +126,7 @@ onMounted(() => {
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
-		Rott, H., M�ller, F., Nagler, T. and Floricioiu, D., 2011. The imbalance of glaciers after disintegration of Larsen-B ice shelf, Antarctic Peninsula. The Cryosphere, 5(1), pp.125-134. DOI: https://doi.org/10.5194/tc-5-125-2011. 
+		Rott, H., Müller, F., Nagler, T. and Floricioiu, D., 2011. The imbalance of glaciers after disintegration of Larsen-B ice shelf, Antarctic Peninsula. The Cryosphere, 5(1), pp.125-134. DOI: https://doi.org/10.5194/tc-5-125-2011. 
 	  </blockquote>
 	  <blockquote class="citation-block">
 		Wuite, J., Rott, H., Hetzenecker, M., Floricioiu, D., De Rydt, J., Gudmundsson, G.H., Nagler, T. and Kern, M., 2015. Evolution of surface velocities and ice discharge of Larsen B outlet glaciers from 1995 to 2013. The Cryosphere, 9(3), pp.957-969. DOI: https://doi.org/10.5194/tc-9-957-2015. 

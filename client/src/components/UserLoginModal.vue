@@ -106,11 +106,34 @@ const handleResetRequest = async () => {
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value;
 };
+
+// --- PREVENT ACCIDENTAL CLOSURE ---
+let clickStartedOnBackdrop = false;
+
+const handleMouseDown = (e) => {
+  // We only care if the click started on the backdrop itself, not the card
+  clickStartedOnBackdrop = e.target.classList.contains('modal-backdrop');
+};
+
+const handleMouseUp = (e) => {
+  // Only close if the click started ON the backdrop AND ended ON the backdrop
+  if (clickStartedOnBackdrop && e.target.classList.contains('modal-backdrop')) {
+    emit('close');
+  }
+  // Reset for the next interaction
+  clickStartedOnBackdrop = false;
+};
+
+
 </script>
 
 <template>
-  <div class="modal-backdrop" @click.self="$emit('close')">
-    <div class="modal-card">
+  <div 
+    class="modal-backdrop" 
+    @mousedown="handleMouseDown" 
+    @mouseup="handleMouseUp"
+  >
+    <div class="modal-card" @mousedown.stop @mouseup.stop> 
       <button class="close-btn" @click="$emit('close')">x</button>
       
       <h2 v-if="viewMode === 'login'">User Login</h2>
@@ -118,7 +141,7 @@ const togglePasswordVisibility = () => {
       <h2 v-else>Reset Password</h2>
       
       <p class="subtext" v-if="viewMode === 'login'">Login to access all SHIVER functions.</p>
-      <p class="subtext" v-else-if="viewMode === 'register'">Join SHIVER to access all ice sheet velocity data.</p>
+      <p class="subtext" v-else-if="viewMode === 'register'">Join SHIVER to access all ice sheet velocity data. <br><br> <strong>Note:</strong> Passwords must be at least 10 characters long, contain at least one letter, at least one number and at least one special character.</p>
       <p class="subtext" v-else>Enter your email to receive a password reset link.</p>
 
       <div v-if="successMsg" class="success-banner">{{ successMsg }}</div>
@@ -202,11 +225,13 @@ const togglePasswordVisibility = () => {
   background: rgba(0, 0, 0, 0.6);
   z-index: 3000;
   display: flex; justify-content: center; align-items: center;
+  user-select: none;
 }
 .modal-card {
   background: #1a2634; color: white;
   padding: 30px; border-radius: 8px; width: 100%; max-width: 400px;
   position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  user-select: auto;
 }
 .close-btn {
   position: absolute; top: 10px; right: 15px;

@@ -8,11 +8,14 @@
      }" 
      :style="{ height: mapHeightPercent + '%' }">
 	 
+	 <div v-if="isMapBusy" class="map-interaction-blocker"></div>
+	 
       <l-map 
 	    :key="currentRegion"
         ref="map" 
         v-model:zoom="zoom" 
         v-model:center="center" 
+		:style="{ pointerEvents: isMapBusy ? 'none' : 'auto' }"
         :use-global-leaflet="false" 
 		:options="mapOptions"
         @click="onMapClick"
@@ -89,7 +92,8 @@
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		   v-if="wmsOverlayUrl && activeMode === 'overview'"
+		   v-if="wmsOverlayUrl"
+		   :visible="activeMode === 'overview' && overlayLayer === 'speed'"
 		  :url="wmsOverlayUrl"
 		  layers="default_speed"
 		  format="image/png"
@@ -97,12 +101,12 @@
 		  :opacity="0.8"
 		  :z-index="30" 
 		  name="Ice Speed"
-		  :visible="overlayLayer === 'speed'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsOverlayUrl && activeMode === 'overview'"
+		  v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'count'"
 		  :url="wmsOverlayUrl"
 		  layers="count"
 		  format="image/png"
@@ -110,12 +114,12 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Measurement Count"
-		  :visible="overlayLayer === 'count'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsOverlayUrl && activeMode === 'overview'"
+		  v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'trend'"
 		  :url="wmsOverlayUrl"
 		  layers="trend"
 		  format="image/png"
@@ -123,12 +127,12 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Speed Trend"
-		  :visible="overlayLayer === 'trend'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		   v-if="wmsOverlayUrl && activeMode === 'overview'"
+		   v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'range'"
 		  :url="wmsOverlayUrl"
 		  layers="range"
 		  format="image/png"
@@ -136,31 +140,34 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Measurement Range"
-		  :visible="overlayLayer === 'range'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsVectorUrl && activeMode === 'overview'"
+		  v-if="wmsVectorUrl"
+		  :visible="activeMode === 'overview' && isFlowActive"
 		  :url="wmsVectorUrl"
 		  layers="vectors"
 		  format="image/png"
 		  :transparent="true"
 		  name="Flow direction arrows"
-		  :visible="isFlowActive"
 		  :z-index="50"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="activeMode === 'analysis' && analysisWmsUrl"
+		  v-if="analysisWmsUrl"
 		  :key="analysisWmsUrl" 
 		  :url="analysisWmsUrl"
+		  :visible="activeMode === 'analysis'"
 		  layers="analysis_layer"
 		  format="image/png"
 		  :transparent="true"
 		  :opacity="0.7"
 		  :z-index="100"
+		  @loading="onAnalysisLoading"
+		  @load="onAnalysisComplete"
+		  @tileerror="onAnalysisError"
 		></l-wms-tile-layer>
 		
         <l-geo-json 
@@ -346,6 +353,28 @@
 		
 	  </div>
 	  
+	  <div class="map-toolbar-left">
+		<div class="toolbar-group-row">
+			<button 
+			  class="panel-btn" 
+			  :class="{ 'active': currentRegion === 'Greenland' }"
+			  @click="currentRegion = 'Greenland'; switchRegion()"
+			  title="Switch to Greenland"
+			>
+			  <greenlandIcon class="btn-icon-svg" />
+			</button>
+
+			<button 
+			  class="panel-btn" 
+			  :class="{ 'active': currentRegion === 'Antarctica' }"
+			  @click="currentRegion = 'Antarctica'; switchRegion()"
+			  title="Switch to Antarctica"
+			>
+			  <antarcticaIcon class="btn-icon-svg" />
+			</button>
+		</div>
+	  </div>
+	  
       <div class="map-toolbar">
 	  
 		  <div class="menu-trigger">
@@ -359,26 +388,6 @@
 		  </div>
 		  
 		  <div class="tools-wrapper">
-
-			  <div class="toolbar-group">
-				<button 
-				  class="panel-btn" 
-				  :class="{ 'active': currentRegion === 'Greenland' }"
-				  @click="currentRegion = 'Greenland'; switchRegion()"
-				  title="Switch to Greenland"
-				>
-				  <greenlandIcon class="btn-icon-svg" />
-				</button>
-
-				<button 
-				  class="panel-btn" 
-				  :class="{ 'active': currentRegion === 'Antarctica' }"
-				  @click="currentRegion = 'Antarctica'; switchRegion()"
-				  title="Switch to Antarctica"
-				>
-				  <antarcticaIcon class="btn-icon-svg" />
-				</button>
-			  </div>
 
 			  <div class="toolbar-group">
 			    <button 
@@ -683,10 +692,26 @@
 						<input type="range" v-model.number="colorVmax" min="-500" max="500" step="10" class="modern-slider">
 					  </div>
 					</div>
-
+					
 				</template>
 				
 			  </div>
+			  
+			    <div v-if="activeMode === 'analysis'" class="card-footer">
+					<hr class="divider">
+					<button 
+						class="btn-run-analysis" 
+						@click="runAnalysis" 
+						:disabled="isMapBusy || !selectedSource"
+					  >
+						<div v-if="isMapBusy" class="btn-spinner"></div>
+						
+						<span>
+						  {{ isMapBusy ? 'Processing Data...' : 'Update Analysis Map' }}
+						</span>
+					  </button>
+				</div>
+					
 			</div>
 		  </div>
 		
@@ -877,6 +902,10 @@
 				
 			<div class="axis-controls" v-if="selectedPoints.length > 0">
 				<div class="axis-group">
+					<label><strong>Chart options:</strong></label>
+				</div>
+				
+				<div class="axis-group">
 					<label>Y-Min:</label>
 					<input type="number" step="any" v-model.lazy="yAxisMin" @change="updatePlotAxes" />
 					<label>Y-Max:</label>
@@ -885,9 +914,9 @@
 					
 				<div class="axis-group">
 					<label>Start:</label>
-					<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMin" @change="updatePlotAxes" />
+					<input type="date" v-model.lazy="xAxisMin" :min="minChartDate" :max="maxChartDate" @change="updatePlotAxes" />
 					<label>End:</label>
-					<input type="text" placeholder="YYYY-MM-DD" v-model.lazy="xAxisMax" @change="updatePlotAxes" />
+					<input type="date" v-model.lazy="xAxisMax" :min="minChartDate" :max="maxChartDate" @change="updatePlotAxes" />
 				</div>
 				<button @click="resetAxes" class="btn-reset-axes">Reset</button>
 					
@@ -1117,7 +1146,7 @@ const onMapMouseMove = (e) => {
   const newLat = e.latlng.lat + state.offsetLat;
   const newLon = e.latlng.lng + state.offsetLon;
 
-  // 2. Create a BRAND NEW object (Copy + Update)
+  // 2. Create a new object (Copy + Update)
   // This breaks the reference to the old object. 
   // Vue Production cannot ignore this—it sees a completely new piece of data.
   const updatedPoint = {
@@ -1130,12 +1159,12 @@ const onMapMouseMove = (e) => {
   // splice matches the array mutation methods Vue watches closely
   selectedPoints.value.splice(index, 1, updatedPoint);
 
-  // 4. Update our drag state to track the NEW object
+  // 4. Update our drag state to track the new object
   // If we don't do this, 'state.point' will still point to the old (stale) object
   state.point = updatedPoint;
 };
 
-// 3. End Drag (Attached to the MAP)
+// 3. End Drag (Attached to the map)
 const onMapMouseUp = async (e) => {
   if (!draggingState.value.active) return;
 
@@ -1144,7 +1173,7 @@ const onMapMouseUp = async (e) => {
     map.value.leafletObject.dragging.enable();
   }
   
-  // 1. Extract values BEFORE resetting the state
+  // 1. Extract values before resetting the state
   const point = draggingState.value.point;
   const startLat = draggingState.value.startLat;
   const startLon = draggingState.value.startLon;
@@ -1313,7 +1342,6 @@ const center = ref([71.394, -40.987]);
 const statusMessage = ref("");
 const isDownloading = ref(false);
 const isDownloadingChart = ref(false);
-const isDownloadingMap = ref(false);
 const isUploading = ref(false);
 const selectedPoints = ref([]); 
 const showHelp = ref(false); 
@@ -1340,7 +1368,10 @@ let messageTimeout = null;
 // Layer manager
 const selectedBasemap = ref('none');
 const showLayerManager = ref(false); 
+const isMapBusy = ref(false);
+const isManualUpdate = ref(false);
 const activeMode = ref('overview');
+const analysisWmsUrl = ref('');
 const selectedSource = ref('');
 const selectedEpoch = ref('');
 const allEpochs = ref([]);
@@ -1496,37 +1527,64 @@ watch([analysisVariable, isDifferenceMode], ([newVar, newDiff]) => {
   }
 });
 
-// Build the dynamic WMS URL for the Analysis tab
-const analysisWmsUrl = computed(() => {
-  // Wait until the user has actually selected a source before trying to load
-  if (!selectedSource.value) return null;
+// Trigger analysis
+function runAnalysis() {
+  if (!selectedSource.value) return;
+  
+  isMapBusy.value = true;
+  isManualUpdate.value = true;
+  statusMessage.value = "Running analysis...";
 
   const baseUrl = API_URL.replace(/\/$/, '');
-  let url = `${baseUrl}/api/analysis/wms/${currentRegion.value}?`;
-  
-  // Standard parameters that always apply
   const params = new URLSearchParams({
     variable: analysisVariable.value,
     source: selectedSource.value,
-    vmin: colorVmin.value, // We added this earlier for the difference/trend modes
+    vmin: colorVmin.value,
     vmax: colorVmax.value,
-    t: Date.now() // Cache-buster to force map redraws
+    t: Date.now() // Safe here because it only fires on click
   });
 
-  // Conditionally add the epoch logic ONLY if we are looking at speed
   if (analysisVariable.value === 'speed') {
-    if (selectedEpoch.value !== '') {
-      params.append('epoch', selectedEpoch.value);
-    }
-    // Only send compareepoch if difference mode is active AND a baseline is selected
-    if (isDifferenceMode.value && compareEpoch.value !== '' && compareSource.value !== '') {
+    if (selectedEpoch.value !== '') params.append('epoch', selectedEpoch.value);
+    
+    if (isDifferenceMode.value && compareEpoch.value && compareSource.value) {
       params.append('compareepoch', compareEpoch.value);
       params.append('comparesource', compareSource.value); 
     }
   }
 
-  return url + params.toString();
-});
+  // Updating this ref triggers the Leaflet layer update
+  analysisWmsUrl.value = `${baseUrl}/api/analysis/wms/${currentRegion.value}?${params.toString()}`;  
+}
+
+// Function to handle the successful load of tiles
+const onAnalysisComplete = () => {
+  if (!isManualUpdate.value) {
+    isMapBusy.value = false;
+    return;
+  }
+
+  // If it was a manual update, show the completion message
+  statusMessage.value = "Analysis complete.";
+  isMapBusy.value = false;
+  
+  // Disarm the flag so subsequent zooms stay quiet
+  isManualUpdate.value = false;
+};
+
+// Function to handle errors
+const onAnalysisError = () => {
+  if (isManualUpdate.value) {
+    statusMessage.value = "Error performing analysis.";
+    isManualUpdate.value = false;
+  }
+  isMapBusy.value = false;
+};
+
+// In case the map triggers a reload internally
+const onAnalysisLoading = () => {
+  isMapBusy.value = true;
+};
 
 
 // Define analysis colours and labels
@@ -1562,6 +1620,7 @@ const dynamicVikStyle = computed(() => {
       #AF8A3E ${zeroPct + (100 - zeroPct) / 2}%, 
       #611200 100%)`
   };
+  
 });
 
 
@@ -1793,6 +1852,24 @@ const getSiteLabel = (point, index) => {
   return name;
 };
 
+// Define date formatter for plot relayout
+const formatChartDate = (val) => {
+  if (!val) return '';
+  
+  // Create a date object. Plotly dates are usually ISO strings or numbers.
+  const d = new Date(val);
+  
+  // Check if the date is valid
+  if (isNaN(d.getTime())) return '';
+
+  // Format as YYYY-MM-DD
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
 // --- FUNCTION 1: HANDLE CHART ZOOM (Chart updates Text Boxes) ---
 const onPlotRelayout = (event) => {
   // 1. Check if this is an Auto-Range event (Double click or Reset)
@@ -1808,8 +1885,8 @@ const onPlotRelayout = (event) => {
       
       // Update X-Axis Variables
       if (event['xaxis.range[0]']) {
-        xAxisMin.value = String(event['xaxis.range[0]']).split(' ')[0];
-        xAxisMax.value = String(event['xaxis.range[1]']).split(' ')[0];
+        xAxisMin.value = formatChartDate(event['xaxis.range[0]']);
+        xAxisMax.value = formatChartDate(event['xaxis.range[1]']);
       }
       
       // Update Y-Axis Variables
@@ -2133,9 +2210,11 @@ const applyAdvancedOptions = async () => {
       if (JSON.stringify(current.smoothing) !== JSON.stringify(targetSettings.smoothing)) return true;
 
       if (targetSettings.storeType === 'multi') {
-          // B. Multi-Source Check: Did the user add a new satellite?
+          // B. Multi-Source Check: Did the user add or remove a data source?
           const missingSource = targetSettings.sources.some(s => !(current.sources || []).includes(s));
           if (missingSource) return true;
+		  const removedSource = (current.sources || []).some(s => !targetSettings.sources.includes(s));
+          if (removedSource) return true;
       } else {
           // C. Single-Source Check: Did the user add a new Variable or Quality?
           const missingVariable = targetSettings.variable.some(v => !(current.variable || []).includes(v));
@@ -2780,6 +2859,18 @@ const clearAll = () => { selectedPoints.value = []; Plotly.purge('velocity-chart
 
 
 // --- CHART PLOTTING (PLOTLY) ---
+// Dynamically get today's date in local YYYY-MM-DD format
+const maxChartDate = computed(() => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+});
+
+// Set a static hard floor for how far back they can look
+const minChartDate = '1950-01-01';
+
 // BUILD CHART DATA (Returns {data, layout} for a given quality level)
 const buildChartConfig = (plotKey) => {
   const traces = [];
@@ -3233,18 +3324,16 @@ const updateChart = async () => {
     graphDiv.on('plotly_relayout', onPlotRelayout);
     
     // Populate initial values if not zoomed
-    if (graphDiv.layout && graphDiv.layout.xaxis && graphDiv.layout.yaxis) {
+    if (graphDiv.layout.xaxis && graphDiv.layout.xaxis.range) {
         const xRange = graphDiv.layout.xaxis.range;
-        const yRange = graphDiv.layout.yaxis.range;
+        xAxisMin.value = formatChartDate(xRange[0]);
+        xAxisMax.value = formatChartDate(xRange[1]);
+    }
 
-        if (xRange) {
-            xAxisMin.value = String(xRange[0]).split(' ')[0];
-            xAxisMax.value = String(xRange[1]).split(' ')[0];
-        }
-        if (yRange) {
-            yAxisMin.value = Math.round(yRange[0] * 100) / 100;
-            yAxisMax.value = Math.round(yRange[1] * 100) / 100;
-        }
+    if (graphDiv.layout.yaxis && graphDiv.layout.yaxis.range) {
+        const yRange = graphDiv.layout.yaxis.range;
+        yAxisMin.value = Math.round(yRange[0] * 100) / 100;
+        yAxisMax.value = Math.round(yRange[1] * 100) / 100;
     }
 	// Force resize
 	window.requestAnimationFrame(() => {
@@ -3829,6 +3918,7 @@ const handleDownload = async () => {
     isDownloading.value = false;
   }
 };
+
 const generateXLSX = (point, index) => {
   const rootData = point.data.data; 
   const wb = XLSX.utils.book_new();
@@ -3840,6 +3930,7 @@ const generateXLSX = (point, index) => {
   // 1. IDENTIFY VARIABLES
   const excludeKeys = ['dates', 'dates_daily', 'error', 'error_u', 'error_v', 'dt', 'count', 'data_source'];
   const availableKeys = Object.keys(rootData).filter(k => !excludeKeys.includes(k));
+  const displayKeys = availableKeys.map(key => `${key}_m_yr`);
 
   // ==========================================
   // SHEET 1: POINT DATA (Skips NaNs)
@@ -3849,9 +3940,9 @@ const generateXLSX = (point, index) => {
   // Create headers dynamically
   let pointHeaders = [];
   if (isMulti) {
-      pointHeaders = ["Date", "Data_Source", "Error_m_yr", "Time_Separation_days", "Pixel_Count", ...availableKeys];
+      pointHeaders = ["Date", "Data_Source", "Error_m_yr", "Time_Separation_days", "Pixel_Count", ...displayKeys];
   } else {
-      pointHeaders = ["Date", "Error_m_yr", "Error_U_m_yr", "Error_V_m_yr", "Time_Separation_days", "Pixel_Count", ...availableKeys];
+      pointHeaders = ["Date", "Error_m_yr", "Error_U_m_yr", "Error_V_m_yr", "Time_Separation_days", "Pixel_Count", ...displayKeys];
   }
   pointRows.push(pointHeaders);
 
@@ -3898,7 +3989,7 @@ const generateXLSX = (point, index) => {
   
   if (dailyDates && dailyDates.length > 0) {
       const dailyRows = [];
-      const dailyHeaders = ["Date", ...availableKeys];
+      const dailyHeaders = ["Date", ...displayKeys];
       dailyRows.push(dailyHeaders);
 
       dailyDates.forEach((date, i) => {
@@ -4008,6 +4099,17 @@ const generateXLSX = (point, index) => {
   align-items: flex-end;
 }
 
+.map-toolbar-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000; /* Above Leaflet Map */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+
 /* The wrapper holds the actual button groups */
 .tools-wrapper {
   display: flex;
@@ -4019,6 +4121,17 @@ const generateXLSX = (point, index) => {
 .toolbar-group {
   display: flex;
   flex-direction: column;
+  gap: 8px; /* Space between buttons in a group */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 20px; /* Capsule shape container */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  backdrop-filter: blur(4px);
+}
+
+.toolbar-group-row {
+  display: flex;
+  flex-direction: row;
   gap: 8px; /* Space between buttons in a group */
   background: rgba(255, 255, 255, 0.9);
   padding: 8px;
@@ -4042,7 +4155,7 @@ const generateXLSX = (point, index) => {
 
 /* --- RESPONSIVE LOGIC --- */
 /* If the screen height is less than 750px, switch to Compact Mode */
-@container map-container (height < 500px) {
+@container map-container (height < 400px) {
   
   /* 1. Show the hamburger button */
   .menu-trigger {
@@ -4646,6 +4759,65 @@ const generateXLSX = (point, index) => {
   color: #3498db; /* Turns the text blue */
 }
 
+/* ANALYSIS BUTTON
+/* Analysis Action Button */
+.btn-run-analysis {
+  /* Layout & Typography */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 20px;
+  border-radius: 20px; /* Matching your pill radius */
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Visuals (Inherited from your active pill state) */
+  background: #e8f4fd;
+  color: #3498db;
+  border: 1px solid #3498db;
+}
+
+/* Hover effect - re-using your "lift" and shadow logic */
+.btn-run-analysis:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+  background: #3498db; /* Invert colors on hover for a "pushed" feel */
+  color: #ffffff;
+}
+
+/* Active/Click state */
+.btn-run-analysis:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Disabled state - Matching your grayscale/opacity logic */
+.btn-run-analysis:disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  cursor: not-allowed;
+  background: #f1f3f5;
+  color: #555;
+  border-color: transparent;
+}
+
+/* Inline Spinner for the button */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.75s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Sliders */
 .param-item { margin-bottom: 12px; }
 .param-info {
@@ -4694,9 +4866,12 @@ const generateXLSX = (point, index) => {
 
 /* --- FOOTER --- */
 .card-footer {
+  flex-shrink: 0;
   padding: 15px 20px;
   background: white;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: center;
 }
 .btn-primary-action {
   width: 100%;
@@ -5057,6 +5232,12 @@ const generateXLSX = (point, index) => {
   font-size: 0.85rem;
 }
 
+.axis-group input[type="date"] {
+    min-width: 110px; 
+    padding: 4px;
+    font-family: inherit;
+}
+
 .btn-reset-axes {
   background: white;
   border: 1px solid #aaa;
@@ -5348,6 +5529,14 @@ const generateXLSX = (point, index) => {
   opacity: 0;
 }
 
+/* Add a fade transition for the toast */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
 /* Use 'deep' selector because these classes are inside Leaflet's SVG overlay */
 :deep(.draggable-feature) {
   cursor: move;
@@ -5362,6 +5551,16 @@ const generateXLSX = (point, index) => {
 
 :deep(.draggable-feature:active) {
   cursor: grabbing;
+}
+
+.map-interaction-blocker {
+  position: absolute;
+  inset: 0;
+  z-index: 9000; /* Just below the status-toast */
+  cursor: wait;
+  pointer-events: auto; /* Captures clicks so map doesn't get them */
+  transition: opacity 0.2s; 
+  background: rgba(255, 255, 255, 0);
 }
 
 </style>

@@ -2,7 +2,7 @@
 
 __Low-latency access to ice velocity measurements for Greenland and Antarctica__
 
-![License](https://img.shields.io/badge/license-GNU&GPL-blue.svg)
+![License](https://img.shields.io/badge/license-GNU%GPL-blue.svg)
 
 **SHIVER** is a user-friendly, interactive platform for exploring, visualizing and extracting ice velocity measurements of Greenland and Antarctica.
 
@@ -10,7 +10,7 @@ The velocity datasets incorporated into SHIVER are described in the SHIVER [`Gre
 
 You can use SHIVER to:
 
-* **Visualize and download** time-series of ice velocity at any location in the Greenland and Antarctic ice sheets.
+* **Visualize and download** time-series of ice velocity at any location on the Greenland and Antarctic ice sheets.
 * **Calculate speed trends** at any location and time-period, through any and all data sources, on-the-fly.
 * **Explore maps of flow speed** from any time-period and data source.
 * **Generate maps of speed change** across any time-period and any combination of data sources, on-the-fly.

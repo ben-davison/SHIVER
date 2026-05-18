@@ -8,11 +8,14 @@
      }" 
      :style="{ height: mapHeightPercent + '%' }">
 	 
+	 <div v-if="isMapBusy" class="map-interaction-blocker"></div>
+	 
       <l-map 
         :key="currentRegion"
         ref="map" 
         v-model:zoom="zoom" 
         v-model:center="center" 
+		:style="{ pointerEvents: isMapBusy ? 'none' : 'auto' }"
         :use-global-leaflet="true" 
 		:options="mapOptions"
 		@ready="onMapReady"
@@ -37,7 +40,7 @@
 		  :opacity="1.0" 
 		  :z-index="5" 
 		  name="Landsat Mosaic" 
-		  :visible="selectedBasemap== 'satellite'"
+		  :visible="selectedBasemap === 'satellite'"
 		  :options="{ crossOrigin: 'anonymous', minZoom: 4 }"
 		></l-wms-tile-layer>
 		
@@ -76,19 +79,8 @@
 		</Transition>
 		
 		<l-wms-tile-layer
-		  :url="wmsOverlayUrl"
-		  layers="hillshade"
-		  format="image/png"
-		  :transparent="true"
-		  :opacity="1.0"
-		  :z-index="10" 
-		  name="Topography"
-		  :visible="selectedBasemap === 'hillshade'"
-		  :options="{ crossOrigin: 'anonymous' }"
-		></l-wms-tile-layer>
-		
-		<l-wms-tile-layer
-		   v-if="wmsOverlayUrl && activeMode === 'overview'"
+		   v-if="wmsOverlayUrl"
+		   :visible="activeMode === 'overview' && overlayLayer === 'speed'"
 		  :url="wmsOverlayUrl"
 		  layers="default_speed"
 		  format="image/png"
@@ -96,12 +88,12 @@
 		  :opacity="0.8"
 		  :z-index="30" 
 		  name="Ice Speed"
-		  :visible="overlayLayer === 'speed'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsOverlayUrl && activeMode === 'overview'"
+		  v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'count'"
 		  :url="wmsOverlayUrl"
 		  layers="count"
 		  format="image/png"
@@ -109,12 +101,12 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Measurement Count"
-		  :visible="overlayLayer === 'count'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsOverlayUrl && activeMode === 'overview'"
+		  v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'trend'"
 		  :url="wmsOverlayUrl"
 		  layers="trend"
 		  format="image/png"
@@ -122,12 +114,12 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Speed Trend"
-		  :visible="overlayLayer === 'trend'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		   v-if="wmsOverlayUrl && activeMode === 'overview'"
+		   v-if="wmsOverlayUrl"
+		  :visible="activeMode === 'overview' && overlayLayer === 'range'"
 		  :url="wmsOverlayUrl"
 		  layers="range"
 		  format="image/png"
@@ -135,31 +127,34 @@
 		  :opacity="0.5"
 		  :z-index="30" 
 		  name="Measurement Range"
-		  :visible="overlayLayer === 'range'"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="wmsVectorUrl && activeMode === 'overview'"
+		  v-if="wmsVectorUrl"
+		  :visible="activeMode === 'overview' && isFlowActive"
 		  :url="wmsVectorUrl"
 		  layers="vectors"
 		  format="image/png"
 		  :transparent="true"
 		  name="Flow direction arrows"
-		  :visible="isFlowActive"
 		  :z-index="50"
 		  :options="{ crossOrigin: 'anonymous' }"
 		></l-wms-tile-layer>
 		
 		<l-wms-tile-layer
-		  v-if="activeMode === 'analysis' && analysisWmsUrl"
+		  v-if="analysisWmsUrl"
 		  :key="analysisWmsUrl" 
 		  :url="analysisWmsUrl"
+		  :visible="activeMode === 'analysis'"
 		  layers="analysis_layer"
 		  format="image/png"
 		  :transparent="true"
 		  :opacity="0.7"
 		  :z-index="100"
+		  @loading="onAnalysisLoading"
+		@load="onAnalysisComplete"
+		@tileerror="onAnalysisError"
 		></l-wms-tile-layer>
 		
 		<l-geo-json 
@@ -191,6 +186,40 @@
 		</l-layer-group>
 		
       </l-map>
+	  
+	  
+	  <div class="map-sidebar">
+			  <button class="tool-btn" :class="{ 'is-active': isDrawing }" @click="startDrawing">
+				<svg viewBox="0 0 24 24" class="icon"><path d="M12,21L4.35,16.5V7.5L12,3L19.65,7.5V16.5L12,21M12,4.3L6.1,7.7V15.3L12,18.7L17.9,15.3V7.7L12,4.3Z" /></svg>
+				<span>{{ isDrawing ? 'Cancel' : 'Start' }}</span>
+			  </button>
+
+			  <button 
+				class="tool-btn" 
+				:class="{ 'is-active': isEditing && !isDrawing }" 
+				:disabled="!isRegionDrawn || isUploadedShape"
+				@click="toggleEdit"
+			  >
+				<svg viewBox="0 0 24 24" class="icon"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" /></svg>
+				<span>Edit</span>
+			  </button>
+
+			  <button class="tool-btn" @click="undoLastPoint" :disabled="!isDrawing || vertices.length === 0">
+				<svg viewBox="0 0 24 24" class="icon"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>
+				<span>Undo</span>
+			  </button>
+
+			  <button class="tool-btn danger-btn" @click="resetDrawing" :disabled="!isRegionDrawn">
+				<svg viewBox="0 0 24 24" class="icon"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19V4M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg>
+				<span>Delete</span>
+			  </button>
+			  
+			  <button class="tool-btn success-btn" :class="{ 'ready-to-finish': (vertices.length >= 3 && isDrawing) || isEditing }" @click="finishDrawing" :disabled="!isDrawing && !isEditing">
+				<svg viewBox="0 0 24 24" class="icon"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" /></svg>
+				<span>Finish</span>
+			  </button>
+	  </div>
+	  
 	  
       <div class="legend-container">
 
@@ -318,6 +347,28 @@
 		
 	  </div>
 	  
+	  <div class="map-toolbar-left">
+		<div class="toolbar-group-row">
+			<button 
+			  class="panel-btn" 
+			  :class="{ 'active': currentRegion === 'Greenland' }"
+			  @click="currentRegion = 'Greenland'; switchRegion()"
+			  title="Switch to Greenland"
+			>
+			  <greenlandIcon class="btn-icon-svg" />
+			</button>
+
+			<button 
+			  class="panel-btn" 
+			  :class="{ 'active': currentRegion === 'Antarctica' }"
+			  @click="currentRegion = 'Antarctica'; switchRegion()"
+			  title="Switch to Antarctica"
+			>
+			  <antarcticaIcon class="btn-icon-svg" />
+			</button>
+		</div>
+	  </div>
+	  
       <div class="map-toolbar">
 	  
 		  <div class="menu-trigger">
@@ -331,26 +382,6 @@
 		  </div>
 		  
 		  <div class="tools-wrapper">
-
-			  <div class="toolbar-group">
-				<button 
-				  class="panel-btn" 
-				  :class="{ 'active': currentRegion === 'Greenland' }"
-				  @click="currentRegion = 'Greenland'; switchRegion()"
-				  title="Switch to Greenland"
-				>
-				  <greenlandIcon class="btn-icon-svg" />
-				</button>
-
-				<button 
-				  class="panel-btn" 
-				  :class="{ 'active': currentRegion === 'Antarctica' }"
-				  @click="currentRegion = 'Antarctica'; switchRegion()"
-				  title="Switch to Antarctica"
-				>
-				  <antarcticaIcon class="btn-icon-svg" />
-				</button>
-			  </div>
 
 			  <div class="toolbar-group">
 			    <button 
@@ -636,6 +667,22 @@
 				</template>
 				
 			  </div>
+			  
+			  <div v-if="activeMode === 'analysis'" class="card-footer">
+					<hr class="divider">
+					<button 
+						class="btn-run-analysis" 
+						@click="runAnalysis" 
+						:disabled="isMapBusy || !selectedSource"
+					  >
+						<div v-if="isMapBusy" class="btn-spinner"></div>
+						
+						<span>
+						  {{ isMapBusy ? 'Processing Data...' : 'Update Analysis Map' }}
+						</span>
+					  </button>
+			   </div>
+				
 		</div>
     </div>
 	
@@ -822,8 +869,6 @@ import { saveAs } from 'file-saver';
 import L from 'leaflet';
 import antarcticaIcon from '../components/icons/antarcticaIcon.vue';
 import greenlandIcon from '../components/icons/greenlandIcon.vue';
-import "@geoman-io/leaflet-geoman-free";
-import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 import * as turf from '@turf/turf';
 import { differenceInWeeks, differenceInMonths, differenceInYears } from 'date-fns'; // useful for time steps
 import { useAuthStore } from '../stores/auth';
@@ -997,7 +1042,6 @@ const TIME_DELAY_MS = 90000; // 1.5 Minutes
 const STORAGE_KEY = 'shiver_feedback_shown';
 const showFeedbackPopup = ref(false);
 const isMessageSpinnerRequired = ref(false);  // Optional: controls the spinner
-const drawnLayer = shallowRef(null);
 const geoUpdateTrigger = ref(0);
 const fileInput = ref(null);
 const isDownloading = ref(false);
@@ -1013,7 +1057,10 @@ let messageTimeout = null;
 // Layer manager
 const selectedBasemap = ref('none');
 const showLayerManager = ref(false); 
+const isMapBusy = ref(false);
+const isManualUpdate = ref(false);
 const activeMode = ref('overview');
+const analysisWmsUrl = ref('');
 const selectedSource = ref('');
 const selectedEpoch = ref('');
 const allEpochs = ref([]);
@@ -1228,37 +1275,64 @@ watch([analysisVariable, isDifferenceMode], ([newVar, newDiff]) => {
   }
 });
 
-// Build the dynamic WMS URL for the Analysis tab
-const analysisWmsUrl = computed(() => {
-  // Wait until the user has actually selected a source before trying to load
-  if (!selectedSource.value) return null;
+// Trigger analysis
+function runAnalysis() {
+  if (!selectedSource.value) return;
+  
+  isMapBusy.value = true;
+  isManualUpdate.value = true;
+  statusMessage.value = "Running analysis...";
 
   const baseUrl = API_URL.replace(/\/$/, '');
-  let url = `${baseUrl}/api/analysis/wms/${currentRegion.value}?`;
-  
-  // Standard parameters that always apply
   const params = new URLSearchParams({
     variable: analysisVariable.value,
     source: selectedSource.value,
-    vmin: colorVmin.value, // We added this earlier for the difference/trend modes
+    vmin: colorVmin.value,
     vmax: colorVmax.value,
-    t: Date.now() // Cache-buster to force map redraws
+    t: Date.now() // Safe here because it only fires on click
   });
 
-  // Conditionally add the epoch logic ONLY if we are looking at speed
   if (analysisVariable.value === 'speed') {
-    if (selectedEpoch.value !== '') {
-      params.append('epoch', selectedEpoch.value);
-    }
-    // Only send compareepoch if difference mode is active AND a baseline is selected
-    if (isDifferenceMode.value && compareEpoch.value !== '' && compareSource.value !== '') {
+    if (selectedEpoch.value !== '') params.append('epoch', selectedEpoch.value);
+    
+    if (isDifferenceMode.value && compareEpoch.value && compareSource.value) {
       params.append('compareepoch', compareEpoch.value);
       params.append('comparesource', compareSource.value); 
     }
   }
 
-  return url + params.toString();
-});
+  // Updating this ref triggers the Leaflet layer update
+  analysisWmsUrl.value = `${baseUrl}/api/analysis/wms/${currentRegion.value}?${params.toString()}`;  
+}
+
+// Function to handle the successful load of tiles
+const onAnalysisComplete = () => {
+  if (!isManualUpdate.value) {
+    isMapBusy.value = false;
+    return;
+  }
+
+  // If it was a manual update, show the completion message
+  statusMessage.value = "Analysis complete.";
+  isMapBusy.value = false;
+  
+  // Disarm the flag so subsequent zooms stay quiet
+  isManualUpdate.value = false;
+};
+
+// Function to handle errors
+const onAnalysisError = () => {
+  if (isManualUpdate.value) {
+    statusMessage.value = "Error performing analysis.";
+    isManualUpdate.value = false;
+  }
+  isMapBusy.value = false;
+};
+
+// In case the map triggers a reload internally
+const onAnalysisLoading = () => {
+  isMapBusy.value = true;
+};
 
 
 // Define analysis colours and labels
@@ -1538,7 +1612,6 @@ const availableVariables = [
 ];
 
 // Computed parameters
-const isRegionDrawn = computed(() => !!drawnLayer.value);
 const isReady = computed(() => {
     if (!isRegionDrawn.value) return false;
     
@@ -1553,67 +1626,275 @@ const isReady = computed(() => {
 
 
 // -----------------------------------------------------------------------------------------
-// --- GEOMAN SETUP --- // -------------------------------------------------------------------
+// --- POLYGON DRAWING --- // -------------------------------------------------------------------
+const isDrawing = ref(false);
+const isEditing = ref(false);
+const vertices = ref([]); // Only used to trigger Vue buttons (Start, Finish, etc.)
+
+// Pure JS variables - Vue Proxies cannot touch these!
+let rawVertices = []; 
+let markers = []; 
+let midpoints = []; 
+let visualPolygon = null; 
+let ghostMarker = null;
+let mouseTooltip = null; 
+const drawnLayer = shallowRef(null);
+
+const isRegionDrawn = computed(() => {
+  // 1. Check if a file upload layer is currently on the map
+  if (drawnLayer.value) return true;
+
+  // 2. Fallback to checking manual drawing state
+  return vertices.value.length >= 3 && !isDrawing.value;
+});
+
 const onMapReady = (mapInstance) => {
-  const leafletMapObj = mapInstance.leafletObject || mapInstance;
-  leafletMap = leafletMapObj;
-  
-  if (!leafletMapObj.pm) return;
-
-  leafletMapObj.pm.setGlobalOptions({
-    snappingOption: false, 
-    measurements: { measurement: false }, 
-    allowSelfIntersection: true,
-    templineStyle: { color: '#ffeb3b', weight: 2, dashArray: null },
-    hintlineStyle: { color: '#ffeb3b', weight: 2, dashArray: null }
-  });
-  
-  // A. Add Controls - Disable Editing & Dragging
-  leafletMapObj.pm.addControls({
-    position: 'topleft',
-    drawCircle: false,
-    drawMarker: false,
-    drawCircleMarker: false,
-    drawPolyline: false,
-    drawPolygon: true,
-    drawRectangle: false,
-    editMode: false,      // Disabled to prevent crash
-    dragMode: false,      // Disabled for performance
-    cutPolygon: false,    // Disabled
-    removalMode: true,
-    drawText: false,
-  });
-
-  // B. Creation Logic & Tooltip
-  leafletMapObj.on('pm:create', (e) => {
-    if (drawnLayer.value) leafletMapObj.removeLayer(drawnLayer.value);
-    
-    drawnLayer.value = e.layer;
-    
-    e.layer.setStyle({ 
-        color: '#ffeb3b', 
-        weight: 2, 
-        fillOpacity: 0.2, 
-        dashArray: '5, 5' 
-    });
-
-    // 1. Calculate Area immediately using Turf
-    const geojson = e.layer.toGeoJSON();
-    const areaSqKm = (turf.area(geojson) / 1e6).toFixed(0);
-
-    // 2. Bind a permanent tooltip to the center of the shape
-    e.layer.bindTooltip(`${areaSqKm} km&sup2;`, {
-        permanent: true,
-        direction: 'center',
-        className: 'polygon-area-tooltip' 
-    }).openTooltip();
-    
-    e.layer.on('remove', () => { drawnLayer.value = null; });
-  });
-  
-  leafletMapObj.on('pm:remove', () => { drawnLayer.value = null; });
+  leafletMap = mapInstance.leafletObject || mapInstance;
 };
 
+// --- 1. CORE DRAWING LOGIC ---
+const addVertex = (lat, lng, index = null) => {
+  // Update the pure JS array
+  if (index === null) {
+    rawVertices.push([lat, lng]);
+  } else {
+    rawVertices.splice(index, 0, [lat, lng]);
+  }
+  
+  // Sync a clone to Vue so the buttons update, keeping the proxy away from Leaflet
+  vertices.value = [...rawVertices]; 
+  
+  updatePolygonOnly();
+  refreshMarkers();
+};
+
+const handleMouseMove = (e) => {
+  if (!isDrawing.value || !e.latlng) return;
+
+  // 1. Ghost Marker (Kept because it works and looks good!)
+  if (!ghostMarker) {
+    const icon = L.divIcon({ className: 'vertex-handle ghost', iconSize: [12, 12], iconAnchor: [6, 6] });
+    ghostMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon, interactive: false, keyboard: false, zIndexOffset: 2000 }).addTo(leafletMap);
+  } else {
+    ghostMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
+  }
+
+  // 2. Tooltip (Kept because it's helpful!)
+  if (!mouseTooltip) {
+    mouseTooltip = L.tooltip({ permanent: true, direction: 'right', className: 'drawing-cursor-tooltip', offset: [15, 0] })
+      .setLatLng([e.latlng.lat, e.latlng.lng])
+      .addTo(leafletMap);
+  } else {
+    mouseTooltip.setLatLng([e.latlng.lat, e.latlng.lng]);
+  }
+
+  const count = rawVertices.length;
+  if (count === 0) {
+    mouseTooltip.setContent("Click to start drawing");
+  } else {
+    mouseTooltip.setContent(count >= 3 ? "Click to add point or 'Finish'" : "Click to add point");
+  }
+
+};
+
+const updatePolygonOnly = () => {
+  if (rawVertices.length < 2) return;
+  
+  // Force explicit L.latLng objects for the main Polygon too
+  const latLngs = rawVertices.map(v => L.latLng(v[0], v[1]));
+  
+  const style = { color: '#ffeb3b', weight: 3, fillOpacity: 0.2, dashArray: isDrawing.value ? '10, 10' : null, interactive: false };
+
+  if (!visualPolygon) {
+    visualPolygon = L.polygon(latLngs, style).addTo(leafletMap);
+  } else {
+    visualPolygon.setLatLngs(latLngs);
+    visualPolygon.setStyle(style);
+  }
+
+  if (rawVertices.length >= 3) {
+    const geojson = visualPolygon.toGeoJSON();
+    const areaSqKm = (turf.area(geojson) / 1e6).toFixed(0);
+    visualPolygon.unbindTooltip();
+    visualPolygon.bindTooltip(`${areaSqKm} km&sup2`, { permanent: true, direction: 'center', className: 'area-tooltip-internal' }).openTooltip();
+  }
+};
+
+// --- 2. MARKERS & INTERACTION ---
+const clearMarkers = () => {
+  markers.forEach(m => leafletMap.removeLayer(m));
+  midpoints.forEach(m => leafletMap.removeLayer(m));
+  markers = [];
+  midpoints = [];
+};
+
+const createMarker = (latlng, isMidpoint = false, index = null) => {
+  const icon = L.divIcon({
+    className: isMidpoint ? 'midpoint-handle' : 'vertex-handle',
+    iconSize: isMidpoint ? [10, 10] : [14, 14],
+    iconAnchor: isMidpoint ? [5, 5] : [7, 7]
+  });
+
+  const marker = L.marker(latlng, { 
+    icon, 
+    draggable: !isMidpoint, 
+    zIndexOffset: isMidpoint ? 1000 : 2000,
+    keyboard: false 
+  }).addTo(leafletMap);
+
+  if (isMidpoint) {
+    marker.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      addVertex(latlng[0], latlng[1], index);
+    });
+  } else {
+    marker.on('dragstart', () => {
+      if (leafletMap.dragging) leafletMap.dragging.disable();
+    });
+    
+    marker.on('drag', (e) => {
+      const i = markers.indexOf(marker);
+      if (i > -1) {
+        const newPos = e.target.getLatLng();
+        rawVertices[i] = [newPos.lat, newPos.lng];
+        updatePolygonOnly(); 
+        updateMidpointsPosition(); 
+      }
+    });
+    
+    marker.on('dragend', () => {
+      if (leafletMap.dragging) leafletMap.dragging.enable();
+      vertices.value = [...rawVertices]; 
+      refreshMarkers(); 
+    });
+  }
+  return marker;
+};
+
+const refreshMarkers = () => {
+  clearMarkers();
+  if (!isDrawing.value && !isEditing.value) return;
+  rawVertices.forEach((v) => markers.push(createMarker(v, false)));
+  if (rawVertices.length >= 2) {
+    const count = rawVertices.length;
+    for (let i = 0; i < count; i++) {
+      if (isDrawing.value && i === count - 1) break;
+      const p1 = rawVertices[i];
+      const p2 = rawVertices[(i + 1) % count];
+      midpoints.push(createMarker([(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2], true, i + 1));
+    }
+  }
+};
+
+const updateMidpointsPosition = () => {
+  const count = rawVertices.length;
+  if (count < 2) return;
+  let midIdx = 0;
+  for (let i = 0; i < count; i++) {
+    if (isDrawing.value && i === count - 1) break;
+    const p1 = rawVertices[i];
+    const p2 = rawVertices[(i + 1) % count];
+    if (midpoints[midIdx]) {
+      midpoints[midIdx].setLatLng([(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]);
+    }
+    midIdx++;
+  }
+};
+
+
+// --- 3. CONTROLS ---
+const handleMapClick = (e) => {
+  if (!isDrawing.value) return;
+  addVertex(e.latlng.lat, e.latlng.lng);
+  // Ghost line initialization is totally gone!
+};
+
+const startDrawing = () => {
+  if (!leafletMap) return;
+  if (isDrawing.value) {
+    finishDrawing();
+    return;
+  }
+  if (drawnLayer.value) {
+    leafletMap.removeLayer(drawnLayer.value); 
+    drawnLayer.value = null;
+  }
+  isUploadedShape.value = false;
+  resetDrawing();
+  isDrawing.value = true;
+  leafletMap.on('click', handleMapClick);
+  leafletMap.on('mousemove', handleMouseMove);
+  leafletMap.getContainer().style.cursor = 'crosshair';
+};
+
+const finishDrawing = () => {
+  isDrawing.value = false;
+  isEditing.value = false;
+  
+  if (mouseTooltip) { leafletMap.removeLayer(mouseTooltip); mouseTooltip = null; }
+  if (ghostMarker) { leafletMap.removeLayer(ghostMarker); ghostMarker = null; }
+  
+  leafletMap.off('click', handleMapClick);
+  leafletMap.off('mousemove', handleMouseMove);
+  leafletMap.getContainer().style.cursor = '';
+
+  if (vertices.value.length >= 3) {
+    drawnLayer.value = visualPolygon;
+    updatePolygonOnly();
+    refreshMarkers();
+  } else {
+    resetDrawing();
+  }
+};
+
+const undoLastPoint = () => {
+  rawVertices.pop();
+  vertices.value = [...rawVertices];
+  if (rawVertices.length === 0 && visualPolygon) {
+    leafletMap.removeLayer(visualPolygon);
+    visualPolygon = null;
+  }
+  updatePolygonOnly();
+  refreshMarkers();
+};
+
+const toggleEdit = () => {
+  isEditing.value = !isEditing.value;
+  isDrawing.value = false;
+  refreshMarkers();
+};
+
+const resetDrawing = () => {
+  if (drawnLayer.value) {
+    leafletMap.removeLayer(drawnLayer.value);
+    drawnLayer.value = null;
+  }
+  isUploadedShape.value = false;
+  isDrawing.value = false;
+  isEditing.value = false;
+  
+  if (!leafletMap) {
+    rawVertices = [];
+    vertices.value = [];
+    return;
+  }
+
+  clearMarkers();
+  if (visualPolygon) leafletMap.removeLayer(visualPolygon);
+  if (mouseTooltip) leafletMap.removeLayer(mouseTooltip);
+  if (ghostMarker) leafletMap.removeLayer(ghostMarker);
+  
+  rawVertices = [];
+  vertices.value = [];
+  visualPolygon = null;
+  mouseTooltip = null;
+  ghostMarker = null;
+  drawnLayer.value = null;
+  
+  leafletMap.off('click', handleMapClick);
+  leafletMap.off('mousemove', handleMouseMove);
+  leafletMap.getContainer().style.cursor = '';
+};
 
 
 // -----------------------------------------------------------------------------------------
@@ -1773,7 +2054,7 @@ const estimatedSize = computed(() => {
         return {
             areaSqKm, 
             valid: false, 
-            msg: `Area too large (${areaSqKm.toFixed(0)} km&sup2;). Max is 50,000 km&sup2;.` 
+            msg: `Area too large (${areaSqKm.toFixed(0)} km&sup2;). Max is 10,000 km&sup2;.` 
         };
     }
 
@@ -1823,6 +2104,7 @@ const sizeColor = computed(() => {
 
 // -----------------------------------------------------------------------------------------
 // --- FILE UPLOAD ---------------------------------------------------------------------------
+const isUploadedShape = ref(false);
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -1886,6 +2168,7 @@ const handleFileUpload = async (event) => {
 
     // --- DRAW ON MAP ---
     drawGeoJSONOnMap(geojson);
+	isUploadedShape.value = true;
     setStatus('File uploaded successfully', 'success');
 
   } catch (error) {
@@ -1907,11 +2190,35 @@ const drawGeoJSONOnMap = (geojsonFeature) => {
       return;
   }
 
-  // A. Remove existing layer
+  // A. Remove existing uploaded layer
   if (drawnLayer.value) {
     leafletMap.removeLayer(drawnLayer.value);
     drawnLayer.value = null;
   }
+  
+  // Reset Vue refs i.e. manually drawn layer
+  vertices.value = [];
+  isDrawing.value = false;
+  isEditing.value = false;
+  if (visualPolygon) {
+    leafletMap.removeLayer(visualPolygon);
+    visualPolygon = null;
+  }
+  if (ghostMarker) {
+    leafletMap.removeLayer(ghostMarker);
+    ghostMarker = null;
+  }
+  if (mouseTooltip) {
+    leafletMap.removeLayer(mouseTooltip);
+    mouseTooltip = null;
+  }
+  
+  // Clean up drawing arrays
+  markers.forEach(marker => leafletMap.removeLayer(marker));
+  markers = [];
+  midpoints.forEach(midpoint => leafletMap.removeLayer(midpoint));
+  midpoints = [];
+  rawVertices = [];
 
   // B. Parse the GeoJSON
   const tempLayer = L.geoJSON(geojsonFeature);
@@ -1950,7 +2257,7 @@ const drawGeoJSONOnMap = (geojsonFeature) => {
   newLayer.openTooltip(); // Ensure the tooltip opens after adding to map
   drawnLayer.value = newLayer;
 
-  // E. Attach the 'remove' listener (So the Geoman X button works)
+  // E. Attach the 'remove' listener
   newLayer.on('remove', () => { 
       drawnLayer.value = null; 
   });
@@ -2111,6 +2418,16 @@ const stopDrag = () => {
   align-items: flex-end;
 }
 
+.map-toolbar-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000; /* Above Leaflet Map */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 /* The wrapper holds the actual button groups */
 .tools-wrapper {
   display: flex;
@@ -2122,6 +2439,17 @@ const stopDrag = () => {
 .toolbar-group {
   display: flex;
   flex-direction: column;
+  gap: 8px; /* Space between buttons in a group */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 20px; /* Capsule shape container */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  backdrop-filter: blur(4px);
+}
+
+.toolbar-group-row {
+  display: flex;
+  flex-direction: row;
   gap: 8px; /* Space between buttons in a group */
   background: rgba(255, 255, 255, 0.9);
   padding: 8px;
@@ -2145,7 +2473,7 @@ const stopDrag = () => {
 
 /* --- RESPONSIVE LOGIC --- */
 /* If the screen height is less than 750px, switch to Compact Mode */
-@container map-container (height < 500px) {
+@container map-container (height < 300px) {
   
   /* 1. Show the hamburger button */
   .menu-trigger {
@@ -2600,6 +2928,102 @@ const stopDrag = () => {
 .polygon-area-tooltip { background: rgba(0,0,0,0.7); color: white; border: none; font-weight: bold; }
 
 
+/* Sidebar Container */
+.map-sidebar {
+  position: absolute;
+  top: 160px;
+  left: 20px;
+  transform: translateY(-50%);
+  z-index: 1000;
+  
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px; /* Tight stack */
+  padding: 5px;
+  background: rgba(40, 40, 40, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.map-sidebar .tool-btn:last-child {
+  grid-column: span 2;
+}
+
+.tool-btn {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+}
+
+/* Icon Styling */
+.tool-btn .icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  margin-bottom: 4px;
+}
+
+.tool-btn span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Reactivity / Hover States */
+.tool-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.tool-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Active / Pressed State */
+.tool-btn.is-active {
+  background: #ffeb3b !important;
+  color: #222 !important;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.4);
+  font-weight: bold;
+}
+
+/* Disabled / Unreactive State */
+.tool-btn:disabled {
+  opacity: 0.2;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.ready-to-finish {
+  background: rgba(76, 175, 80, 0.3);
+  color: #4CAF50;
+  animation: pulse 2s infinite;
+}
+
+/* Specific button colors when active */
+.tool-btn.active { color: #ffeb3b; }
+.success-btn:hover:not(:disabled) { color: #4CAF50 !important; }
+.danger-btn:hover:not(:disabled) { color: #F44336 !important; }
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+
 /* --- HELP MODAL OVERLAY --- */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -3029,6 +3453,92 @@ const stopDrag = () => {
   color: #3498db; /* Turns the text blue */
 }
 
+
+
+/* ANALYSIS BUTTON
+/* Analysis Action Button */
+.btn-run-analysis {
+  /* Layout & Typography */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 20px;
+  border-radius: 20px; /* Matching your pill radius */
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Visuals (Inherited from your active pill state) */
+  background: #e8f4fd;
+  color: #3498db;
+  border: 1px solid #3498db;
+}
+
+/* Hover effect - re-using your "lift" and shadow logic */
+.btn-run-analysis:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+  background: #3498db; /* Invert colors on hover for a "pushed" feel */
+  color: #ffffff;
+}
+
+/* Active/Click state */
+.btn-run-analysis:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Disabled state - Matching your grayscale/opacity logic */
+.btn-run-analysis:disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  cursor: not-allowed;
+  background: #f1f3f5;
+  color: #555;
+  border-color: transparent;
+}
+
+/* Inline Spinner for the button */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.75s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* --- FOOTER --- */
+.card-footer {
+  flex-shrink: 0;
+  padding: 15px 20px;
+  background: white;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: center;
+}
+.btn-primary-action {
+  width: 100%;
+  padding: 10px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary-action:hover { background: #34495e; }
+.btn-primary-action:disabled { background: #95a5a6; cursor: not-allowed; }
+
+
 /* Sliders */
 .param-item { margin-bottom: 12px; }
 .param-info {
@@ -3330,6 +3840,16 @@ const stopDrag = () => {
   cursor: grabbing;
 }
 
+.map-interaction-blocker {
+  position: absolute;
+  inset: 0;
+  z-index: 9000; /* Just below the status-toast */
+  cursor: wait;
+  pointer-events: auto; /* Captures clicks so map doesn't get them */
+  transition: opacity 0.2s; 
+  background: rgba(255, 255, 255, 0);
+}
+
 </style>
 
 <style>
@@ -3439,6 +3959,52 @@ svg path.leaflet-interactive:focus {
     font-weight: bold;
     color: #333; 
     text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+}
+
+
+/*------------------------------------*/
+/* --- POLYGON DRAWING --------------- */
+/*------------------------------------*/
+/* Marker Handles */
+.vertex-handle {
+  background: #fff;
+  border: 2px solid #2196F3;
+  border-radius: 50%;
+  cursor: crosshair;
+}
+
+.vertex-handle.ghost {
+  opacity: 0.6;
+  pointer-events: none; /* Crucial so it doesn't block map clicks */
+}
+
+.midpoint-handle {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #2196F3;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.midpoint-handle:hover {
+  opacity: 1;
+  background: #2196F3;
+}
+
+/* Tooltips */
+.drawing-cursor-tooltip {
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.area-tooltip-internal {
+  background: rgba(255, 255, 0, 0.8);
+  border: 1px solid #333;
+  font-weight: bold;
+  padding: 2px 5px;
 }
 
 </style>
