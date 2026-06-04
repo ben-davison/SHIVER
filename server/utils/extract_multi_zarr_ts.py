@@ -5,21 +5,24 @@ from shapely.geometry import Point, Polygon
 import numpy as np
 from pathlib import Path
 import platform
+import os
+import warnings
 from scipy.signal import savgol_filter
 from functools import lru_cache
 
 # --- 1. CONFIGURATION & ENVIRONMENT DETECTION ---
 current_os = platform.system()
-
-if current_os == "Windows":
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
     print("Environment: Windows (Multi-Source Data)")
+    root_drive = "/mnt/r" if is_wsl else "R:"
     DATA_STORES = {
         'Greenland': {
-            'path': Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_optimized.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_optimized.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_optimized.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_optimized.zarr"), 
             'crs': "EPSG:3031"
         }
     }
@@ -36,7 +39,7 @@ else:
         }
     }
     
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=8)
 def get_cached_timeseries_zarr(zarr_path):
     """
     Opens the time-series optimized Zarr store, sorts the time coordinate,
@@ -46,6 +49,27 @@ def get_cached_timeseries_zarr(zarr_path):
     # Cache the sorted dataset for performance
     return xr.open_zarr(zarr_path, consolidated=True).sortby('time')
 
+
+def _empty_site_response(status="error", message=""):
+    """
+    Returns a standardized empty structure to guarantee downstream 
+    routers/serializers never suffer from a KeyError.
+    """
+    return {
+        "status": status,
+        "message": message,
+        "data": {
+            "dates": [],
+            "error": [],
+            "dt": [],
+            "data_source": [],
+            "count": [],
+            "speed": {
+                "raw": [],
+                "smoothed": []
+            }
+        }
+    }
 
 def get_multi_glacier_timeseries(
     location_input, 
@@ -125,7 +149,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
 
     px, py = proj_geom.centroid.x, proj_geom.centroid.y
     if not (x_min <= px <= x_max) or not (y_min <= py <= y_max):
-        return {"status": "error", "message": "Location outside data coverage."}
+        return _empty_site_response("error", "Location outside data coverage.")
     
     is_single_pixel = False
     if isinstance(proj_geom, Point):
@@ -147,7 +171,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         try:
             subset = ds.sel(x=proj_geom.centroid.x, y=proj_geom.centroid.y, method='nearest')
         except Exception as e:
-            return {"status": "error", "message": f"Pixel selection failed: {e}"}
+            return _empty_site_response("error", f"Pixel selection failed: {e}")
             
     if 'time_bnds' in subset.data_vars or 'time_bnds' in subset.coords:
         tb = subset['time_bnds']
@@ -160,54 +184,59 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
             dt_days = (t1 - t0) / np.timedelta64(1, 'D')
             subset = subset.assign(time_separation=dt_days)
         else:
-            subset = subset.assign(time_separation=xr.full_like(subset['speed'], 12.0))
+            subset = subset.assign(time_separation=xr.full_like(subset['time'], 12.0, dtype=float))
         
         # Drop time_bnds so it doesn't break pandas to_dataframe()
         subset = subset.drop_vars('time_bnds')
     else:
-        subset = subset.assign(time_separation=xr.full_like(subset['speed'], 12.0))
+        subset = subset.assign(time_separation=xr.full_like(subset['time'], 12.0, dtype=float))
 
 
-    # 1. Extraction and Spatial Aggregation (Now safe from MultiIndex!)
+    # 1. Extraction and Spatial Aggregation 
     if is_single_pixel:
         df = subset[['speed', 'error', 'data_source', 'time_separation']].to_dataframe()
         df['valid_count'] = subset['speed'].notnull().astype(int).to_series()
     else:
-        # For buffered regions
-        subset_df = subset[['speed', 'error', 'data_source', 'time_separation']].to_dataframe().reset_index()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            spatial_median = subset[['speed', 'error']].median(dim=['x', 'y'])
         
-        df = subset_df.groupby('time').agg({
-            'speed': 'median',
-            'error': 'median',
-            'data_source': 'first',
-            'time_separation': 'first' # dt is the same for all pixels in a given epoch
-        })
-        df['valid_count'] = subset_df.groupby('time')['speed'].count()
+        valid_count = subset['speed'].notnull().sum(dim=['x', 'y'])
+        
+        # Combine into a lightweight time-indexed pandas dataframe
+        df = spatial_median.to_dataframe()
+        if 'x' in subset['data_source'].dims:
+            df['data_source'] = subset['data_source'].isel(x=0, y=0).values
+        else:
+            df['data_source'] = subset['data_source'].values
+            
+        if 'x' in subset['time_separation'].dims:
+            df['time_separation'] = subset['time_separation'].isel(x=0, y=0).values
+        else:
+            df['time_separation'] = subset['time_separation'].values
+            
+        df['valid_count'] = valid_count.values
 
     # 2. Filter by Data Source
     if sources is not None and len(sources) > 0:
         df = df[df['data_source'].astype(str).isin(sources)]
         
     if df.empty or df['speed'].dropna().empty:
-        return {"status": "error", "message": "No valid data or all selected sources masked/NaN"}
+        return _empty_site_response("error", "No valid data or all selected sources masked/NaN")
     
-    # Subtract 1 day to correct for inclusive time_bnds
+    # Check time separation
     df['time_separation'] = df['time_separation'] - 1.0
-
-    # Safeguard fallback just in case dt <= 0 (e.g., if original dt was a 1-day baseline)
-    df['time_separation'] = df['time_separation'].apply(lambda x: x if x > 0 else 0.5)
-    df['time_separation'] = df['time_separation'].fillna(12.0)
-
+    df['time_separation'] = df['time_separation'].apply(lambda x: x if x > 0 else 0.5).fillna(12.0)
     df = df.sort_index()
     
     if df.index.duplicated().any():
         df = df.groupby(level=0).first()
 
     # =========================================================================
-    # PROCESSING LOOP (Union Index Approach)
+    # PROCESSING LOOP
     # =========================================================================
     
-    # --- FIX 3: OUTLIER REJECTION ---
+    # --- OUTLIER REJECTION ---
     # Apply physical speed limits
     df.loc[(df['speed'] < -100) | (df['speed'] > 100000), 'speed'] = np.nan
     
@@ -223,25 +252,15 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
     # Flag points that deviate more than 3 standard deviations from local mean
     outliers = (df['speed'] - rolling_mean).abs() > (3 * rolling_std)
     df.loc[outliers, 'speed'] = np.nan
-    # ---------------------------------
 
-    # 1. The exact timestamps of your data points
+    # Create combined time vector (exact times and regular times)
     exact_idx = df.index
-    
-    # 2. The regular daily grid needed for the smoothing math
     daily_idx = pd.date_range(start=exact_idx.min().floor('D'), end=exact_idx.max().ceil('D'), freq='D')
-    
-    # 3. Combine them! This creates a timeline with both midnights and exact times.
     full_idx = exact_idx.union(daily_idx).sort_values()
 
     # Map the raw data onto this combined timeline
     df_daily = df.reindex(full_idx) 
-    
-    # --- FIX 1: GHOST POINTS ---
-    # Only keep points where a TRUE valid measurement exists (speed is not null)
-    # This completely eliminates ghost points generated at NaN timestamps
-    valid_dates_mask = df_daily['speed'].notnull()
-    # ---------------------------
+    valid_dates_mask = df_daily['speed'].notnull() # only keep points where speed is not null
     
     def clean_nans(data_series):
         if hasattr(data_series, 'values'): data_series = data_series.values 
@@ -249,7 +268,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         return [x if (pd.notnull(x) and (isinstance(x, str) or np.isfinite(x))) else None for x in data_series]
 
     output_data = {
-        # Export as ISO strings so the frontend gets the EXACT time (e.g., 1986-07-02T06:06:19)
+        # Export as ISO strings so the frontend gets the exact time (e.g., 1986-07-02T06:06:19)
         "dates": full_idx.strftime('%Y-%m-%dT%H:%M:%S').tolist(), 
         "error": clean_nans(np.round(df_daily['error'].astype(float), 2)),
         "dt": clean_nans(np.round(df_daily['time_separation'].astype(float), 1)),
@@ -274,36 +293,36 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         if effective_window >= 3:
             smoothed_values = savgol_filter(temp_series.values, window_length=effective_window, polyorder=poly)
             daily_smoothed_raw = pd.Series(smoothed_values, index=full_idx)
-            # Apply the strict mask to punch the holes back out!
             processed_raw_series = daily_smoothed_raw.where(valid_dates_mask)
     except Exception:
         pass
 
-    # --- STEP 2: WEIGHTED DAILY AVERAGE (Trend Line Calculation) ---
+    # --- STEP 2: WEIGHTED DAILY AVERAGE ---
     capped_separation = df['time_separation'].clip(upper=gap_fill)
     time_sep_days = pd.to_timedelta(capped_separation, unit='D')
-    starts = df.index - (time_sep_days / 2)
-    ends   = df.index + (time_sep_days / 2)
-    
+    starts_arr = (df.index - (time_sep_days / 2)).dt.floor('D').values
+    ends_arr   = (df.index + (time_sep_days / 2)).dt.ceil('D').values
     daily_stack = []
+    
+    # Pre-extract numpy arrays to bypass slow Pandas row indexers inside the loop
+    speeds_arr = current_speed_series.values
+    dt_arr = df['time_separation'].values
+    times_arr = df.index
+    
     for i in range(len(df)):
-        if pd.isna(current_speed_series.iloc[i]): continue 
+        if pd.isna(speeds_arr[i]): continue 
         
-        s_date = starts.iloc[i].floor('D')
-        e_date = ends.iloc[i].ceil('D')
-        
-        val_to_use = current_speed_series.iloc[i]
+        val_to_use = speeds_arr[i]
         try:
-            if pd.notnull(processed_raw_series.loc[df.index[i]]):
-                val_to_use = processed_raw_series.loc[df.index[i]]
+            if pd.notnull(processed_raw_series.loc[times_arr[i]]):
+                val_to_use = processed_raw_series.loc[times_arr[i]]
         except: pass
         
-        # Calculate weight: 1 / dt (safeguard against dt=0 or negative)
-        dt_val = df['time_separation'].iloc[i]
-        if pd.isna(dt_val) or dt_val < 1: dt_val = 1.0 
+        dt_val = dt_arr[i] if (pd.notnull(dt_arr[i]) and dt_arr[i] >= 1) else 1.0
         weight_val = 1.0 / dt_val
 
-        date_rng = pd.date_range(start=s_date, end=e_date, freq='D')
+        # Lightening the creation loop
+        date_rng = pd.date_range(start=starts_arr[i], end=ends_arr[i], freq='D')
         if not date_rng.empty:
             daily_stack.append(pd.DataFrame({
                 'date': date_rng, 
@@ -312,17 +331,15 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
             }))
 
     if daily_stack:
-        big_df = pd.concat(daily_stack)
-        # Calculate Weighted Average: sum(value * weight) / sum(weight)
+        big_df = pd.concat(daily_stack, ignore_index=True)
         big_df['weighted_speed'] = big_df['speed'] * big_df['weight']
         grouped = big_df.groupby('date')
         daily_ts = grouped['weighted_speed'].sum() / grouped['weight'].sum()
-        
         daily_ts = daily_ts.reindex(full_idx)
     else:
         daily_ts = pd.Series(dtype=float, index=full_idx)
 
-    # --- STEP 3: DAILY SMOOTHING & GAP RE-MASKING ---
+    # --- DAILY SMOOTHING & GAP RE-MASKING ---
     daily_ts_filled = daily_ts.interpolate(method='time', limit=gap_fill)
     daily_final = daily_ts.copy() 
     
@@ -336,7 +353,6 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         if eff_win_daily >= 3:
             smooth_vals_daily = savgol_filter(temp_series_daily.values, window_length=eff_win_daily, polyorder=poly)
             daily_final = pd.Series(smooth_vals_daily, index=full_idx)
-            # Strict gap re-masking: if the gap was too large to interpolate natively, re-NaN it
             daily_final[daily_ts_filled.isna()] = np.nan
     except Exception: 
         pass
@@ -350,6 +366,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
 
     return {
         "status": "success",
+        "message": "Data processed successfully.",
         "data": output_data
     }
 

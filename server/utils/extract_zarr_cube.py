@@ -9,15 +9,42 @@ import uuid
 import platform
 from pathlib import Path
 from datetime import datetime
+import sys
+import dask
+import dask.array
 
 # Import your existing paths
-from utils.extract_zarr_ts import DATA_STORES 
 from utils.citations import generate_citation_text
 
+# Set zarr store depending on operating system
 current_os = platform.system()
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
+    root_drive = "/mnt/r" if is_wsl else "R:"
+    DATA_STORES = {
+        'Greenland': {
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair_cubed.zarr"), 
+            'crs': "EPSG:3413"
+        },
+        'Antarctica': {
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair_cubed.zarr"), 
+            'crs': "EPSG:3031"
+        }
+    }
+else:
+    DATA_STORES = {
+        'Greenland': {
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/date_pair_cubed.zarr"), 
+            'crs': "EPSG:3413"
+        },
+        'Antarctica': {
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/date_pair_cubed.zarr"), 
+            'crs': "EPSG:3031"
+        }
+    }
 
 # Set export directory
-if current_os == "Windows":
+if current_os == "Windows" or is_wsl:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     export_dir = os.path.join(base_dir, "static", "exports")
     os.makedirs(export_dir, exist_ok=True)
@@ -60,45 +87,39 @@ def generate_netcdf_cube(
     
     
     # 3. Open Zarr Store (Lazy Load)
-    ds = xr.open_zarr(store_info['path'], consolidated=True, chunks=None)
+    ds = xr.open_zarr(store_info['path'], consolidated=True, chunks={})
     
-    # 4. Calculate error (Before filtering/resampling)
-    def calc_error_component(rock_var, office_var):
-        if rock_var not in ds or office_var not in ds:
-            return None
-        
-        err = ds[rock_var].fillna(ds[office_var]).fillna(0)
-        
-        return err
-    
-    # 5. Spatial Subsetting (Bounding Box)
-    print(f"Subsetting spatially...")
+    # 4. Crop spatial and time domain - note error values will therefore vary slightly depending on the time period selected
+    print(f"Subsetting spatially and temporally...")
     buffer = 200 
-    # Handle Y-axis orientation
     y_slice = slice(maxy + buffer, miny - buffer) if ds.y[0] > ds.y[-1] else slice(miny - buffer, maxy + buffer)
-    subset = ds.sel( x=slice(minx - buffer, maxx + buffer), y=y_slice )
     
-    # 6. Generate error fields
-    # A. Calculate Component Errors (U and V)
-    u_rock, u_off = 'u_err_rock', 'u_err_off_ice'
-    v_rock, v_off = 'v_err_rock', 'v_err_off_ice'
+    subset = ds.sortby("time").sel(
+        x=slice(minx - buffer, maxx + buffer), 
+        y=y_slice,
+        time=slice(date_range[0], date_range[1])
+    )
+
+    if subset.time.size == 0:
+        raise ValueError("No data found inside the selected date range.")
+        
+    # 5. Calculate error 
     added_errors = {}
-    for comp, rock, off in [('u', u_rock, u_off), ('v', v_rock, v_off)]:
+    for comp, rock, off in [('u', 'u_err_rock', 'u_err_off_ice'), ('v', 'v_err_rock', 'v_err_off_ice')]:
         if rock in subset and off in subset:
             err_da = subset[rock].fillna(subset[off]).fillna(0)
-            median_val = err_da.where(err_da != 0).median().values
-            err_da = err_da.where(err_da != 0, median_val)
+            fill_val = err_da.where(err_da != 0).mean()
+            err_da = err_da.where(err_da != 0, fill_val)
             added_errors[f'{comp}_error'] = np.abs(err_da)
 
-    # B. Calculate Speed Error (Magnitude of U and V errors)
     if 'u_error' in added_errors and 'v_error' in added_errors:
         added_errors['s_error'] = np.sqrt(added_errors['u_error']**2 + added_errors['v_error']**2)
-
+    
     # Add these new variables to the subset dataset
     for name, da in added_errors.items():
         subset[name] = da
     
-    # 7. Select variables
+    # 6. Select variables
     final_vars = list(variables) 
     # 7b. Add V error if any V variable is requested
     if any('v' in v.lower() for v in variables) and 'v_error' in subset:
@@ -119,15 +140,10 @@ def generate_netcdf_cube(
     subset = subset[vars_to_keep]
 
     
-    # 8. Clip to polygon boundaries
+    # 7. Clip to polygon boundaries
     print("Clipping data to exact polygon shape...")
     try:
-        # We must write the CRS to the xarray object so rioxarray knows how to interpret it
         subset.rio.write_crs(target_crs, inplace=True)
-        
-        # Clip
-        # all_touched=True ensures we don't return empty data if the polygon is very thin
-        # drop=False keeps the rectangular grid coordinates (required for NetCDF) but fills outside with NaN
         subset = subset.rio.clip(
             gdf_proj.geometry, 
             crs=target_crs, 
@@ -137,23 +153,16 @@ def generate_netcdf_cube(
         )
     except Exception as e:
         print(f"Clipping failed: {e}. Returning unclipped bounding box.")
-    # -----------------------------------
-
-    
-    # 9. Sort and crop time
-    print(f"Sorting and cropping to time period...")
-    subset = subset.sortby("time")
-    subset = subset.sel(time=slice(date_range[0], date_range[1]))
     
     
-    # 10. Temporal Resampling (Aggregation)
+    # 8. Temporal Resampling (Aggregation)
     ref_var = list(subset.data_vars)[0] # Pick a reference var to count valid pixels in
     if frequency != "native":
         print(f"Aggregating data...")
-        # 1. Define Resampler
+        # A. Define Resampler
         resampler = subset.resample(time=frequency)
         
-        # 2. Calculate Components
+        # B. Calculate Components
         ds_mean = resampler.mean(dim="time", keep_attrs=True)
         ds_std = resampler.std(dim="time", keep_attrs=True)
         
@@ -162,22 +171,30 @@ def generate_netcdf_cube(
         ds_count = subset[ref_var].resample(time=frequency).count(dim="time", keep_attrs=True)
         ds_count.name = "measurement_count"
 
-        # 3. Rename STD variables to prevent collision
+        # C. Rename STD variables to prevent collision
         # e.g., 'u_filt' -> 'u_filt_std'
         rename_map = {var: f"{var}_std" for var in ds_std.data_vars}
         ds_std = ds_std.rename(rename_map)
         
-        # 4. Merge everything into one dataset
+        # D. Merge everything into one dataset
         subset = xr.merge([ds_mean, ds_std, ds_count])
     else:
         # Handle duplicate dates if using native resolution
         if not subset.indexes['time'].is_unique:
-            print(f"Duplicate dates detected in {region}. Averaging...")
-            # groupby('time').mean() automatically sorts and removes duplicates
-            subset = subset.groupby("time").mean(dim="time", keep_attrs=True)
+            print(f"Duplicate mid-dates detected in {region}. Applying negligible time offsets to preserve all pairs...")
+            time_series = pd.Series(subset.time.values) # Extract time values to pandas to easily count duplicates
+            dup_offsets = time_series.groupby(time_series).cumcount() # cumcount() returns 0 for the first occurrence, 1 for the second, etc.
+            new_times = time_series + pd.to_timedelta(dup_offsets, unit='s') # Add 1 second per duplicate level to force uniqueness
+            subset = subset.assign_coords(time=new_times.values) # Reassign the uniquely shifted times back to the dataset
+            subset = subset.sortby('time') # Re-sort to ensure strict chronological order
+            
+            #print(f"Duplicate dates detected in {region}. Averaging...")
+            # subset = subset.groupby("time").mean(dim="time", keep_attrs=True) # average the layers
+            #subset = subset.drop_duplicates(dim="time", keep="first") # Or just keep first layer? Much faster but less robust.
             
     
-    # 11. metadata
+    # 9. metadata
+    print(f"Adding metadata to NetCDF.")
     # A. Ensure CRS
     if subset.rio.crs is None:
         subset.rio.write_crs(target_crs, inplace=True)
@@ -255,55 +272,80 @@ def generate_netcdf_cube(
             subset[var_name].attrs['long_name'] = "ice surface northing velocity"
             subset[var_name].attrs['units'] = "m yr-1"
             
+    # C. Calculate dates accounting for aggregation frequency
+    print(f"Calculating epoch dates and mode time separation.")
+    raw_first = pd.to_datetime(subset.time.values.min())
+    raw_last = pd.to_datetime(subset.time.values.max())
+    epochs = len(subset.time)
     
-    # C. Generate Citation Text (Hardcoded to SHIFT)
-    citation_text = generate_citation_text(["SHIFT"], region)
+    if frequency != "native":
+        freq_upper = str(frequency).upper()
+        if "M" in freq_upper:  # Monthly
+            first_date = raw_first.strftime('%Y-%m-01')
+            last_date = (raw_last + pd.offsets.MonthEnd(0)).strftime('%Y-%m-%d')
+        elif "Y" in freq_upper or "A" in freq_upper:  # Yearly
+            first_date = raw_first.strftime('%Y-01-01')
+            last_date = (raw_last + pd.offsets.YearEnd(0)).strftime('%Y-%m-%d')
+        else:  # Weekly or custom rolling offsets
+            first_date = raw_first.strftime('%Y-%m-%d')
+            last_date = raw_last.strftime('%Y-%m-%d')
+            
+        # Dynamically calculate temporal resolution step size from the aggregated dimension
+        if epochs > 1:
+            time_diffs = np.diff(subset.time.values) / np.timedelta64(1, 'D')
+            mode_vals = pd.Series(time_diffs).mode()
+            mode_res = round(float(mode_vals.iloc[0]), 1) if not mode_vals.empty else round(float(time_diffs.mean()), 1)
+        else:
+            mode_res = "Variable"
+    else:
+        # Native mode tracks the raw satellite pass offset properties
+        first_date = raw_first.strftime('%Y-%m-%d')
+        last_date = raw_last.strftime('%Y-%m-%d')
+        mode_res = "N/A"
+        if "time_separation" in subset:
+            sample_size = min(1000, subset["time_separation"].size)
+            flat_vals = subset["time_separation"].data.flatten()[:sample_size]
+            mode_vals = pd.Series(flat_vals).dropna().mode()
+            if not mode_vals.empty:
+                mode_res = round(float(mode_vals.iloc[0]), 2)
     
-    # 1. SHIVER Row
+    # D. Generate citation text 
+    print(f"Generating citation text.")
+    # SHIVER Row
     shiver_citations = (
         "SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX\n"
         "SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX\n"
         "SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5283/essd.XXXXXXX"
     )
     
-    summary_rows = [{
-        "Data Source": "SHIVER",
-        "First Date": "",
-        "Last Date": "",
-        "Mode Temporal Resolution (days)": "",
-        "Epochs (Measurements)": "",
-        "Citation": shiver_citations
-    }]
-    
-    first_date = pd.to_datetime(subset.time.values.min()).strftime('%Y-%m-%d') if subset.time.size > 0 else date_range[0]
-    last_date = pd.to_datetime(subset.time.values.max()).strftime('%Y-%m-%d') if subset.time.size > 0 else date_range[1]
-    
-    mode_res = "N/A"
-    # Note: If user requested monthly/annual frequency, time_separation might not exist here.
-    if "time_separation" in subset:
-        mode_vals = pd.Series(subset["time_separation"].values).dropna().mode()
-        if not mode_vals.empty:
-            mode_res = round(float(mode_vals.iloc[0]), 2)
-            
-    epochs = len(subset.time)
-    
     # Get the SHIFT citation
     full_cite = generate_citation_text(["SHIFT"], region)
     delimiter = "cite these original sources:\n\n* "
     clean_cite = full_cite.split(delimiter)[1].strip() if delimiter in full_cite else full_cite.split("* ")[-1].strip()
     
-    summary_rows = [{
-        "Data Source": "SHIFT",
-        "First Date": first_date,
-        "Last Date": last_date,
-        "Mode Temporal Resolution (days)": mode_res+1,
-        "Epochs (Measurements)": epochs,
-        "Citation": clean_cite
-    }]
+    summary_rows = [
+        {
+            "Data Source": "SHIVER",
+            "First Date": "",
+            "Last Date": "",
+            "Mode Temporal Resolution (days)": "",
+            "Epochs (Measurements)": "",
+            "Citation": shiver_citations
+        },
+        {
+            "Data Source": "SHIFT",
+            "First Date": first_date,
+            "Last Date": last_date,
+            "Mode Temporal Resolution (days)": mode_res,
+            "Epochs (Measurements)": epochs,
+            "Citation": clean_cite
+        }
+    ]
     
     csv_text = pd.DataFrame(summary_rows).to_csv(index=False)
                 
-    # D. Global Attributes (Point 1)
+    # E. Global Attributes (Point 1)
+    print(f"Setting global NetCDF attributes.")
     time_start = pd.to_datetime(subset.time.values.min()).strftime('%Y%m%d')
     time_end = pd.to_datetime(subset.time.values.max()).strftime('%Y%m%d')
     
@@ -319,16 +361,18 @@ def generate_netcdf_cube(
         'keywords': f"{region}, velocity, Sentinel-1",
         'Conventions': 'CF-1.8, ACDD-1.3',
         'date_created': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'acknowledgment': citation_text
+        'acknowledgment': full_cite
     }
         
     
-    # 8. QGIS Compatibility
+    # 10. QGIS Compatibility
+    print(f"Ensuring CRS compatibility.")
     # Ensure a CRS variable exists (rioxarray magic)
     if subset.rio.crs is None:
         subset.rio.write_crs(target_crs, inplace=True)
     
-    # 9. Save
+    # 11. Save
+    print(f"Preparing encoding and saving...")
     # Prepare encoding for compression
     encoding = {}
     for var in subset.data_vars:
@@ -368,4 +412,4 @@ def generate_netcdf_cube(
     subset.to_netcdf(output_path, encoding=encoding, engine='netcdf4', format='NETCDF4')    
     print(f"Saved cube to: {output_path}")
 
-    return output_path, region, citation_text, csv_text
+    return output_path, region, full_cite, csv_text

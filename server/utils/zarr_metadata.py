@@ -2,15 +2,18 @@
 import xarray as xr
 import pandas as pd
 import platform
+import os
 
 # Global dictionary to store the metadata in memory
 metadata_cache = {}
 
 current_os = platform.system()
-if current_os == "Windows":
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
+    root_drive = "/mnt/r" if is_wsl else "R:"
     ZARR_PATHS = {
-        "Antarctica": r"R:\SCADI\output\Sentinel1\Antarctica\mosaic\subregions\peninsula\Antarctica_multisource_speed_optimized.zarr",
-        "Greenland": r"R:\SCADI\output\Sentinel1\Greenland\mosaic\subregions\lev\Greenland_multisource_speed_optimized.zarr"
+        "Antarctica": f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_optimized.zarr",
+        "Greenland": f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_optimized.zarr"
     }
 else:
     ZARR_PATHS = {

@@ -5,15 +5,17 @@ from shapely.geometry import Point, Polygon
 import numpy as np
 from pathlib import Path
 import platform
+import os
 from scipy.signal import savgol_filter
 
 # --- 1. CONFIGURATION & ENVIRONMENT DETECTION ---
 
 current_os = platform.system()
-
-if current_os == "Windows":
-    desktop_gr_path = Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair.zarr")
-    desktop_ant_path = Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
+    root_drive = "/mnt/r" if is_wsl else "R:"
+    desktop_gr_path = Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/date_pair.zarr")
+    desktop_ant_path = Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/date_pair.zarr")
 
     if desktop_gr_path.exists():
         print("🖥Environment: Windows (Desktop - Full Data)")

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, HTTPException, Response
 from utils.zarr_metadata import metadata_cache
 from pathlib import Path
 from utils.wms_renderer import fetch_cog_data, fetch_zarr_data, render_array_to_png
-from config import ZARR_PATHS, COG_BASE_DIR
+from config import OMEZARR_PATHS, COG_BASE_DIR
 import traceback
 
 router = APIRouter(
@@ -23,7 +23,7 @@ async def get_zarr_metadata(region: str):
 
 
 @router.get("/wms/{region}")
-async def get_analysis_wms(region: str, req: Request):
+def get_analysis_wms(region: str, req: Request):
     params = {k.lower(): v for k, v in req.query_params.items()}
     
     if params.get("request", "").lower() != "getmap":
@@ -74,21 +74,28 @@ async def get_analysis_wms(region: str, req: Request):
             return fetch_cog_data(str(tif_path), bbox, width, height, target_crs)
             
         else:
-            zarr_path = ZARR_PATHS.get(region)
+            zarr_path = OMEZARR_PATHS.get(region)
             if not zarr_path or not zarr_path.exists():
                 raise HTTPException(status_code=404, detail="Zarr store not found.")
                 
-            return fetch_zarr_data(zarr_path, bbox, width, height, ep)
+            # Define maximum pyramid levels per region
+            MAX_PYRAMID_LEVELS = {
+                "Antarctica": 5,
+                "Greenland": 4
+            }
+            # Default to 4 just to be safe if a new region is added later
+            max_level = MAX_PYRAMID_LEVELS.get(region, 4)
+                
+            return fetch_zarr_data(zarr_path, bbox, width, height, ep, max_level)
     # -----------------------
 
     try:
         # 1. Fetch Measurement Data
         data = get_grid_data(source, epoch)
 
-        # 2. Fetch Reference Data & Calculate Difference (If requested)
+        # 2. Fetch Reference Data & Calculate Difference 
         if compare_source and compare_epoch:
             ref_data = get_grid_data(compare_source, compare_epoch)
-            # Subtract the two perfectly matching 2D numpy arrays
             data = data - ref_data
 
         # 3. Determine Colormap & Render
@@ -102,7 +109,9 @@ async def get_analysis_wms(region: str, req: Request):
         
         png_bytes = render_array_to_png(data, vmin, vmax, cmap)
         
-        return Response(content=png_bytes, media_type="image/png")
+        # Cache and return
+        tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
+        return Response(content=png_bytes, media_type="image/png", headers=tile_headers)
 
     except Exception as e:
         print("=== FULL TRACEBACK ===")

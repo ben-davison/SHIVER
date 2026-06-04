@@ -10,13 +10,37 @@ import platform
 from pathlib import Path
 from datetime import datetime
 
-from utils.extract_multi_zarr_ts import DATA_STORES 
 from utils.citations import generate_citation_text
 
+# Set zarr store depending on operating system
 current_os = platform.system()
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
+    root_drive = "/mnt/r" if is_wsl else "R:"
+    DATA_STORES = {
+        'Greenland': {
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_cubed.zarr"), 
+            'crs': "EPSG:3413"
+        },
+        'Antarctica': {
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_cubed.zarr"), 
+            'crs': "EPSG:3031"
+        }
+    }
+else:
+    DATA_STORES = {
+        'Greenland': {
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_cubed.zarr"), 
+            'crs': "EPSG:3413"
+        },
+        'Antarctica': {
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_cubed.zarr"), 
+            'crs': "EPSG:3031"
+        }
+    }
 
 # Set export directory
-if current_os == "Windows":
+if current_os == "Windows"  or is_wsl:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     export_dir = os.path.join(base_dir, "static", "exports")
     os.makedirs(export_dir, exist_ok=True)
@@ -56,13 +80,19 @@ def generate_multi_netcdf_cube(
     minx, miny, maxx, maxy = gdf_proj.total_bounds
     
     # 3. Open Zarr Store (Lazy Load)
-    ds = xr.open_zarr(store_info['path'], consolidated=True, chunks=None)
+    ds = xr.open_zarr(store_info['path'], consolidated=True, chunks={})
     
-    # 4. Spatial Subsetting
-    print(f"Subsetting spatially...")
+    # 4. Spatial and Temporal Subsetting
+    print(f"Subsetting spatially and temporally...")
     buffer = 200 
     y_slice = slice(maxy + buffer, miny - buffer) if ds.y[0] > ds.y[-1] else slice(miny - buffer, maxy + buffer)
-    subset = ds.sel( x=slice(minx - buffer, maxx + buffer), y=y_slice )
+    
+    # Sort time first to prevent Pandas non-monotonic indexing errors
+    subset = ds.sortby("time").sel( 
+        x=slice(minx - buffer, maxx + buffer), 
+        y=y_slice,
+        time=slice(date_range[0], date_range[1])
+    )
     
     # 5. Select variables (Ensure data_source and time boundaries are included)
     final_vars = list(variables) 
@@ -85,17 +115,13 @@ def generate_multi_netcdf_cube(
     except Exception as e:
         print(f"Clipping failed: {e}. Returning unclipped bounding box.")
     
-    # 7. Sort and crop time
-    print(f"Sorting and cropping to time period...")
-    subset = subset.sortby("time")
-    subset = subset.sel(time=slice(date_range[0], date_range[1]))
-    
-    # 8. Filter by data source
+    # 7. Filter by data source
     if sources and "data_source" in subset:
         print(f"Filtering by selected sources: {sources}")
         
-        # Find the time slices where the data_source is in our requested list
-        valid_times = subset.time[subset["data_source"].isin(sources)]
+        # Compute the boolean mask into memory so Xarray knows the exact shape
+        mask = subset["data_source"].isin(sources).compute()
+        valid_times = subset.time[mask]
         
         # Subset the entire dataset to only keep those valid time slices
         subset = subset.sel(time=valid_times)
@@ -104,7 +130,7 @@ def generate_multi_netcdf_cube(
         if subset.time.size == 0:
             raise ValueError("No data found for the exact region, time period, and data sources selected.")
             
-    # 9. Add citation information
+    # 8. Add citation information
     actual_sources = []
     if "data_source" in subset:
         unique_vals = np.unique(subset["data_source"].values)
@@ -116,7 +142,7 @@ def generate_multi_netcdf_cube(
     # The global 30+ line citation string for the metadata and txt file
     citation_text = generate_citation_text(actual_sources, region)
     
-    # 1. Create the dedicated SHIVER row first
+    # A. Create the dedicated SHIVER row first
     shiver_citations = (
         "SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX\n"
         "SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX\n"
@@ -132,16 +158,18 @@ def generate_multi_netcdf_cube(
         "Citation": shiver_citations
     }]
     
-    # Generate the Summary Table (CSV) Data
+    # B. Generate the Summary Table (CSV) Data
     for src in actual_sources:
         # Isolate the time slices for this specific source
-        valid_times = subset.time[subset["data_source"] == src]
+        mask = (subset["data_source"] == src).compute()
+        valid_times = subset.time[mask]
+        
         if len(valid_times) == 0:
             continue
             
         sub_src = subset.sel(time=valid_times)
         
-        # 1 & 2. Dates
+        #  Dates
         first_date = pd.to_datetime(sub_src.time.values.min()).strftime('%Y-%m-%d')
         last_date = pd.to_datetime(sub_src.time.values.max()).strftime('%Y-%m-%d')
         
@@ -153,10 +181,10 @@ def generate_multi_netcdf_cube(
             if not mode_vals.empty:
                 mode_res = round(float(mode_vals.iloc[0]), 2)
                 
-        # 4. Epochs
+        # Epochs
         epochs = len(valid_times)
         
-        # 5. Specific Citation for just this row
+        # Specific Citation for just this row
         full_cite = generate_citation_text([src], region)
         delimiter = "cite these original sources:\n\n* "
         
@@ -170,12 +198,12 @@ def generate_multi_netcdf_cube(
             "Data Source": src,
             "First Date": first_date,
             "Last Date": last_date,
-            "Mode Temporal Resolution (days)": mode_res+1,
+            "Mode Temporal Resolution (days)": mode_res + 1 if isinstance(mode_res, (int, float)) else mode_res,
             "Epochs (Measurements)": epochs,
             "Citation": clean_cite
         })
 
-    # Convert the list of dictionaries directly into a CSV string
+    # C. Convert the list of dictionaries directly into a CSV string
     csv_text = pd.DataFrame(summary_rows).to_csv(index=False)
             
     # 9. Metadata Check

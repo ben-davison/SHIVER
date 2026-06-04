@@ -1,22 +1,28 @@
 # server/config.py
 import platform
 from pathlib import Path
+import os
 
 current_os = platform.system()
-
-if current_os == "Windows":
-    base_path_gr = Path("R:/aux_data/overlays/Greenland")
-    base_path_ant = Path("R:/aux_data/overlays/Antarctica")
-    overlay_path_gr = Path("R:/aux_data/overlays/Greenland")
-    overlay_path_ant = Path("R:/aux_data/overlays/Antarctica")
-    landsat_mosaic_path_gr = Path("R:/aux_data/image_mosaic/Greenland/GEE_S2/greenland_tiles_20m")
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+if current_os == "Windows" or is_wsl:
+    root_drive = "/mnt/r" if is_wsl else "R:"
+    base_path_gr = Path(f"{root_drive}/aux_data/overlays/Greenland")
+    base_path_ant = Path(f"{root_drive}/aux_data/overlays/Antarctica")
+    overlay_path_gr = Path(f"{root_drive}/aux_data/overlays/Greenland")
+    overlay_path_ant = Path(f"{root_drive}/aux_data/overlays/Antarctica")
+    landsat_mosaic_path_gr = Path(f"{root_drive}/aux_data/image_mosaic/Greenland/GEE_S2/greenland_tiles_20m")
     ZARR_PATHS = {
-        "Greenland": Path("R:/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed.zarr"),
-        "Antarctica": Path("R:/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed.zarr")
+        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed.zarr"),
+        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed.zarr")
+    }
+    OMEZARR_PATHS = {
+        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_pyramid.zarr"),
+        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_pyramid.zarr")
     }
     COG_BASE_DIR = {
-        "Greenland": Path("R:/aux_data/overlays/Greenland"),
-        "Antarctica": Path("R:/aux_data/overlays/Antarctica")
+        "Greenland": Path(f"{root_drive}/aux_data/overlays/Greenland"),
+        "Antarctica": Path(f"{root_drive}/aux_data/overlays/Antarctica")
     }
 else:
     base_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland")
@@ -27,6 +33,10 @@ else:
     ZARR_PATHS = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed.zarr"),
         "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed.zarr")
+    }
+    OMEZARR_PATHS = {
+        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_pyramid.zarr"),
+        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_pyramid.zarr")
     }
     COG_BASE_DIR = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/overlays"),

@@ -9,6 +9,7 @@ import io
 import numpy as np
 import matplotlib.cm as cm
 import cmcrameri.cm as cmc
+import traceback
 from PIL import Image
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
@@ -98,8 +99,23 @@ def load_custom_palette(path: Path):
 PALETTES = {}
 for region, path in PALETTE_FILES.items():
     PALETTES[region] = load_custom_palette(path)
+    
+
+# --- GLOBAL LOOKUP TABLES ---
+def _create_lut(cmap_func):
+    """Pre-computes a 256-color RGB Lookup Table from a Matplotlib colormap."""
+    # Generate 256 values from 0 to 1, map them, drop alpha, and convert to uint8
+    return (cmap_func(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
+
+LUTS = {
+    "trend": _create_lut(cmc.vik),
+    "hillshade": _create_lut(cmc.grayC),
+    "range": _create_lut(cm.magma),
+    "default": _create_lut(cm.viridis)
+}
+
    
-# Begin
+# --- Begin ---
 app = FastAPI(
     title="Ice Velocity API",
     description="High-performance API for extracting glacier velocity time-series from Zarr.",
@@ -173,7 +189,7 @@ def health_check():
 
 # --- VECTOR WMS ENDPOINT - POLAR PROJECTIONS ---
 @app.get("/api/wms/{region}/vectors")
-async def get_wms_vector(region: str, req: Request):
+def get_wms_vector(region: str, req: Request):
     """
     Dynamic WMS Server for Vector Overlays.
     No rotation required: The map and the data share the same polar stereographic grid!
@@ -208,95 +224,75 @@ async def get_wms_vector(region: str, req: Request):
         except TileOutsideBounds:
             return _empty_wms(width, height)
 
-        # 2. Extract Arrays & Handle NaNs
-        U = np.nan_to_num(u_img.data[0], nan=0.0)
-        V = np.nan_to_num(v_img.data[0], nan=0.0)
+        # 2. DECIMATE FIRST (16x16 grid)
+        # Slicing the raw arrays before doing any math saves ~99% of CPU cycles
+        step = 16
+        U_sub = u_img.data[0][::step, ::step]
+        V_sub = v_img.data[0][::step, ::step]
+        
+        h, w = U_sub.shape # Note: This is now the small dimension (e.g., 16x16)
+
+        # 3. Extract Arrays & Handle NaNs on the tiny arrays
+        U_sub = np.nan_to_num(U_sub, nan=0.0)
+        V_sub = np.nan_to_num(V_sub, nan=0.0)
         
         # Calculate dynamic speed (magnitude) using hypotenuse
-        S = np.hypot(U, V)
+        S_sub = np.hypot(U_sub, V_sub)
         
-        # 3. Filter Logic
-        # Mask out completely empty pixels and very slow ice (< 20 m/yr) to declutter
-        valid_pixels = (S >= 20) & (U != -9999) & (V != -9999)
+        # 4. Filter Logic
+        valid_pixels = (S_sub >= 20) & (U_sub != -9999) & (V_sub != -9999)
         
-        # --- MAGNITUDE CAPPING ---
-        max_speed = 1000.0
-        cap_mask = S > max_speed
-        
-        # Scale U and V down proportionately where the speed exceeds max_speed
-        scale_factor = max_speed / S[cap_mask]
-        U[cap_mask] = U[cap_mask] * scale_factor
-        V[cap_mask] = V[cap_mask] * scale_factor
-        
-        # 4. Decimate (16x16 grid)
-        step = 16
-        h, w = U.shape
-        
-        # Create Pixel Grid using the dynamic width/height
-        xs = np.arange(0, w, step) + step / 2
-        ys = np.arange(0, h, step) + step / 2
-        X, Y = np.meshgrid(xs, ys)
-        
-        # Subsample data
-        U_sub = U[::step, ::step]
-        V_sub = V[::step, ::step]
-        mask_sub = valid_pixels[::step, ::step]
-
-        if not np.any(mask_sub):
+        if not np.any(valid_pixels):
             return _empty_wms(width, height)
 
+        # --- MAGNITUDE CAPPING ---
+        max_speed = 1000.0
+        cap_mask = S_sub > max_speed
+        
+        # Scale U and V down proportionately where the speed exceeds max_speed
+        if np.any(cap_mask):
+            scale_factor = max_speed / S_sub[cap_mask]
+            U_sub[cap_mask] = U_sub[cap_mask] * scale_factor
+            V_sub[cap_mask] = V_sub[cap_mask] * scale_factor
+
         # --- NO ROTATION NEEDED ---
-        # The U and V components are naturally aligned with the map's grid.
-        U_masked = np.ma.masked_where(~mask_sub, U_sub)
-        V_masked = np.ma.masked_where(~mask_sub, V_sub)
+        U_masked = np.ma.masked_where(~valid_pixels, U_sub)
+        V_masked = np.ma.masked_where(~valid_pixels, V_sub)
 
         # 5. Plotting
+        # Create Pixel Grid using the dynamic width/height
+        # We base the grid on the original requested width/height, stepping by 16
+        xs = np.arange(0, width, step) + step / 2
+        ys = np.arange(0, height, step) + step / 2
+        X, Y = np.meshgrid(xs, ys)
+
         dpi = 100
-        # Dynamically size the figure based on WMS request width/height
         fig = Figure(figsize=(width/dpi, height/dpi), dpi=dpi, facecolor=(0,0,0,0))
         canvas = FigureCanvas(fig)
         ax = fig.add_axes([0, 0, 1, 1])
         ax.set_axis_off() 
-        ax.set_xlim(0, w)
-        ax.set_ylim(h, 0) # Invert Y for Matplotlib
+        ax.set_xlim(0, width)
+        ax.set_ylim(height, 0) # Invert Y for Matplotlib
 
-        # You can now standardize the scale factor across both ice sheets if desired
-        if region == "Greenland":
-            ax.quiver(X, Y, U_masked, V_masked, 
-                      color='black', headlength=2, headaxislength=2.5, headwidth=3.0,
-                      pivot='middle', scale=5000, width=0.0075) 
-        else:
-            ax.quiver(X, Y, U_masked, V_masked, 
-                      color='black', headlength=2, headaxislength=2.5, headwidth=3.0,
-                      pivot='middle', scale=5000, width=0.0075) 
+        ax.quiver(X, Y, U_masked, V_masked, 
+                  color='black', headlength=2, headaxislength=2.5, headwidth=3.0,
+                  pivot='middle', scale=5000, width=0.0075) 
 
         buf = io.BytesIO()
         canvas.print_png(buf)
         plt.close(fig)
         buf.seek(0)
-        return Response(content=buf.read(), media_type="image/png")
+        tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"} # 24 hours of caching (86400 seconds)
+        return Response(content=buf.read(), media_type="image/png", headers=tile_headers)
 
     except Exception as e:
         print(f"Vector WMS Error: {e}")
         return _empty_wms(width, height)
-
-    except Exception as e:
-        print(f"Vector WMS Error: {e}")
-        return _empty_wms(width, height)
-
-# Helper function for transparent tiles
-def _empty_wms(width: int, height: int):
-    empty_img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    buf = io.BytesIO()
-    empty_img.save(buf, format="PNG")
-    buf.seek(0)
-    return Response(content=buf.read(), media_type="image/png")
-
 
 
 # 2D overlays - WMS Polar Projections
 @app.get("/api/wms/{region}")
-async def get_wms_overlay(region: str, req: Request):
+def get_wms_overlay(region: str, req: Request):
     """
     Dynamic WMS Server for Polar Projections: Region-specific limits & Transparency rules.
     Accepts standard WMS parameters (BBOX, WIDTH, HEIGHT, CRS, LAYERS).
@@ -307,16 +303,12 @@ async def get_wms_overlay(region: str, req: Request):
     if params.get("request", "").lower() != "getmap":
         return Response("Only GetMap is supported", status_code=400)
 
-    # In WMS, 'layers' tells us which variable to load (e.g., 'count', 'speed')
     layer_type = params.get("layers", "count")
     bbox_str = params.get("bbox")
     width = int(params.get("width", 256))
     height = int(params.get("height", 256))
-    
-    # Leaflet will pass EPSG:3413 (Greenland) or EPSG:3031 (Antarctica)
     target_crs = params.get("crs", params.get("srs", "EPSG:4326"))
     
-    # Set defaults
     nodata_val = 0 if layer_type in ["landsat_mosaic", "default_speed"] else None
     read_indexes = (1, 2, 3) if layer_type in ["landsat_mosaic", "default_speed"] else None
 
@@ -324,35 +316,22 @@ async def get_wms_overlay(region: str, req: Request):
         return Response("Missing BBOX", status_code=400)
 
     minx, miny, maxx, maxy = map(float, bbox_str.split(","))
-
-    print(f"\n--- WMS REQUEST: {region} / {layer_type} ---")
     
     # 2. Check Dictionary Lookups
     if region not in TIFF_PATHS:
-        print(f"Error: Region '{region}' not found in TIFF_PATHS keys: {list(TIFF_PATHS.keys())}")
         raise HTTPException(status_code=404, detail=f"Region '{region}' not configured")
         
     if layer_type not in TIFF_PATHS[region]:
-        print(f"Error: Layer '{layer_type}' not found for region '{region}'. Available: {list(TIFF_PATHS[region].keys())}")
         raise HTTPException(status_code=404, detail=f"Layer '{layer_type}' not found")
 
     # 3. Check File Path
     file_path = TIFF_PATHS[region][layer_type]
-    print(f"Looking for file at: {file_path}")
-    print(f"   Absolute path: {file_path.absolute()}")
-
     if not file_path.exists():
-        print(f"FILE MISSING! Python cannot see this file.")
-        if str(file_path).startswith("R:"):
-            print("   Note: You are using the R: drive. Ensure the terminal running Python has permissions to see it.")
         raise HTTPException(status_code=404, detail=f"File not found on server at: {file_path}")
     
-    print("File found. Attempting to read bounding box...")
-
     try:
         with Reader(file_path) as cog:
             try:
-                # Use .part() instead of .tile() for WMS bounding boxes
                 img = cog.part(
                     bbox=(minx, miny, maxx, maxy),
                     bounds_crs=target_crs,
@@ -363,116 +342,76 @@ async def get_wms_overlay(region: str, req: Request):
                     nodata=nodata_val
                 )
             except TileOutsideBounds:
-                return Response(content=Image.new('RGBA', (width, height), (0, 0, 0, 0)).tobytes("png"), media_type="image/png")
+                return _empty_wms(width, height)
 
             if layer_type == "landsat_mosaic":
-                # Intercept the array to apply normalization and gamma stretch
                 if img.data.dtype == 'float32' or img.data.dtype == np.float32:
                     data_max = np.nanmax(img.data)
                     
-                    # 1. Normalize data to a 0.0 - 1.0 range 
-                    if data_max <= 2.0:
-                        norm_data = np.clip(img.data, 0.0, 1.0)
-                    else:
-                        norm_data = np.clip(img.data / 4000.0, 0.0, 1.0)
+                    # 1. Normalize data
+                    norm_data = np.clip(img.data if data_max <= 2.0 else img.data / 4000.0, 0.0, 1.0)
                     
                     # 2. Apply Gamma Stretch
                     gamma = 2.0 if region == "Greenland" else 1.2 
-                    stretched_data = np.power(norm_data, 1.0 / gamma)
+                    stretched_data = norm_data ** (1.0 / gamma) # ** is faster than np.power
                     
                     # 3. Convert to 8-bit RGB array
                     stretched_8bit = (stretched_data * 255).astype(np.uint8)
                     rgb_array = np.transpose(stretched_8bit, (1, 2, 0))
                     
-                    # 4. Create the Alpha Mask
+                    # 4. Create the Alpha Mask & Assemble
                     alpha_mask = (np.sum(img.data, axis=0) > 0).astype(np.uint8) * 255
-                    
-                    # 5. Assemble final RGBA image
                     rgba_image = np.zeros((height, width, 4), dtype=np.uint8)
                     rgba_image[..., 0:3] = rgb_array
                     rgba_image[..., 3] = alpha_mask 
                     
-                    # 6. Save and return using PIL
-                    pil_img = Image.fromarray(rgba_image)
                     buf = io.BytesIO()
-                    pil_img.save(buf, format="PNG")
-                    return Response(content=buf.getvalue(), media_type="image/png")
+                    Image.fromarray(rgba_image).save(buf, format="PNG")
+                    tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
+                    return Response(content=buf.getvalue(), media_type="image/png", headers=tile_headers)
                     
                 else:
-                    # Fallback for non-float data
-                    rendered_img = img.render(img_format="PNG", nodata=0)
-                    return Response(content=rendered_img, media_type="image/png")
+                    tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
+                    return Response(content=img.render(img_format="PNG", nodata=0), media_type="image/png", headers=tile_headers)
 
             # --- PRECOLOURED SPEED OVERVIEW --- 
             if layer_type == "default_speed":
-                # Render directly to PNG, forcing 0 as NoData so the background is transparent
-                rendered_img = img.render(img_format="PNG", nodata=0)
-                return Response(content=rendered_img, media_type="image/png")
+                tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
+                return Response(content=img.render(img_format="PNG", nodata=0), media_type="image/png", headers=tile_headers)
             
             # --- HILLSHADE --- #
-            if layer_type == "hillshade":
-                data = img.data[0].astype('uint8')
-            else:
-                data = img.data[0].astype('float32')
+            data = img.data[0].astype('uint8') if layer_type == "hillshade" else img.data[0].astype('float32')
+            
+            # Prevent NaN errors in mathematical operations
+            data = np.nan_to_num(data, nan=0.0)
 
             alpha_mask = np.zeros(data.shape, dtype=np.uint8)
             
             # --- 1. MASK CREATION ---
             if layer_type == "speed":
-                # --- SPEED LOGIC ---
-                # Fast ice (> 20 m/yr) -> Solid Opaque
                 alpha_mask[data >= 20] = 255
-                
-                # Slow/Stagnant ice (0-20 m/yr) -> Semi-transparent
                 alpha_mask[(data > 0) & (data < 20)] = 60
-                
             elif layer_type == "trend":
-                 # Mask out NaNs
-                alpha_mask[~np.isnan(data)] = 255
-                
-                # Make areas with a weak trend very transparent
+                alpha_mask[data != 0] = 255 # Handled NaNs above
                 alpha_mask[(data > -0.5) & (data < 0.5)] = 40
-                
-            elif layer_type == "hillshade":
-                alpha_mask[data > 0] = 255
-                
-            elif layer_type == "range":
-                alpha_mask[data > 0] = 255
-                
             else:
-                # --- COUNT LOGIC ---
                 alpha_mask[data > 0] = 255
-
 
             # --- 2. DATA PROCESSING ---
             if layer_type == "dynamic_speed":
-                # --- DYNAMIC LIMITS ---
-                if region == "Antarctica":
-                    max_v = 2000.0
-                else:
-                    max_v = 400.0 # Greenland default
-
+                max_v = 2000.0 if region == "Antarctica" else 400.0
                 min_v = 1.0   
                 
-                # Log Scale Logic
                 log_min = np.log10(min_v)
                 log_max = np.log10(max_v)
 
-                # Safe Log Calculation
-                safe_data = np.where(data > min_v, data, min_v)
-                log_data = np.log10(safe_data)
-                norm = (log_data - log_min) / (log_max - log_min)
+                # np.clip is heavily optimized in C compared to np.where
+                safe_data = np.clip(data, min_v, None)
+                norm = (np.log10(safe_data) - log_min) / (log_max - log_min)
                 use_custom = True
                 
             elif layer_type == "trend":
-                # --- TREND LOGIC ---
-                # Diverging Scale: -10 to +10 m/yr^2
                 min_v, max_v = -15, 15
-                #if region == "Antarctica":
-                #    min_v, max_v = -15, 15
-                #else:
-                #    min_v, max_v = -2.5, 2.5
-
                 norm = (data - min_v) / (max_v - min_v)
                 use_custom = False 
             
@@ -487,62 +426,66 @@ async def get_wms_overlay(region: str, req: Request):
 
             else:
                 # Count Layer
-                if region == "Antarctica":
-                    min_v, max_v = 0, 200
-                else:
-                    min_v, max_v = 0, 750
-                    
-                norm = (data - min_v) / (max_v - min_v)
+                max_v = 200 if region == "Antarctica" else 750
+                norm = data / max_v
                 use_custom = False
 
+            # Clip norm strictly between 0 and 1 so LUT indexing doesn't crash
             norm = np.clip(norm, 0, 1)
 
-            # --- 3. COLOR PAINTING ---
+            # --- 3. COLOR PAINTING (LUT Optimization) ---
             rgba_image = np.zeros((height, width, 4), dtype=np.uint8)
+            
+            # Map 0.0-1.0 array to 0-255 integer indices
+            indices = (norm * 255).astype(np.int32)
 
             if use_custom:
-                current_palette = PALETTES.get(region)
-                if current_palette is None:
-                    current_palette = PALETTES.get("Greenland")
+                current_palette = PALETTES.get(region, PALETTES.get("Greenland"))
                 if current_palette is not None and len(current_palette) > 0:
-                    num_colors = len(current_palette)
-                    indices = (norm * (num_colors - 1)).astype(np.int32)
-                    rgba_image[..., 0:3] = current_palette[indices]
+                    pal_indices = (norm * (len(current_palette) - 1)).astype(np.int32)
+                    rgba_image[..., 0:3] = current_palette[pal_indices]
                 else:
-                    # Grey Fallback
-                    idx_byte = (norm * 255).astype(np.uint8)
-                    rgba_image[..., 0] = idx_byte
-                    rgba_image[..., 1] = idx_byte
-                    rgba_image[..., 2] = idx_byte
+                    # Grey Fallback using broadcasting
+                    idx_byte = indices.astype(np.uint8)
+                    rgba_image[..., 0:3] = np.stack([idx_byte]*3, axis=-1)
             else:
+                # Direct lookup mapping - entirely bypassing Matplotlib!
                 if layer_type == "trend":
-                    cm_data = cmc.vik(norm)
+                    rgba_image[..., 0:3] = LUTS["trend"][indices]
                 elif layer_type == "hillshade":
-                    cm_data = cmc.grayC(norm)
+                    rgba_image[..., 0:3] = LUTS["hillshade"][indices]
                 elif layer_type == "range":
-                    cm_data = cm.magma(norm)
+                    rgba_image[..., 0:3] = LUTS["range"][indices]
                 else:
-                    cm_data = cm.viridis(norm)
-                
-                # Convert to 0-255 uint8 and assign RGB channels
-                rgba_image[..., 0] = (cm_data[..., 0] * 255).astype(np.uint8)
-                rgba_image[..., 1] = (cm_data[..., 1] * 255).astype(np.uint8)
-                rgba_image[..., 2] = (cm_data[..., 2] * 255).astype(np.uint8)
+                    rgba_image[..., 0:3] = LUTS["default"][indices]
 
             # --- 4. APPLY MASK ---
             rgba_image[..., 3] = alpha_mask
 
             # 5. Save
-            pil_img = Image.fromarray(rgba_image)
             buf = io.BytesIO()
-            pil_img.save(buf, format="PNG")
-            
-            return Response(content=buf.getvalue(), media_type="image/png")
+            Image.fromarray(rgba_image).save(buf, format="PNG")
+            tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"} # 24 hours of caching (86400 seconds)
+            return Response(content=buf.getvalue(), media_type="image/png", headers=tile_headers)
             
     except Exception as e:
         print(f"WMS Tile Error: {e}")
         raise HTTPException(status_code=500, detail=f"WMS Tile error: {str(e)}")
 
+
+# Helper function for transparent tiles
+def _empty_wms(width: int, height: int):
+    buf = io.BytesIO()
+    Image.new('RGBA', (width, height), (0, 0, 0, 0)).save(buf, format="PNG")
+    tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
+    return Response(content=buf.getvalue(), media_type="image/png", headers=tile_headers)
+
+
+# Helper function for transparent tiles
+def _empty_wms(width: int, height: int):
+    buf = io.BytesIO()
+    Image.new('RGBA', (width, height), (0, 0, 0, 0)).save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png")
 
  
 @app.post("/api/auth")
@@ -653,15 +596,26 @@ def extract_multi_from_json(
             win_daily=payload.win_daily,
             poly=payload.poly
         )
+        
+        # Handle top-level fatal errors from the utility (e.g., Zarr store unreadable)
+        if "error" in results:
+            error_msg = results["error"]
+            # If the user sent bad input, throw a 400 Bad Request. Otherwise, throw a 500.
+            status_code = 400 if "no geometries" in error_msg.lower() else 500
+            raise HTTPException(status_code=status_code, detail=error_msg)
+
+        # 
         return results
+    
     except Exception as e:
-        print(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"ERROR: Multi-source timeseries extraction error: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An internal server error occurred during timeseries extraction.")
         
 
 
 @app.post("/api/timeseries/upload")
-async def upload_shapefile(
+def upload_shapefile(
     file: UploadFile = File(...), 
     buffer: float = Form(500),
     variable: List[str] = Form(["s"]),
@@ -719,7 +673,7 @@ async def upload_shapefile(
         
 
 @app.post("/api/timeseries/multi/upload")
-async def upload_multi_shapefile(
+def upload_multi_shapefile(
     file: UploadFile = File(...), 
     buffer: float = Form(500),
     sources: List[str] = Form([]), 

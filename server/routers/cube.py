@@ -2,16 +2,17 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List
-import os
-import zipfile
 from sqlalchemy.orm import Session
 from models import User, get_db, SessionLocal, DownloadLog
 from shapely.geometry import shape
+import os
+import zipfile
+import asyncio
 
 # IMPORTS
 # Helper functions
 from utils.extract_zarr_cube import generate_netcdf_cube
-from utils.email import send_cube_ready_email, send_cube_failed_email
+from utils.email import send_cube_ready_email, send_cube_failed_email, send_dev_error_email
 # Imports for authentication
 from models import User
 from dependencies import get_current_user
@@ -35,7 +36,7 @@ class CubeRequest(BaseModel):
     frequency: str = "native"
     mode: str = "single"
     
-async def process_large_cube(payload: CubeRequest, user_email: str, target_freq: str, origin_url: str):
+def process_large_cube(payload: CubeRequest, user_email: str, target_freq: str, origin_url: str):
     """
     This runs in the background AFTER the response is sent to the user.
     """
@@ -72,8 +73,6 @@ async def process_large_cube(payload: CubeRequest, user_email: str, target_freq:
             zipf.write(file_path, arcname=nc_filename)
             zipf.writestr("citations_and_usage.txt", citation_text)
             zipf.writestr("citations_summary.csv", csv_text)
-            
-        # Clean up the raw .nc file to save server space
         try:
             os.remove(file_path)
         except OSError as e:
@@ -103,7 +102,7 @@ async def process_large_cube(payload: CubeRequest, user_email: str, target_freq:
             db.close() # close manual session
         
         # 3. Send Email
-        await send_cube_ready_email(user_email, download_link, region)
+        asyncio.run(send_cube_ready_email(user_email, download_link, region))
         print(f"Background job done. Email sent to {user_email}")
 
     except Exception as e:
@@ -121,7 +120,18 @@ async def process_large_cube(payload: CubeRequest, user_email: str, target_freq:
         else:
             friendly_msg = "An unexpected technical issue occurred while packaging your NetCDF file. Our development team has been notified."
             
-        await send_cube_failed_email(user_email, region, friendly_msg)
+            # Extract the raw payload data cleanly
+            request_details = payload.model_dump()
+            
+            # Fire off the dev email with the real traceback and request data
+            asyncio.run(send_dev_error_email(
+                user_email=user_email, 
+                region=region, 
+                raw_error=str(e), 
+                payload_data=request_details
+            ))
+            
+        asyncio.run(send_cube_failed_email(user_email, region, friendly_msg))
         
 
 
