@@ -105,7 +105,10 @@ const closeMenu = () => { isMenuOpen.value = false; };
 				</div>
 		  </div>
 		  
-          <RouterLink to="/fram" active-class="active-link">FRAM Project</RouterLink>
+		  <div class="nav-dropdown">
+				<RouterLink to="/projects" class="dropdown-trigger" active-class="active-link" :class="{ 'active-link': $route.path.startsWith('/projects') }">Projects</RouterLink>
+		  </div>
+		  
           <RouterLink to="/people" active-class="active-link">People</RouterLink>
         </nav>
 

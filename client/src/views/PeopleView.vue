@@ -25,93 +25,19 @@ const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&ba
 const teamMembers = [
   {
     id: 1,
-    name: "Associate Prof. Jonathan Kingslake",
-    role: "FRAM Principal Investigator",
-	institution: "Lamont-Doherty Earth Observatory",
-    image: photoJonnyK, 
-    bio: "Jonny leads the FRAM project.",
-	website: "https://jkingslake.com", 
-    websiteDisplay: "jkingslake.com"
+    name: "Dr Ben Davison",
+    role: "SHIVER Principal Developer",
+	institution: "University of Sheffield",
+    image: photoBenD,
+    bio: "Ben automated SHIFT and developed SHIVER."
   },
   {
     id: 2,
     name: "Prof. Andrew Sole",
-    role: "FRAM Co-Investigator (UK Lead)",
+    role: "SHIFT Principal Developer",
 	institution: "University of Sheffield",
     image: photoAndrewS,
-    bio: "Andrew leads the UK side of the FRAM project and led the development of SCADI. Andrew specialises in remote sensing of glacier dynamics and interactions between meltwater and ice motion."
-  },
-  {
-    id: 3,
-    name: "Isabel Cordero",
-    role: "Logistics manager",
-	institution: "Lamont-Doherty Earth Observatory",
-    image: getPlaceholderUrl("Isabel+Cordero"),
-    bio: "Isabel makes sure everyone and everything gets where it needs to be when it needs to be there."
-  },
-  {
-    id: 4,
-    name: "Dr Ben Davison",
-    role: "Postdoctoral Research Associate",
-	institution: "University of Sheffield",
-    image: photoBenD,
-    bio: "Ben leads the remote sensing project work, including SCADI optimization and automation and SHIVER development. Ben deployed GNSS, ApRES and a passive seismometer during the 2024 field season."
-  },
-  {
-    id: 5,
-    name: "Dr Jeremy Ely",
-    role: "Co-Investigator",
-	institution: "University of Sheffield",
-    image: getPlaceholderUrl("Jeremy+Ely"),
-    bio: "Jeremy is an expert in glacial geomorphology and hydrology. Jeremy helps us to interpret our field and satellite observations, and provides guidance on key science questions."
-  },
-  {
-    id: 6,
-    name: "Nick Frearson",
-    role: "Logistics support",
-	institution: "Lamont-Doherty Earth Observatory",
-    image: getPlaceholderUrl("Nick+Frearson"),
-    bio: "If it's broken, Nick can fix it."
-  },
-  {
-    id: 7,
-    name: "Dr Andrew Hoffman",
-    role: "Postdoctoral Research Associate",
-	institution: "Lamont-Doherty Earth Observatory",
-    image: getPlaceholderUrl("Andrew+Hoffman"),
-    bio: "Andrew is a glacial geophysics and fieldwork specialist. Andrew deployed GNSS and ApRES during the 2025 field season."
-  },
-  {
-    id: 8,
-    name: "Prof. Stephen Livingstone",
-    role: "Co-Investigator",
-	institution: "University of Sheffield",
-    image: photoStephenL,
-    bio: "Stephen is an expert in ice sheet hydrology. He helps us to interpret our field and satellite observations, and provides guidance on key science questions."
-  },
-  {
-    id: 9,
-    name: "Sian Thorpe",
-    role: "Research Associate",
-	institution: "University of Sheffield",
-    image: photoSianT,
-    bio: "Sian specializes in subglacial lake dynamics and glacial fieldwork. Sian supports the SCADI remote sensing and deployed GNSS and a passive seismometer during the 2025 field season."
-  },
-  {
-    id: 10,
-    name: "Dr Rohi Muthyala",
-    role: "Postdoctoral Research Associate",
-	institution: "Lamont-Doherty Earth Observatory",
-    image: getPlaceholderUrl("Rohi+Muthyala"),
-    bio: "Rohi is a hydrologist and field glaciologist. Rohi deployed an AWS and piloted the UAV during the 2024 and 2025 field seasons."
-  },
-  {
-    id: 11,
-    name: "Associate Prof. Kate Winter",
-    role: "Co-Investigator",
-	institution: "Northumbria University",
-    image: photoKateW,
-    bio: "Kate is a glacial geophysics expert. Kate led the field campaign in 2024 and supported the deployment of GNSS and ApRES."
+    bio: "Andrew led the development of the SHIFT processing algorithm."
   }
 ];
 </script>
@@ -122,7 +48,7 @@ const teamMembers = [
     <main class="content-wrapper">
       <div class="header-section">
         <h1>Meet the Team</h1>
-        <p class="subtitle">The researchers behind FRAM and SHIVER</p>
+        <p class="subtitle">The researchers behind SHIVER & SHIFT</p>
       </div>
 
       <div class="team-grid">

@@ -23,6 +23,8 @@ import UKRILogo from '../assets/UKRI_logo/UKRI_logo.png';
 import NSFLogo from '../assets/NSF_logo/NSF_Official_logo_High_Res_1200ppi.png';
 import LDEOLogo from '../assets/LDEO_logo/LDEO_logo_black.png';
 import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
+import DocSectionCard from '../components/DocSectionCard.vue' 
+import DocSectionCardShort from '../components/DocSectionCardShort.vue' 
 
 // --- NAVIGATION LOGIC ---
 const router = useRouter();
@@ -31,13 +33,6 @@ const goToMap = () => {
   router.push('/map'); 
 };
 
-const goToDocs = () => {
-  router.push('/documentation'); 
-};
-
-const goToFram = () => {
-  router.push('/fram'); 
-};
 
 </script>
 
@@ -76,23 +71,51 @@ const goToFram = () => {
 		  provides an interactive platform for exploring, visualizing and extracting these measurements, with the aim
           of accelerating scientific discovery and educating interested parties.
         </p>
-        
-        <div class="features-grid">
-          <div class="feature-card" @click="goToFram">
-            <h3>Flow Response of Antarctica to Meltwater (FRAM)</h3>
-            <p>Combining satellite and field-based measurements to understand how Antarctic glaciers are responding to increasing meltwater supply.</p>
-          </div>
-          <div class="feature-card" @click="goToMap">
-            <h3>Sheffield Ice Velocity ExploreR (SHIVER)</h3>
-            <p>SHIVER utilizes cloud-based architecture to provide instant visualisation and extraction of ice sheet velocity data.</p>
-          </div>
-          <div class="feature-card" @click="goToDocs">
-            <h3>SHeffield Ice Flow Tracker (SHIFT)</h3>
-            <p>SHIFT is our processing system to generate the some of the ice velocity measurements available in SHIVER.
-			With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.</p>
-          </div>
-        </div>
-      </div>
+		
+		<DocSectionCardShort 
+			title="Sheffield Ice Velocity ExploreR (SHIVER) - Timeseries Explorer" 
+			to="/map"
+		  >
+			<template #image>
+			  <img src="../assets/documentation/overview/timeseries_thumb.png" alt="Timeseries graph">
+			</template>
+			<template #description>
+			  <p>
+			    The SHIVER Timeseries Explorer utilizes cloud-based architecture to provide instant visualisation and extraction of ice sheet velocity measurements for Greenland and Antarctica in one simple interface.
+			  </p>
+			</template>
+		</DocSectionCardShort>
+		
+		<DocSectionCardShort 
+			title="Sheffield Ice Velocity ExploreR (SHIVER) - Data Cube Extractor" 
+			to="/cube"
+		  >
+			<template #image>
+			  <img src="../assets/images/NetCDF.png" alt="NetCDF schematic">
+			</template>
+			<template #description>
+			  <p>
+			    The SHIVER Data Cube Extractor allows rapid generation and download of ice velocity data cubes for any time period and region in Greenland and Antarctica in one simple interface.
+			  </p>
+			</template>
+		</DocSectionCardShort>
+		
+		<DocSectionCardShort 
+			title="SHeffield Ice Flow Tracker (SHIFT)" 
+			to="/documentation/shift"
+		  >
+			<template #image>
+			  <img src="../assets/documentation/CC.jpg" alt="SHIFT Diagram">
+			</template>
+			<template #description>
+			  <p>
+			    SHIFT is our processing system to generate the some of the ice velocity measurements available in SHIVER.
+			    With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.
+			  </p>
+			</template>
+		</DocSectionCardShort>
+		
+	   </div>
     </section>
 
   </div>

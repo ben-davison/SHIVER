@@ -3,7 +3,6 @@ import { useAuthStore } from '../stores/auth'
 import HomeView from '../views/HomeView.vue'
 import MapView from '../views/MultiSourceMap.vue'
 import CubeView from '../views/MultiSourceCube.vue'
-import FramView from '../views/FramView.vue'
 import PeopleView from '../views/PeopleView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
@@ -19,6 +18,10 @@ import DocDataCubeGenView from '../views/documentation/DocDataCubeGenView.vue'
 import DocTimeseriesExplorerView from '../views/documentation/DocTimeseriesExplorerView.vue'
 import DocCubeExtractorView from '../views/documentation/DocCubeExtractorView.vue'
 import DocCitationView from '../views/documentation/DocCitationView.vue'
+
+// Project pages
+import ProjectLayout from '../views/projects/ProjLayout.vue'
+import ProjOverviewView from '../views/projects/ProjOverviewView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -50,7 +53,14 @@ const router = createRouter({
         { path: 'citation', name: 'doc-citation', component: DocCitationView }
       ]
     },
-    { path: '/fram', name: 'fram', component: FramView },
+	{ 
+      path: '/projects', 
+      component: ProjectLayout, // Parent layout component
+      children: [
+        { path: '', redirect: { name: 'proj-overview' } }, // Redirect base to overview
+        { path: 'overview', name: 'proj-overview', component: ProjOverviewView }
+      ]
+    },
     { path: '/people', name: 'people', component: PeopleView },
 	{ path: '/login', name: 'login', component: LoginView },
 	{ path: '/profile', name: 'profile', component: ProfileView },
