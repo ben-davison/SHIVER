@@ -1599,8 +1599,8 @@ const frequency = ref('monthly');
 const selectedVariables = ref(['s_filt']);
 
 // Cube limits
-const MAX_AREA_SQKM = 10000; // sq km
-const MAX_DAYS = 366;
+const MAX_AREA_SQKM = 50000; // sq km
+const MAX_DAYS = 3660;
 
 const availableVariables = [
   { id: 's_filt', name: 'Speed (Time-filtered)' },

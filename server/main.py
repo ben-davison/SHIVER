@@ -150,10 +150,25 @@ app.include_router(users.router)
 app.include_router(analysis.router)
 
 # --- CONFIG: STATIC FILES ---
-# Mounts the 'static' folder to serve GeoJSON/CSS/JS files
+current_os = platform.system()
+is_wsl = "WSL_DISTRO_NAME" in os.environ
+
+if current_os == "Windows" or is_wsl:
+    export_dir = current_dir / "static" / "exports"
+else:
+    export_dir = Path("/mnt/grio1/Shared/SHIVER/data/exports")
+
+# Ensure the export directory exists
+export_dir.mkdir(parents=True, exist_ok=True)
+
+# 2. Mount the highly specific exports path FIRST
+app.mount("/static/exports", StaticFiles(directory=export_dir), name="exports")
+
+# 3. Mount the general static folder SECOND
 static_path = current_dir / "static"
-static_path.mkdir(exist_ok=True) # Creates it if it doesn't exist
+static_path.mkdir(exist_ok=True) 
 app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 
 # --- DATA MODELS (Pydantic) ---
 class RoiRequest(BaseModel):
