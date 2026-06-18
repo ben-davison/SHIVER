@@ -356,7 +356,7 @@
 	  <div class="map-toolbar-left">
 		<div class="toolbar-group-row">
 			<button 
-			  class="panel-btn" 
+			  id="btn-switch-greenland" class="panel-btn" 
 			  :class="{ 'active': currentRegion === 'Greenland' }"
 			  @click="currentRegion = 'Greenland'; switchRegion()"
 			  title="Switch to Greenland"
@@ -365,7 +365,7 @@
 			</button>
 
 			<button 
-			  class="panel-btn" 
+			  id="btn-switch-antarctica" class="panel-btn" 
 			  :class="{ 'active': currentRegion === 'Antarctica' }"
 			  @click="currentRegion = 'Antarctica'; switchRegion()"
 			  title="Switch to Antarctica"
@@ -391,7 +391,7 @@
 
 			  <div class="toolbar-group">
 			    <button 
-				  class="panel-btn" 
+				  id="btn-overlays" class="panel-btn" 
 				  @click="checkAuth(() => showLayerManager = !showLayerManager)"
 				  :class="{ 'active': showLayerManager }" 
 				  title="Map Layers & Analysis"
@@ -404,7 +404,7 @@
 				</button>
                  
 				<label 
-				  class="panel-btn" 
+				  id="btn-upload-file"  class="panel-btn" 
 				  :class="{ 'active': isUploading }" 
 				  title="Upload File (KML, KMZ, GeoJSON or zipped shapefile)"
 				>
@@ -418,7 +418,7 @@
 				</label>
 
 				<button 
-				  class="panel-btn" 
+				  id="btn-advanced" class="panel-btn" 
 				  @click="checkAuth(() => showAdvanced = !showAdvanced)"
 				  :class="{ 'active': showAdvanced }" 
 				  title="Advanced Options"
@@ -428,18 +428,18 @@
 				  </svg>
 				</button>
 
-				<button class="panel-btn" @click="showHelp = true" title="Help">
+				<button id="btn-help-trigger" class="panel-btn" @click="showHelp = true" title="Help">
 				  <span><strong>?</strong></span>
 				</button>
 			  </div>
 
 			  <div class="toolbar-group" v-if="selectedPoints.length > 0">
-				<button class="panel-btn" @click="checkAuth(handleDownload)" :class="{ 'active': isDownloading }" :disabled="isDownloading" :title="xlsxDownloadLabel">
+				<button id="btn-download-data" class="panel-btn" @click="checkAuth(handleDownload)" :class="{ 'active': isDownloading }" :disabled="isDownloading" :title="xlsxDownloadLabel">
 				   <span v-if="isDownloading" class="spinner-small"></span>
 				   <excelIcon v-else class="btn-icon-svg" />
 				</button>
 
-				<button class="panel-btn" @click="checkAuth(downloadChartImage)" :class="{ 'active': isDownloadingChart }" :disabled="isDownloadingChart" :title="chartDownloadLabel">
+				<button id="btn-download-chart" class="panel-btn" @click="checkAuth(downloadChartImage)" :class="{ 'active': isDownloadingChart }" :disabled="isDownloadingChart" :title="chartDownloadLabel">
 				   <span v-if="isDownloadingChart" class="spinner-small"></span>
 				   <graphIcon v-else class="btn-icon-svg" />
 				</button>
@@ -900,7 +900,7 @@
 				
 			<div id="velocity-chart" class="chart-container"></div>
 				
-			<div class="axis-controls" v-if="selectedPoints.length > 0">
+			<div id="chart-axis-controls" class="axis-controls" v-if="selectedPoints.length > 0">
 				<div class="axis-group">
 					<label><strong>Chart options:</strong></label>
 				</div>
@@ -924,6 +924,7 @@
 					
 				<div class="trend-group">
 					<button 
+					      id="btn-toggle-trends"
 						  @click="toggleTrends" 
 						  class="btn-icon" 
 						  :class="{ 'active': showTrends }"
@@ -998,6 +999,43 @@
         <h2>How to use SHIVER - Timeseries Explorer</h2>
 	    <p>This gives a brief overview of the SHIVER Timeseries Explorer. Take a look at our <AppLink to="/documentation" class="text-link"><strong>SHIVER documentation</strong></AppLink> pages for more details.</p>
         
+		<p>Or play the tutorials below to see all of the SHIVER Timeseries functions</p>
+		
+		<div class="action-buttons" style="display: flex; gap: 15px; margin-bottom: 20px;">
+			<button class="play-tutorial-btn" @click="isVideoModalOpen = true">
+			  <svg 
+				xmlns="http://www.w3.org/2000/svg" 
+				width="16" 
+				height="16" 
+				viewBox="0 0 24 24" 
+				fill="currentColor"
+				class="play-icon"
+			  >
+				<path d="M5 3l14 9-14 9V3z"/>
+			  </svg>
+			  Play Video Tutorial
+			</button>
+			
+			<button class="play-tutorial-btn" @click="replayTour">
+				<svg 
+				  xmlns="http://www.w3.org/2000/svg" 
+				  width="16" 
+				  height="16" 
+				  viewBox="0 0 24 24" 
+				  fill="none" 
+				  stroke="currentColor" 
+				  stroke-width="2" 
+				  stroke-linecap="round" 
+				  stroke-linejoin="round"
+				  class="play-icon"
+				>
+				  <polyline points="1 4 1 10 7 10"></polyline>
+				  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+				</svg>
+				Replay Welcome Tour
+			</button>
+		</div>
+		
         <div class="modal-body">
           <h3>1. Basic Usage</h3>
 		  <ul>
@@ -1037,6 +1075,13 @@
       </div>
     </div>
 	
+	<VideoModal 
+    :isOpen="isVideoModalOpen"
+    title="SHIVER Timeseries Explorer Tutorial"
+    :videoSrc="tutorialVideoSrc"
+    @close="isVideoModalOpen = false"
+  />
+	
 </template>
 
 <script setup>
@@ -1056,6 +1101,8 @@ import greenlandIcon from '../components/icons/greenlandIcon.vue';
 import excelIcon from '../components/icons/excelIcon.vue';
 import graphIcon from '../components/icons/graphIcon.vue';
 import { generateCitationText } from '../utils/citationsConfig';
+import { startGuestTour } from '../tours/guestTour';
+import VideoModal from '../components/VideoModal.vue';
 
 // --- API CONFIGURATION ---
 import apiClient, { API_URL } from '../api';
@@ -1345,6 +1392,7 @@ const isDownloadingChart = ref(false);
 const isUploading = ref(false);
 const selectedPoints = ref([]); 
 const showHelp = ref(false); 
+const isVideoModalOpen = ref(false);
 const iceEdgeData = ref(null);
 const groundingLineData = ref(null);
 const mapHeightPercent = ref(60); 
@@ -4038,6 +4086,79 @@ const generateXLSX = (point, index) => {
 };
 
 
+
+// ==========================================================
+// =========== GUEST TOUR ======================================
+// ==========================================================
+onMounted(async () => {
+  await nextTick(); // Wait for the DOM to be ready
+
+  // 1. Check for the token directly
+  const token = sessionStorage.getItem('shiver_token');
+  let hasCompletedTour = false;
+
+  // 2. Determine tour status
+  if (token) {
+    // USER IS LOGGED IN: Ask FastAPI if they have completed the tour
+    try {
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      // Replace this with your actual endpoint that returns the user's profile
+      const response = await apiClient.get('/api/users/me', config); 
+      
+      // Assuming your backend returns a boolean field called 'has_completed_tour'
+      hasCompletedTour = response.data.has_completed_tour; 
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      // Fallback: if the request fails, assume they haven't completed it so the tour runs
+      hasCompletedTour = false; 
+    }
+  } else {
+    // USER IS A GUEST: Check local storage
+    hasCompletedTour = localStorage.getItem('app_tour_status') === 'completed';
+  }
+
+  // 3. Launch the tour if they haven't completed it
+  if (!hasCompletedTour) {
+    setTimeout(() => {
+      
+      startGuestTour(
+        // Callback 1: Tour Complete
+        async () => {
+          if (token) {
+            try {
+              const config = { headers: { 'Authorization': `Bearer ${token}` } };
+              await apiClient.patch('/api/users/me/tour-status', { tour_status: 'completed' }, config);
+              console.log("Backend updated successfully.");
+            } catch (error) {
+              console.error("Failed to save tour status:", error);
+            }
+          } else {
+            localStorage.setItem('app_tour_status', 'completed');
+          }
+        },
+        // Callback 2: Set status message
+        (msg) => {
+          statusMessage.value = msg;
+        }
+      );
+      
+    }, 1000);
+  }
+});
+
+// REPLAY TOUR
+const replayTour = () => {
+  showHelp.value = false; // 1. Close the help pop-up
+  
+  setTimeout(() => {
+    startGuestTour();     // 2. Launch the tour after a brief pause
+  }, 300); // 300ms allows the modal fade-out animation to finish
+};
+
+// Point to your video path (place your recorded MP4s inside the 'public/' directory)
+const tutorialVideoSrc = ref('https://www.youtube.com/embed/O4mW5bOfp8g?si=SjTWUKv9DZ5eO2tC');
+
+
 </script>
 
 <style scoped>
@@ -5561,6 +5682,21 @@ const generateXLSX = (point, index) => {
   pointer-events: auto; /* Captures clicks so map doesn't get them */
   transition: opacity 0.2s; 
   background: rgba(255, 255, 255, 0);
+}
+
+
+/* TUTORIAL */
+.play-tutorial-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: #0066cc; color: white; border: none;
+  padding: 10px 15px; border-radius: 4px; font-weight: bold;
+  cursor: pointer; margin-bottom: 15px; width: 100%;
+}
+.play-tutorial-btn:hover { background: #0052a3; }
+
+.play-icon {
+  flex-shrink: 0; /* Prevents the icon from squishing */
+  margin-top: 2px; /* Slight optical adjustment for vertical centering */
 }
 
 </style>

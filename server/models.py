@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, create_engine, DateTime, ForeignKey, Float
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+import enum
 from datetime import datetime
 
 # 1. Setup Database (SQLite for simplicity)
@@ -24,6 +25,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     reset_token = Column(String, nullable=True)
     reset_token_expires = Column(DateTime, nullable=True)
+    tour_status = Column(String, server_default="pending", nullable=False)
     downloads = relationship("DownloadLog", back_populates="user")
 
 
@@ -43,6 +45,14 @@ class DownloadLog(Base):
     
     # Relationship to User
     user = relationship("User", back_populates="downloads")
+    
+    
+class TourStatus(str, enum.Enum):
+    PENDING = "pending"                  # Brand new user, needs full tour (Intro + Advanced)
+    INTRO_COMPLETED = "intro_completed"  # Completed guest tour, only needs Advanced tour
+    COMPLETED = "completed"              # Fully finished everything
+    NEVER_ASK_AGAIN = "never_ask_again"  # Opted out completely
+    
 
 # Dependency to get DB session
 def get_db():

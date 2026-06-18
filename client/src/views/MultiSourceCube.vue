@@ -204,7 +204,7 @@
 				<span>Edit</span>
 			  </button>
 
-			  <button class="tool-btn" @click="undoLastPoint" :disabled="!isDrawing || vertices.length === 0">
+			  <button class="tool-btn" @click="undoLastPoint" :disabled="verticesHistory.length === 0">
 				<svg viewBox="0 0 24 24" class="icon"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>
 				<span>Undo</span>
 			  </button>
@@ -824,6 +824,24 @@
         
         <h2>How to use SHIVER - Data Cube Extractor</h2>
 	    <p>This gives a brief overview of the SHIVER Data Cube Extractor. Take a look at our <AppLink to="/documentation" class="text-link"><strong>SHIVER documentation</strong></AppLink> pages for more details.</p>
+		
+		<p>Or play the video tutorial below to see all of the SHIVER Data Cube Extractor functions</p>
+		
+		<div class="action-buttons" style="display: flex; gap: 15px; margin-bottom: 20px;">
+			<button class="play-tutorial-btn" @click="isVideoModalOpen = true">
+			  <svg 
+				xmlns="http://www.w3.org/2000/svg" 
+				width="16" 
+				height="16" 
+				viewBox="0 0 24 24" 
+				fill="currentColor"
+				class="play-icon"
+			  >
+				<path d="M5 3l14 9-14 9V3z"/>
+			  </svg>
+			  Play Video Tutorial
+			</button>
+		</div>
         
         <div class="modal-body">
           <h3>1. Basic Usage</h3>
@@ -857,6 +875,13 @@
       </div>
     </div>
 	
+	<VideoModal 
+    :isOpen="isVideoModalOpen"
+    title="SHIVER Data Cube Extractor Tutorial"
+    :videoSrc="tutorialVideoSrc"
+    @close="isVideoModalOpen = false"
+  />
+	
 </template>
 
 <script setup>
@@ -875,6 +900,9 @@ import { useAuthStore } from '../stores/auth';
 import shp from 'shpjs';
 import toGeoJSON from '@mapbox/togeojson'; // For KML
 import JSZip from 'jszip'; // For KMZ
+import VideoModal from '../components/VideoModal.vue';
+const isVideoModalOpen = ref(false);
+const tutorialVideoSrc = ref('https://youtube.com/embed/Gbv7x24S7cU?si=_AP8s2pij1e84fIl');
 
 // -----------------------------------------------------------------------------------------
 // --- API CONFIGURATION --------------------------------------------------------------------
@@ -1599,8 +1627,8 @@ const frequency = ref('monthly');
 const selectedVariables = ref(['s_filt']);
 
 // Cube limits
-const MAX_AREA_SQKM = 50000; // sq km
-const MAX_DAYS = 3660;
+const MAX_AREA_SQKM = 15000; // sq km
+const MAX_DAYS = 366;
 
 const availableVariables = [
   { id: 's_filt', name: 'Speed (Time-filtered)' },
@@ -1630,6 +1658,7 @@ const isReady = computed(() => {
 const isDrawing = ref(false);
 const isEditing = ref(false);
 const vertices = ref([]); // Only used to trigger Vue buttons (Start, Finish, etc.)
+const verticesHistory = shallowRef([]);
 
 // Pure JS variables - Vue Proxies cannot touch these!
 let rawVertices = []; 
@@ -1654,6 +1683,7 @@ const onMapReady = (mapInstance) => {
 
 // --- 1. CORE DRAWING LOGIC ---
 const addVertex = (lat, lng, index = null) => {
+  saveHistoryState();
   // Update the pure JS array
   if (index === null) {
     rawVertices.push([lat, lng]);
@@ -1666,6 +1696,11 @@ const addVertex = (lat, lng, index = null) => {
   
   updatePolygonOnly();
   refreshMarkers();
+};
+
+// Save vertex history
+const saveHistoryState = () => {
+  verticesHistory.value = [...verticesHistory.value, JSON.parse(JSON.stringify(rawVertices))];
 };
 
 const handleMouseMove = (e) => {
@@ -1717,6 +1752,9 @@ const updatePolygonOnly = () => {
     const areaSqKm = (turf.area(geojson) / 1e6).toFixed(0);
     visualPolygon.unbindTooltip();
     visualPolygon.bindTooltip(`${areaSqKm} km&sup2`, { permanent: true, direction: 'center', className: 'area-tooltip-internal' }).openTooltip();
+	
+	// Update the computed size
+	geoUpdateTrigger.value++;
   }
 };
 
@@ -1750,6 +1788,7 @@ const createMarker = (latlng, isMidpoint = false, index = null) => {
   } else {
     marker.on('dragstart', () => {
       if (leafletMap.dragging) leafletMap.dragging.disable();
+	  saveHistoryState();
     });
     
     marker.on('drag', (e) => {
@@ -1848,12 +1887,20 @@ const finishDrawing = () => {
 };
 
 const undoLastPoint = () => {
-  rawVertices.pop();
+  if (verticesHistory.value.length === 0) return;
+
+  // Pop the last snapshot and overwrite current vertices
+  rawVertices = verticesHistory.value.pop();
   vertices.value = [...rawVertices];
+  verticesHistory.value = [...verticesHistory.value];
+
+  // If we undid our way back to an empty map, clean up the visual layer
   if (rawVertices.length === 0 && visualPolygon) {
     leafletMap.removeLayer(visualPolygon);
     visualPolygon = null;
-  }
+    drawnLayer.value = null; // Important to reset this so estimatedSize clears
+  } 
+  
   updatePolygonOnly();
   refreshMarkers();
 };
@@ -1875,6 +1922,7 @@ const resetDrawing = () => {
   
   if (!leafletMap) {
     rawVertices = [];
+	verticesHistory = [];
     vertices.value = [];
     return;
   }
@@ -2054,7 +2102,7 @@ const estimatedSize = computed(() => {
         return {
             areaSqKm, 
             valid: false, 
-            msg: `Area too large (${areaSqKm.toFixed(0)} km&sup2;). Max is 10,000 km&sup2;.` 
+            msg: `Area too large (${areaSqKm.toFixed(0)} km&sup2;). Max is 15,000 km&sup2;.` 
         };
     }
 

@@ -77,7 +77,28 @@ onMounted(() => {
         </template>
       </ProjSectionCard>
 
-
+	  
+	  <ProjSectionCard
+        title="Roughness modulation of Greenland Ice Sheet hydrology and ice-flow dynamics" 
+        to="https://the-slide-project.github.io/index"
+      >
+        <template #image>
+          <img src="../../assets/documentation/CC.jpg" alt="Cross correlation field from feature tracking">
+        </template>
+        <template #description>
+          <p>
+            This project - which focused on quantifying the influence of ice surface and bed roughness on surface 
+			and subglacial meltwater routing and Greenland Ice Sheet flow - provided the kickstarter for the development
+			of our feature tracking routine which underlies the SHIFT dataset. 
+          </p>
+		  
+		  <p>
+            You can read much more about the resulting feature tracking algorithms that were developed during and after 
+			this project in our <AppLink to="/documentation" class="text-link">documentation page</AppLink>.
+          </p>
+		  
+        </template>
+      </ProjSectionCard>
 
 
 	  <ProjSectionCard

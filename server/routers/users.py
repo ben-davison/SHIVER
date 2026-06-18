@@ -15,6 +15,11 @@ class UserProfile(BaseModel):
     total_volume_mb: float
     usage_breakdown: Dict[str, int]
     recent_downloads: list[dict]
+    tour_status: str
+    has_completed_tour: bool
+    
+class TourStatusUpdate(BaseModel):
+    tour_status: str # Expects values matching your enum: "completed", "pending", etc.
     
 # Schema for the incoming log request
 class ActivityLogRequest(BaseModel):
@@ -99,5 +104,25 @@ def get_user_profile(current_user: User = Depends(get_current_user), db: Session
         "total_downloads": total_count,
         "total_volume_mb": total_volume,
         "usage_breakdown": usage_map,
-        "recent_downloads": recent_list
+        "recent_downloads": recent_list,
+        "tour_status": current_user.tour_status,
+        "has_completed_tour": current_user.tour_status == "completed"
     }
+
+
+# 4. update the tour status when finished/skipped
+@router.patch("/me/tour-status")
+def update_tour_status(
+    payload: TourStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Updates the tour status for the currently authenticated user.
+    """
+    current_user.tour_status = payload.tour_status
+    db.commit()
+    db.refresh(current_user)
+    
+    return {"status": "success", "tour_status": current_user.tour_status}
+

@@ -87,3 +87,5 @@ create_dev_user.py
 tests/
 requirements.txt
 data/
+server/alembic/
+alembic.ini

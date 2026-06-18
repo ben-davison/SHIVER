@@ -121,7 +121,7 @@ const closeMenu = () => { isMenuOpen.value = false; };
                 <span class="user-label">My Profile</span>
             </RouterLink>
 
-            <button v-else class="login-header-btn" @click="showUserLoginModal = true">
+            <button v-else id="btn-login" class="login-header-btn" @click="showUserLoginModal = true">
                 Log In
             </button>
 
@@ -142,7 +142,7 @@ const closeMenu = () => { isMenuOpen.value = false; };
           </div>
 
           <RouterLink to="/documentation" active-class="active-link" @click="closeMenu">Documentation</RouterLink>
-          <RouterLink to="/fram" active-class="active-link" @click="closeMenu">FRAM Project</RouterLink>
+          <RouterLink to="/projects" active-class="active-link" @click="closeMenu">Projects</RouterLink>
           <RouterLink to="/people" active-class="active-link" @click="closeMenu">People</RouterLink>
             
           <div class="mobile-group">
