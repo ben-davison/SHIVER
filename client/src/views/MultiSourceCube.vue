@@ -1,7 +1,7 @@
 <template>
   <div class="page-container" :class="{ 'is-global-loading': isUploading  }">
     
-    <div class="map-wrapper" 
+    <div v-if="isMapReady" class="map-wrapper" 
      :class="{ 
         'show-glacier-names': currentRegion === 'Antarctica' && zoom >= 6,
         'show-basin-names': (currentRegion === 'Antarctica' && zoom >= 1) || (currentRegion === 'Greenland' && zoom >= 3)
@@ -886,12 +886,13 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, shallowRef, computed, nextTick, watch, onMounted, onUnmounted, inject } from 'vue';
+import { ref, shallowRef, computed, nextTick, watch, onMounted, onUnmounted, inject, markRaw } from 'vue';
 import "leaflet/dist/leaflet.css";
 import { LMap, LWmsTileLayer, LTileLayer, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
 import { saveAs } from 'file-saver';
-import L from 'leaflet';
+//import L from 'leaflet';
+const L = shallowRef(null);
 import antarcticaIcon from '../components/icons/antarcticaIcon.vue';
 import greenlandIcon from '../components/icons/greenlandIcon.vue';
 import * as turf from '@turf/turf';
@@ -902,6 +903,7 @@ import toGeoJSON from '@mapbox/togeojson'; // For KML
 import JSZip from 'jszip'; // For KMZ
 import VideoModal from '../components/VideoModal.vue';
 const isVideoModalOpen = ref(false);
+import { useHead } from '@unhead/vue'
 const tutorialVideoSrc = ref('https://youtube.com/embed/Gbv7x24S7cU?si=_AP8s2pij1e84fIl');
 
 // -----------------------------------------------------------------------------------------
@@ -911,7 +913,7 @@ import apiClient, { API_URL } from '../api';
 
 // Generic checker function
 const checkAuth = (actionCallback) => {
-  const token = sessionStorage.getItem('shiver_token');
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
   
   if (token) {
     // User is logged in, run the requested action
@@ -922,38 +924,75 @@ const checkAuth = (actionCallback) => {
   }
 };
 
+// -----------------------------------------------------------------------------------------
+// --- SEO ---------------------------------------------------------------------------------
+useHead({
+  title: 'SHIVER | Interactive Data Cube Extractor',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Generate custom NetCDF files of ice velocity data compiled from multiple Earth Observations missions for the Greenland Ice Sheet and Antarctic Ice Sheet for any region and time period.' 
+    }
+  ]
+})
+
 
 // -----------------------------------------------------------------------------------------
 // --- PROJ4 SETUP -------------------------------------------------------------------------
 import proj4 from 'proj4';
-window.proj4 = proj4; // Crucial: proj4leaflet expects proj4 to be globally available in Vite!
-import 'proj4leaflet';
+//window.proj4 = proj4; // Crucial: proj4leaflet expects proj4 to be globally available in Vite!
+//import 'proj4leaflet';
+const crsGreenland = shallowRef(null)
+const crsAntarctica = shallowRef(null)
+const isMapReady = ref(false)
 
-// 1. Define Greenland Projection (EPSG:3413)
-const crsGreenland = new L.Proj.CRS(
-  'EPSG:3413',
-  '+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
-  {
-    resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-    origin: [-4194304, 4194304]
-  }
-);
+// Load proj4
+onMounted(async () => {
+  await nextTick();
+  
+  // 1. Dynamically import Leaflet
+  const leafletModule = await import('leaflet');
+  L.value = leafletModule.default || leafletModule;
 
-// 2. Define Antarctica Projection (EPSG:3031)
-const crsAntarctica = new L.Proj.CRS(
-  'EPSG:3031',
-  '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
-  {
-    resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-    origin: [-4194304, 4194304]
-  }
-);
+  // 2. Now that we are safely in the browser, attach proj4 to the window
+  window.proj4 = proj4;
+
+  // 3. Dynamically import proj4leaflet ONLY AFTER Leaflet and window.proj4 are ready
+  await import('proj4leaflet');
+  
+  // 4. Define CRS
+  crsGreenland.value = markRaw(new L.value.Proj.CRS(
+		'EPSG:3413',
+		'+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
+		{
+		  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
+		  origin: [-4194304, 4194304]
+		}
+   ));
+
+  crsAntarctica.value = markRaw(new L.value.Proj.CRS(
+		'EPSG:3031',
+		'+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
+		{
+		  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
+		  origin: [-4194304, 4194304]
+		}
+   ));
+
+  // Flip the switch to let the template render the map elements safely
+  isMapReady.value = true;
+  
+  // Wait one tick for Vue to actually mount the map elements to the DOM 
+  // before we try to read URL parameters and call `.setView()`
+  await nextTick();
+
+});
 
 // --- DYNAMIC CONFIGURATION ---
 // These computed properties automatically feed the correct settings to the map 
 // whenever `currentRegion` changes.
 const currentCrs = computed(() => {
-    return currentRegion.value === 'Antarctica' ? crsAntarctica : crsGreenland;
+    return currentRegion.value === 'Antarctica' ? crsAntarctica.value : crsGreenland.value;
 });
 
 
@@ -990,11 +1029,12 @@ const switchRegion = () => {
 
 // --- NATIVE GOOGLE ANALYTICS TRACKING ---
 const trackEvent = (eventName, params = {}) => {
-  if (typeof window.gtag === 'function') {
+  // Check if window exists FIRST, then check for gtag
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     window.gtag('event', eventName, params);
-    console.log(`?? GA Event Sent: ${eventName}`, params);
+    console.log(`GA Event Sent: ${eventName}`, params);
   } else {
-    console.log(`?? GA Event Skipped (Not loaded): ${eventName}`);
+    console.log(`GA Event Skipped (Not loaded or server-side): ${eventName}`);
   }
 };
 
@@ -1002,6 +1042,7 @@ const trackEvent = (eventName, params = {}) => {
 // --- FEEDBACK POPUP STATE ---------------------------------------------------------------------
 // The main trigger function
 const triggerFeedbackPopup = () => {
+  if (typeof window === 'undefined') return;
   const hasShown = sessionStorage.getItem(STORAGE_KEY);
   if (!hasShown) {
     showFeedbackPopup.value = true;
@@ -1503,7 +1544,7 @@ watch(currentRegion, (newRegion) => {
 const glacierLabelOptions = {
   // Render invisible circle markers so we don't see blue pins
   pointToLayer: (feature, latlng) => {
-    return L.circleMarker(latlng, { radius: 0, opacity: 0, fillOpacity: 0 });
+    return L.value.circleMarker(latlng, { radius: 0, opacity: 0, fillOpacity: 0 });
   },
   // Bind the permanent tooltip using the 'feature' property from your new file
   onEachFeature: (feature, layer) => {
@@ -1708,15 +1749,15 @@ const handleMouseMove = (e) => {
 
   // 1. Ghost Marker (Kept because it works and looks good!)
   if (!ghostMarker) {
-    const icon = L.divIcon({ className: 'vertex-handle ghost', iconSize: [12, 12], iconAnchor: [6, 6] });
-    ghostMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon, interactive: false, keyboard: false, zIndexOffset: 2000 }).addTo(leafletMap);
+    const icon = L.value.divIcon({ className: 'vertex-handle ghost', iconSize: [12, 12], iconAnchor: [6, 6] });
+    ghostMarker = L.value.marker([e.latlng.lat, e.latlng.lng], { icon, interactive: false, keyboard: false, zIndexOffset: 2000 }).addTo(leafletMap);
   } else {
     ghostMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
   }
 
   // 2. Tooltip (Kept because it's helpful!)
   if (!mouseTooltip) {
-    mouseTooltip = L.tooltip({ permanent: true, direction: 'right', className: 'drawing-cursor-tooltip', offset: [15, 0] })
+    mouseTooltip = L.value.tooltip({ permanent: true, direction: 'right', className: 'drawing-cursor-tooltip', offset: [15, 0] })
       .setLatLng([e.latlng.lat, e.latlng.lng])
       .addTo(leafletMap);
   } else {
@@ -1736,12 +1777,12 @@ const updatePolygonOnly = () => {
   if (rawVertices.length < 2) return;
   
   // Force explicit L.latLng objects for the main Polygon too
-  const latLngs = rawVertices.map(v => L.latLng(v[0], v[1]));
+  const latLngs = rawVertices.map(v => L.value.latLng(v[0], v[1]));
   
   const style = { color: '#ffeb3b', weight: 3, fillOpacity: 0.2, dashArray: isDrawing.value ? '10, 10' : null, interactive: false };
 
   if (!visualPolygon) {
-    visualPolygon = L.polygon(latLngs, style).addTo(leafletMap);
+    visualPolygon = L.value.polygon(latLngs, style).addTo(leafletMap);
   } else {
     visualPolygon.setLatLngs(latLngs);
     visualPolygon.setStyle(style);
@@ -1767,13 +1808,13 @@ const clearMarkers = () => {
 };
 
 const createMarker = (latlng, isMidpoint = false, index = null) => {
-  const icon = L.divIcon({
+  const icon = L.value.divIcon({
     className: isMidpoint ? 'midpoint-handle' : 'vertex-handle',
     iconSize: isMidpoint ? [10, 10] : [14, 14],
     iconAnchor: isMidpoint ? [5, 5] : [7, 7]
   });
 
-  const marker = L.marker(latlng, { 
+  const marker = L.value.marker(latlng, { 
     icon, 
     draggable: !isMidpoint, 
     zIndexOffset: isMidpoint ? 1000 : 2000,
@@ -1782,7 +1823,7 @@ const createMarker = (latlng, isMidpoint = false, index = null) => {
 
   if (isMidpoint) {
     marker.on('click', (e) => {
-      L.DomEvent.stopPropagation(e);
+      L.value.DomEvent.stopPropagation(e);
       addVertex(latlng[0], latlng[1], index);
     });
   } else {
@@ -1922,7 +1963,7 @@ const resetDrawing = () => {
   
   if (!leafletMap) {
     rawVertices = [];
-	verticesHistory = [];
+    verticesHistory.value = []; 
     vertices.value = [];
     return;
   }
@@ -1934,6 +1975,7 @@ const resetDrawing = () => {
   
   rawVertices = [];
   vertices.value = [];
+  verticesHistory.value = []; 
   visualPolygon = null;
   mouseTooltip = null;
   ghostMarker = null;
@@ -1980,7 +2022,7 @@ const downloadCube = async () => {
     }
 	
 	// Grab the token directly from sessionStorage
-    const token = sessionStorage.getItem('shiver_token');
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
 	
 	// Dynamically point to the new endpoints if desired
     const endpoint = selectedZarrStore.value === 'single' 
@@ -2269,7 +2311,7 @@ const drawGeoJSONOnMap = (geojsonFeature) => {
   rawVertices = [];
 
   // B. Parse the GeoJSON
-  const tempLayer = L.geoJSON(geojsonFeature);
+  const tempLayer = L.value.geoJSON(geojsonFeature);
   const layers = tempLayer.getLayers();
   
   if (layers.length === 0) return;

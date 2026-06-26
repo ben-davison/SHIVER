@@ -1,7 +1,7 @@
 <template>
   <div class="page-container" :class="{ 'is-global-loading': isUploading || isFetching || isRefreshing }">
     
-    <div class="map-wrapper" 
+    <div v-if="isMapReady" class="map-wrapper" 
      :class="{ 
         'show-glacier-names': currentRegion === 'Antarctica' && zoom >= 6,
         'show-basin-names': (currentRegion === 'Antarctica' && zoom >= 1) || (currentRegion === 'Greenland' && zoom >= 3)
@@ -20,6 +20,7 @@
 		:options="mapOptions"
         @click="onMapClick"
 		@mousemove="onMapMouseMove"  @mouseup="onMapMouseUp"
+		@moveend="syncUrl"
       >		
 		<l-control-scale position="bottomleft" :imperial="false" :metric="true"></l-control-scale>
 		
@@ -1086,15 +1087,16 @@
 
 <script setup>
 // --- IMPORTS ---
-import { ref, computed, nextTick, watch, onMounted, onUnmounted, inject } from 'vue';
+import { ref, shallowRef, computed, nextTick, watch, onMounted, onUnmounted, inject, markRaw } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import "leaflet/dist/leaflet.css";
 import { LMap, LWmsTileLayer, LTileLayer, LCircleMarker, LGeoJson, LControlLayers, LLayerGroup, LControlScale, LRectangle, LTooltip } from "@vue-leaflet/vue-leaflet";
 import axios from 'axios';
-import Plotly from 'plotly.js-dist-min'; 
+//import Plotly from 'plotly.js-dist-min'; 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import L from 'leaflet';
-import domtoimage from 'dom-to-image-more';
+// import L from 'leaflet';
+//import domtoimage from 'dom-to-image-more';
 import * as XLSX from 'xlsx';
 import antarcticaIcon from '../components/icons/antarcticaIcon.vue';
 import greenlandIcon from '../components/icons/greenlandIcon.vue';
@@ -1103,52 +1105,206 @@ import graphIcon from '../components/icons/graphIcon.vue';
 import { generateCitationText } from '../utils/citationsConfig';
 import { startGuestTour } from '../tours/guestTour';
 import VideoModal from '../components/VideoModal.vue';
+import { useHead } from '@unhead/vue'
+const plotlyLib = ref(null)
 
 // --- API CONFIGURATION ---
 import apiClient, { API_URL } from '../api';
 
 // --- PROJ4 SETUP ---
 import proj4 from 'proj4';
-window.proj4 = proj4; // Crucial: proj4leaflet expects proj4 to be globally available in Vite!
-import 'proj4leaflet';
+//window.proj4 = proj4; // Crucial: proj4leaflet expects proj4 to be globally available in Vite!
+//import 'proj4leaflet';
+const L = shallowRef(null);
+const crsGreenland = shallowRef(null)
+const crsAntarctica = shallowRef(null)
+const isMapReady = ref(false)
 
-// 1. Define Greenland Projection (EPSG:3413)
-const crsGreenland = new L.Proj.CRS(
-  'EPSG:3413',
-  '+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
-  {
-    resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-    origin: [-4194304, 4194304]
-  }
-);
-
-// 2. Define Antarctica Projection (EPSG:3031)
-const crsAntarctica = new L.Proj.CRS(
-  'EPSG:3031',
-  '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
-  {
-    resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-    origin: [-4194304, 4194304]
-  }
-);
+// --- SEO --- //
+useHead({
+  title: 'SHIVER | Interactive Timeseries Explorer',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Measure speed change, speed trends and explore time-series of ice velocity data from multiple Earth Observation missions for the Greenland Ice Sheet and Antarctic Ice Sheet.' 
+    }
+  ]
+})
 
 // --- NATIVE GOOGLE ANALYTICS TRACKING ---
 const trackEvent = (eventName, params = {}) => {
-  if (typeof window.gtag === 'function') {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
     window.gtag('event', eventName, params);
-    console.log(`?? GA Event Sent: ${eventName}`, params);
+    console.log(`GA Event Sent: ${eventName}`, params);
   } else {
-    console.log(`?? GA Event Skipped (Not loaded): ${eventName}`);
+    console.log(`GA Event Skipped (Not loaded or server-side): ${eventName}`);
   }
 };
+
+
+// --- URL UPDATE --- //
+const route = useRoute();
+const router = useRouter();
+
+// Sync URL
+const syncUrl = () => {
+  // 1. Get Points
+  const pointStrings = selectedPoints.value.map(pt => {
+    const bufferToUse = pt.buffer || pt.settings?.buffer || pendingBuffer.value;
+    return `${parseFloat(pt.lat).toFixed(4)},${parseFloat(pt.lon).toFixed(4)},${bufferToUse}`;
+  });
+
+  // 2. Get Map View (Safely fallback to current reactive variables)
+  const currentZoom = zoom.value;
+  let currentCenterStr = '';
+  
+  // center.value could be an array [lat, lng] or an object {lat, lng} depending on Leaflet state
+  if (Array.isArray(center.value)) {
+    currentCenterStr = `${parseFloat(center.value[0]).toFixed(4)},${parseFloat(center.value[1]).toFixed(4)}`;
+  } else if (center.value && center.value.lat !== undefined) {
+    currentCenterStr = `${parseFloat(center.value.lat).toFixed(4)},${parseFloat(center.value.lng).toFixed(4)}`;
+  }
+
+  // 3. Construct the query object dynamically
+  const newQuery = {
+    reg: currentRegion.value,
+    z: currentZoom,
+    c: currentCenterStr
+  };
+
+  // Only add 'p' to the URL if there are actually points on the map
+  if (pointStrings.length > 0) {
+    newQuery.p = pointStrings;
+  }
+
+  // 4. Overwrite URL
+  router.replace({
+    path: route.path,
+    query: newQuery
+  });
+};
+
+// Zoom to URL if one has just been copied
+onMounted(async () => {
+  await nextTick(); 
+  
+  // 1. LAZY-LOAD PLOTLY (Safe from the SSG build server)
+  const plotlyModule = await import('plotly.js-dist-min');
+  // Handle potential differences in how the bundler exports the minified module
+  plotlyLib.value = plotlyModule.default || plotlyModule;
+  
+  // 2. Dynamically import Leaflet
+  const leafletModule = await import('leaflet');
+  L.value = leafletModule.default || leafletModule;
+
+  // 3. Now that we are safely in the browser, attach proj4 to the window
+  window.proj4 = proj4;
+
+  // 4. Dynamically import proj4leaflet ONLY AFTER Leaflet and window.proj4 are ready
+  await import('proj4leaflet');
+  
+  // 5 Custom projections
+  crsGreenland.value = markRaw(new L.value.Proj.CRS(
+		'EPSG:3413',
+		'+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
+		{
+		  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
+		  origin: [-4194304, 4194304]
+		}
+   ));
+
+  crsAntarctica.value = markRaw(new L.value.Proj.CRS(
+		'EPSG:3031',
+		'+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs',
+		{
+		  resolutions: [8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
+		  origin: [-4194304, 4194304]
+		}
+   ));
+
+  // 1. DETERMINE THE TRUE REGION FIRST
+  const urlRegion = route.query.reg;
+  const pointsQuery = route.query.p;
+  let targetRegion = 'Greenland'; // Default assumption
+
+  if (urlRegion === 'Greenland' || urlRegion === 'Antarctica') {
+    targetRegion = urlRegion;
+  } else if (pointsQuery) {
+    // If no reg param, infer the region from the first point's latitude
+    const firstPoint = Array.isArray(pointsQuery) ? pointsQuery[0] : pointsQuery;
+    const lat = parseFloat(firstPoint.split(',')[0]);
+    if (!isNaN(lat)) {
+      targetRegion = lat < 0 ? 'Antarctica' : 'Greenland';
+    }
+  }
+  // Set it without triggering a reset
+  currentRegion.value = targetRegion;
+
+  // 2. SET THE MAP VIEW (Zoom & Center)
+  if (route.query.z && route.query.c) {
+    const zParam = parseInt(route.query.z, 10);
+    const [cLat, cLon] = route.query.c.split(',').map(parseFloat);
+    
+    if (!isNaN(zParam) && !isNaN(cLat) && !isNaN(cLon)) {
+       zoom.value = zParam;
+       center.value = [cLat, cLon];
+    }
+  } else {
+    // If no view is in the URL, apply defaults for the target region
+    if (currentRegion.value === 'Greenland') {
+      center.value = [71.394, -40.987]; zoom.value = 1;
+    } else {
+      center.value = [-87.82, 87.09]; zoom.value = 0;
+    }
+  }
+
+  // 3. FLIP THE SWITCH TO RENDER THE MAP
+  // Because zoom and center are set, the map will spawn perfectly aligned!
+  isMapReady.value = true;
+  await nextTick(); 
+
+  // 4. LOAD POINTS
+  if (pointsQuery) {
+    const points = Array.isArray(pointsQuery) ? pointsQuery : [pointsQuery];
+
+    for (const pt of points) {
+      const [latStr, lngStr, bufferStr] = pt.split(',');
+      const lat = parseFloat(latStr);
+      const lng = parseFloat(lngStr);
+      const pointBuffer = bufferStr ? parseInt(bufferStr, 10) : pendingBuffer.value;
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // We already forced the region in Step 1, so this will rarely trip.
+        // But if a URL has mixed Greenland/Antarctica points, it acts as a safeguard.
+        const calculatedRegion = lat < 0 ? 'Antarctica' : 'Greenland';
+        if (currentRegion.value !== calculatedRegion) {
+          currentRegion.value = calculatedRegion;
+          switchRegion(false); 
+        }
+        
+        const safeCustomSettings = {
+            storeType: selectedZarrStore.value,
+            sources: [...pendingSources.value],
+            buffer: pointBuffer,
+            variable: [...pendingVariable.value],
+            quality: [...pendingQuality.value],
+            smoothing: { ...pendingSmoothingParams.value }
+        };
+
+        const newId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        await fetchSinglePoint(newId, lat, lng, COLORS[0], safeCustomSettings); 
+      }
+    }
+  }
+});
 
 
 // --- POINT DRAGGING FUNCTIONS --- //
 // 1. Start Dragging (Attached to Rectangle AND Circle)
 const startPointDrag = (e, index) => {
   // Prevent the click from bubbling to the map (prevents creating a new point)
-  L.DomEvent.stopPropagation(e);
-  L.DomEvent.preventDefault(e);
+  L.value.DomEvent.stopPropagation(e);
+  L.value.DomEvent.preventDefault(e);
 
   // Disable map panning so the map stays still while we move the box
   if (map.value && map.value.leafletObject) {
@@ -1239,6 +1395,7 @@ const onMapMouseUp = async (e) => {
   const hasMoved = Math.abs(point.lat - startLat) > 0.0001 || Math.abs(point.lon - startLon) > 0.0001;
 
   if (hasMoved) {
+	  syncUr(); // update the URL to reflect the new points location
       await fetchSinglePoint(point.id, point.lat, point.lon, point.color, point.settings);
   }
 
@@ -1254,15 +1411,16 @@ const onMapMouseUp = async (e) => {
 const stopPropagation = (e) => {
   // L.DomEvent.stopPropagation works on the native event wrapped inside the Leaflet event
   if (e.originalEvent) {
-    L.DomEvent.stopPropagation(e.originalEvent);
+    L.value.DomEvent.stopPropagation(e.originalEvent);
   } else {
-    L.DomEvent.stopPropagation(e);
+    L.value.DomEvent.stopPropagation(e);
   }
 };
 
 // --- FEEDBACK POPUP STATE ---
 // The main trigger function
 const triggerFeedbackPopup = () => {
+  if (typeof window === 'undefined') return;
   const hasShown = sessionStorage.getItem(STORAGE_KEY);
   if (!hasShown) {
     showFeedbackPopup.value = true;
@@ -1382,7 +1540,7 @@ const getSourceColor = (source) => {
 const makePale = (rgb) => rgb.replace('rgb', 'rgba').replace(')', ', 0.3)');
 
 // --- REACTIVE STATE ---
-const map = ref(null);
+const map = shallowRef(null);
 const currentRegion = ref('Greenland');
 const zoom = ref(1);
 const center = ref([71.394, -40.987]);
@@ -1746,7 +1904,7 @@ const unselectAllSources = () => {
 // These computed properties automatically feed the correct settings to the map 
 // whenever `currentRegion` changes.
 const currentCrs = computed(() => {
-    return currentRegion.value === 'Antarctica' ? crsAntarctica : crsGreenland;
+    return currentRegion.value === 'Antarctica' ? crsAntarctica.value : crsGreenland.value;
 });
 
 
@@ -1768,12 +1926,12 @@ const mapOptions = computed(() => ({
 // Limited use functions
 const MAX_FREE_CLICKS = 5;
 // Initialize from storage (so refreshing the page doesn't reset the count)
-const freeClicksUsed = ref(parseInt(sessionStorage.getItem('shiver_free_clicks') || '0'));
+const freeClicksUsed = typeof window !== 'undefined' ? ref(parseInt(sessionStorage.getItem('shiver_free_clicks') || '0')) : null;
 
 
 // Generic checker function
 const checkAuth = (actionCallback) => {
-  const token = sessionStorage.getItem('shiver_token');
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
   
   if (token) {
     // User is logged in, run the requested action
@@ -1963,7 +2121,8 @@ const updatePlotAxes = () => {
     update['yaxis.autorange'] = false;
   }
 
-  Plotly.relayout(graphDiv, update);
+  //Plotly.relayout(graphDiv, update);
+  plotlyLib.value?.relayout(graphDiv, update);
 };
 
 // --- FUNCTION 3: RESET BUTTON ---
@@ -1975,7 +2134,7 @@ const resetAxes = () => {
   xAxisMin.value = ''; xAxisMax.value = '';
   yAxisMin.value = ''; yAxisMax.value = '';
 
-  Plotly.relayout(graphDiv, {
+  plotlyLib.value?.relayout(graphDiv, {
     'xaxis.autorange': true,
     'yaxis.autorange': true
   });
@@ -2196,17 +2355,23 @@ const qualityLabels = {
 };
 
 // --- REGION MANAGEMENT ---
-const switchRegion = () => {
-  clearAll(); // Remove points when switching context
+const switchRegion = (updateUrl = true) => {
+  clearAll(); 
   
   if (currentRegion.value === 'Greenland') {
-    center.value = [71.394,-40.987]; zoom.value = 1; // 67.133129, -48.900752
+    center.value = [71.394,-40.987]; zoom.value = 1; 
   } else {
-    center.value = [-87.82, 87.09]; zoom.value = 0; // -66.323903, -63.355695
+    center.value = [-87.82, 87.09]; zoom.value = 0; 
   }
   
-  // Force Leaflet to fly to the new center
-  if (map.value && map.value.leafletObject) map.value.leafletObject.setView(center.value, zoom.value);
+  // Force Leaflet to fly to the new center (safe here because map is mounted)
+  if (map.value && map.value.leafletObject) {
+      map.value.leafletObject.setView(center.value, zoom.value);
+  }
+  
+  if (updateUrl) {
+    syncUrl();
+  }
 };
 
 // --- DATA FETCHING & BUFFER LOGIC ---
@@ -2350,7 +2515,7 @@ const refetchAllPoints = async () => {
     };
 	
 	// Auth header injection
-	const token = sessionStorage.getItem('shiver_token');
+	const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
     const config = {};
     if (token) {
         config.headers = { Authorization: `Bearer ${token}` };
@@ -2437,7 +2602,7 @@ const onMapClick = async (e) => {
   }
   
   // Check free tier limit
-  const token = sessionStorage.getItem('shiver_token'); // Check if logged in
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null; // Check if logged in
   if (!token) {
       // If they have already hit the limit
       if (freeClicksUsed.value >= MAX_FREE_CLICKS) {
@@ -2448,7 +2613,9 @@ const onMapClick = async (e) => {
       }
       // Otherwise, count this click
       freeClicksUsed.value++;
-      sessionStorage.setItem('shiver_free_clicks', freeClicksUsed.value);
+	  if (typeof window !== 'undefined') {
+          sessionStorage.setItem('shiver_free_clicks', freeClicksUsed.value);
+      }
       console.log(`Free clicks used: ${freeClicksUsed.value}/${MAX_FREE_CLICKS}`);
   }
   
@@ -2475,8 +2642,8 @@ const onMapClick = async (e) => {
   });
     
   const newId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-  
-  // 4. FETCH
+    
+  // 5. FETCH
   // We pass 'newPointSettings' as the 5th argument so the point is created 
   // with these specific options.
   await fetchSinglePoint(
@@ -2486,6 +2653,9 @@ const onMapClick = async (e) => {
       COLORS[0], // Temporary color (distributeColors will fix it)
       newPointSettings
   );
+  
+  // Format the new point to e.g., "53.38,-1.47" to keep URLs relatively clean
+  syncUrl();
 };
 
 
@@ -2598,7 +2768,7 @@ watch(currentRegion, (newRegion) => {
 const glacierLabelOptions = {
   // Render invisible circle markers so we don't see blue pins
   pointToLayer: (feature, latlng) => {
-    return L.circleMarker(latlng, { radius: 0, opacity: 0, fillOpacity: 0 });
+    return L.value.circleMarker(latlng, { radius: 0, opacity: 0, fillOpacity: 0 });
   },
   // Bind the permanent tooltip using the 'feature' property from your new file
   onEachFeature: (feature, layer) => {
@@ -2729,7 +2899,7 @@ const handleFileUpload = async (event) => {
   formData.append("poly", uploadSettings.smoothing.poly);
   
   // 1. Prepare Headers
-  const token = sessionStorage.getItem('shiver_token');
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
   const config = { headers: {} };
 
     if (token) {
@@ -2788,6 +2958,10 @@ const handleFileUpload = async (event) => {
     statusMessage.value = `Loaded ${addedCount} sites.`;
     updateChart();
     event.target.value = ''; // Reset file input
+	
+	if (addedCount > 0) {
+      syncUrl();
+    }
 
   } catch (error) {
     console.error(error);
@@ -2853,7 +3027,7 @@ const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
     }
 	
 	// 2. Prepare Headers (CORRECT WAY)
-	const token = sessionStorage.getItem('shiver_token');
+	const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
 	const config = { headers: {} };
 	if (token) config.headers['Authorization'] = `Bearer ${token}`; 
   
@@ -2902,7 +3076,20 @@ const refreshPointData = async (point) => {
     await fetchSinglePoint(point.id, point.lat, point.lon, point.color, updatedSettings);
 };
 const removePoint = (id) => { selectedPoints.value = selectedPoints.value.filter(p => p.id !== id); distributeColors(); updateChart(); };
-const clearAll = () => { selectedPoints.value = []; Plotly.purge('velocity-chart'); };
+const clearAll = () => { 
+  // 1. Clear component UI state
+  selectedPoints.value = []; 
+  
+  if (typeof plotlyLib.value !== 'undefined' && plotlyLib.value?.purge) {
+    plotlyLib.value?.purge('velocity-chart'); 
+  }
+  
+  // 2. Clean the URL (keep the region context, but drop the points 'p')
+  router.replace({
+    path: route.path,
+    query: { reg: currentRegion.value }
+  });
+};
 
 
 
@@ -3300,7 +3487,7 @@ const updateChart = async () => {
   
   // Handle empty state
   if (selectedPoints.value.length === 0) { 
-      Plotly.purge('velocity-chart'); 
+      plotlyLib.value?.purge('velocity-chart'); 
       legendItems.value = []; 
       xAxisMin.value = ''; xAxisMax.value = '';
       yAxisMin.value = ''; yAxisMax.value = '';
@@ -3344,7 +3531,7 @@ const updateChart = async () => {
       {
         name: 'custom_download', // Internal name
         title: 'Download Plot (PNG)', // Tooltip text
-        icon: Plotly.Icons.camera,    // Use Plotly's default camera icon
+        icon: plotlyLib.value.Icons.camera,    // Use Plotly's default camera icon
         click: function(gd) { downloadChartImage(); }
       },
 	  {
@@ -3364,7 +3551,9 @@ const updateChart = async () => {
   };
   
   // Render the plot
-  const graphDiv = await Plotly.newPlot('velocity-chart', data, layout, config);
+  if (plotlyLib.value) {
+	const graphDiv = await plotlyLib.value.newPlot('velocity-chart', data, layout, config);
+  }
   
   //Attach listener for axis updates
   if (graphDiv) {
@@ -3385,7 +3574,7 @@ const updateChart = async () => {
     }
 	// Force resize
 	window.requestAnimationFrame(() => {
-        Plotly.Plots.resize(graphDiv);
+        plotlyLib.value.Plots.resize(graphDiv);
     });
   }
 };
@@ -3492,6 +3681,9 @@ const setWaitCursor = (shouldWait) => {
 // CHART IMAGE DOWNLOAD (MULTI-FILE + OPTIMIZED SNAPSHOT)
 const downloadChartImage = async () => {
   if (selectedPoints.value.length === 0) return;
+  
+  const domToImageModule = await import('dom-to-image-more');
+  const domtoimage = domToImageModule.default || domToImageModule;
 
   // 1. Identify Elements
   const chartContainer = document.querySelector('.chart-section'); 
@@ -3537,7 +3729,7 @@ const downloadChartImage = async () => {
         }
 
         // B. Snapshot Plotly Vectors to PNG
-        const plotlyDataUrl = await Plotly.toImage(graphDiv, {
+        const plotlyDataUrl = await plotlyLib.value.toImage(graphDiv, {
             format: 'png',
             width: graphDiv.clientWidth * EXPORT_SCALE,
             height: graphDiv.clientHeight * EXPORT_SCALE,
@@ -3728,7 +3920,7 @@ const downloadChartImage = async () => {
       statusMessage.value = "Chart package downloaded.";
 
       // 6. Log the Download (Backend)
-      const token = sessionStorage.getItem('shiver_token');
+      const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
       if (token && content) {
           apiClient.post('/api/users/log', { 
              interaction_type: 'chart_export', 
@@ -3948,7 +4140,7 @@ const handleDownload = async () => {
     saveAs(content, zipName);
     
     // log downloads
-    const token = sessionStorage.getItem('shiver_token');
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
     if (token) {
         apiClient.post('/api/users/log', {
             interaction_type: 'data_download',
@@ -4094,7 +4286,7 @@ onMounted(async () => {
   await nextTick(); // Wait for the DOM to be ready
 
   // 1. Check for the token directly
-  const token = sessionStorage.getItem('shiver_token');
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
   let hasCompletedTour = false;
 
   // 2. Determine tour status

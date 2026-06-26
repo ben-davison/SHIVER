@@ -2,6 +2,18 @@
 import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import ProjSectionCard from '../../components/ProjSectionCard.vue' 
+// -----------------------------------------------------------------------------------------
+// --- SEO ---------------------------------------------------------------------------------
+import { useHead } from '@unhead/vue'
+useHead({
+  title: 'SHIVER | Projects',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'SHIVER and SHIFT have benefitted from support from several projects including FRAM and SLIDE, and we have been supported by funding from UKRI (NERC) and NSF. Learn more about those projects here.' 
+    }
+  ]
+})
 
 const route = useRoute()
 

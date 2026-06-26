@@ -3,6 +3,19 @@ import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import DocSectionCard from '../../components/DocSectionCard.vue' 
 import DocSectionCardShort from '../../components/DocSectionCardShort.vue' 
+// -----------------------------------------------------------------------------------------
+// --- SEO ---------------------------------------------------------------------------------
+import { useHead } from '@unhead/vue'
+useHead({
+  title: 'SHIVER | Documentation',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Welcome to the technical documentation for SHIFT (SHeffield Ice Flow Tracker) and SHIVER (SHeffield Ice Velocity ExploreR). Select a section below to explore our methodology, data sources, and interactive tools.' 
+    }
+  ]
+})
+
 
 const route = useRoute()
 

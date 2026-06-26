@@ -25,6 +25,19 @@ import LDEOLogo from '../assets/LDEO_logo/LDEO_logo_black.png';
 import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
 import DocSectionCard from '../components/DocSectionCard.vue' 
 import DocSectionCardShort from '../components/DocSectionCardShort.vue' 
+import { useHead } from '@unhead/vue'
+
+// -----------------------------------------------------------------------------------------
+// --- SEO ---------------------------------------------------------------------------------
+useHead({
+  title: 'SHIVER | Home Page',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Explore the flow response of Greenland and Antarctica to climate change. Glacier flow transports ice into the ocean, contributing to global sea level rise. Increases in air and ocean temperature can lead to acceleration of ice flow and faster sea level rise. Therefore, measurements of ice flow are crucial for understanding the response of Greenland and Antarctica to climate change and for monitoring their contribution to sea level rise. In response to this need, researchers have used the abundance of satellite imagery to measure ice sheet flow. SHIVER provides an interactive platform for exploring, visualizing and extracting these measurements, with the aim of accelerating scientific discovery and educating interested parties.' 
+    }
+  ]
+})
 
 // --- NAVIGATION LOGIC ---
 const router = useRouter();

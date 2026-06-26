@@ -18,6 +18,20 @@ import photoSianT from '../assets/people/SianThorpe.jpg';
 import photoAndrewS from '../assets/people/AndrewSole.jpg';
 import photoJonnyK from '../assets/people/JonnyKingslake.jpg';
 
+// -----------------------------------------------------------------------------------------
+// --- SEO ---------------------------------------------------------------------------------
+import { useHead } from '@unhead/vue'
+useHead({
+  title: 'SHIVER | People',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'SHIVER has been developed by a small team of researchers and software engineers at the University of Sheffield.' 
+    }
+  ]
+})
+
+
 // For now, I will use a placeholder function so the code runs immediately
 const getPlaceholderUrl = (name) => `https://ui-avatars.com/api/?name=${name}&background=0D8ABC&color=fff&size=200`;
 
