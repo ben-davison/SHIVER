@@ -30,11 +30,11 @@ else:
     print("Environment: Linux (HPC Production - Multi-Source)")
     DATA_STORES = {
         'Greenland': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_optimized.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_optimized.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_optimized.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_optimized.zarr"), 
             'crs': "EPSG:3031"
         }
     }
@@ -87,6 +87,11 @@ def get_multi_glacier_timeseries(
     gdf = _load_input_to_gdf(location_input)
     if gdf.empty:
         return {"error": "Input file contains no geometries."}
+    
+    # 1b. Limit extraction to ten locations
+    if len(gdf) > 10:
+        gdf = gdf.head(10)
+        results["warning"] = "File contained more than 10 locations. Only the first 10 were extracted."
 
     # 2. Detect Region
     first_geom = gdf.geometry.iloc[0]

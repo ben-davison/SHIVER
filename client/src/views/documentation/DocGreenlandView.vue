@@ -38,14 +38,14 @@ onMounted(() => {
       <p>Our Greenland ice speed data cube is created from fourteen individual data sources:</p>
 	  <ul>
 	    <li><strong>SHIFT:</strong> 12-day snapshots over West Greenland. 2014 to 2026.</li>
-		<li><strong>PROMICE:</strong> 24-day averages, Greenland-wide averages. 2016 to 2025.</li>
+		<li><strong>PROMICE:</strong> 24-day averages, Greenland-wide averages. 2016 to 2026 (updated every ~12 days).</li>
 		<li><strong>MEaSUREs monthly:</strong> Monthly averages, Greenland-wide. 2015 to 2024.</li>
 		<li><strong>MEaSUREs quarterly:</strong> Quarterly averages, Greenland-wide. 2014 to 2024.</li>
 		<li><strong>MEaSUREs winter:</strong> Winter averages, Greenland-wide. 2000 to 2018 most years.</li>
 		<li><strong>MEaSUREs annual:</strong> Annual averages, Greenland-wide. 2015 to 2024.</li>
 		<li><strong>ITS_LIVE annual:</strong> Annual (calendar year) averages, Greenland-wide. 1985 to 2024.</li>
 		<li><strong>Mouginot annual:</strong> Annual (July through June) averages, Greenland-wide. 1972 to 2017.</li>
-		<li><strong>ENVEO annual:</strong> Annual (October through September) averages, Greenland-wide. 2014 to 2018.</li>
+		<li><strong>ENVEO annual:</strong> Annual (October through September) averages, Greenland-wide. 2014 to 2020.</li>
 		<li><strong>ESA CCI winter:</strong> Predominantly winter (varying months) averages, Greenland-wide. 2013 to 2018.</li>
 		<li><strong>ESA CCI ERS-1 (1991-1992):</strong> 1991/1992 winter snapshot, northern and northwestern Greenland.</li>
 		<li><strong>ESA CCI ERS-2 (1995-1996):</strong> 1995/1996 winter snapshot, Greenland margin.</li>
@@ -81,7 +81,7 @@ onMounted(() => {
 	<section id="promice">
       <h2>2.3. PROMICE</h2>
 	  <p>The PROMICE data provide 24-day (two consecutive Sentinel-1 cycles) averages of ice speed over Greenland derived from intensity tracking of Sentinel-1 
-	  image pairs from 2016 to 2025. We use Edition 5 of the PROMICE mosaics here; these mosaics can be downloaded from the
+	  image pairs from 2016 to 2026, with new 24-day averages added every 12 days. We use Edition 5 of the PROMICE mosaics here; these mosaics can be downloaded from the
 	  <AppLink to="https://dataverse.geus.dk/dataset.xhtml?persistentId=doi%3A10.22008%2FFK2%2FK70OPK&version=&q=&fileTypeGroupFacet=&fileAccess=&fileSortField=name&fileSortOrder=desc" target="_blank" rel="noopener" class="text-link">GEUS Dataverse repository</AppLink>. 
 	  The PROMICE velocity processing pipeline is described in detail in <AppLink to="https://essd.copernicus.org/articles/13/3491/2021/" target="_blank" rel="noopener" class="text-link">Solgaard et al. (2021)</AppLink>.</p>
 	  
@@ -229,7 +229,7 @@ onMounted(() => {
 	
 	<section id="enveo_annual">
       <h2>2.10. ENVEO Annual</h2>
-	  <p>The ENVEO annual data provide annual (October through September) averages of ice speed over Greenland derived from a combination of SAR interferometry and intensity and coherence tracking applied to Sentinel-1 image pairs acquired during 2014 to 2018.
+	  <p>The ENVEO annual data provide annual (October through September) averages of ice speed over Greenland derived from a combination of SAR interferometry and intensity and coherence tracking applied to Sentinel-1 image pairs acquired during 2014 to 2020.
 	  The velocity processing pipeline used to produce the mosaics is described in <AppLink to="https://www.sciencedirect.com/science/article/pii/S0034425725004961" target="_blank" rel="noopener" class="text-link">Wuite et al. (2026)</AppLink> 
 	  and the mosaics can be accessed 
 	  <AppLink to="https://cds.climate.copernicus.eu/datasets/satellite-greenland-ice-sheet-velocity?tab=download" target="_blank" rel="noopener" class="text-link">here</AppLink>.</p>

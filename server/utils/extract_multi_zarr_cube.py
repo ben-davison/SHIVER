@@ -30,11 +30,11 @@ if current_os == "Windows" or is_wsl:
 else:
     DATA_STORES = {
         'Greenland': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_cubed.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_cubed.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_cubed.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_cubed.zarr"), 
             'crs': "EPSG:3031"
         }
     }

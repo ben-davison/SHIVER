@@ -17,8 +17,8 @@ if current_os == "Windows" or is_wsl:
     }
 else:
     ZARR_PATHS = {
-        "Antarctica": r"/mnt/grio1/Shared/SHIVER/data/Antarctica/Antarctica_multisource_speed_optimized.zarr",
-        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/Greenland_multisource_speed_optimized.zarr"
+        "Antarctica": r"/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_optimized.zarr",
+        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_optimized.zarr"
     }
 
 
