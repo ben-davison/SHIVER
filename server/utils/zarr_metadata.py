@@ -12,13 +12,13 @@ is_wsl = "WSL_DISTRO_NAME" in os.environ
 if current_os == "Windows" or is_wsl:
     root_drive = "/mnt/r" if is_wsl else "R:"
     ZARR_PATHS = {
-        "Antarctica": f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_optimized.zarr",
-        "Greenland": f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_optimized.zarr"
+        "Antarctica": f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_timeseries.zarr",
+        "Greenland": f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_timeseries.zarr"
     }
 else:
     ZARR_PATHS = {
-        "Antarctica": r"/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_optimized.zarr",
-        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_optimized.zarr"
+        "Antarctica": r"/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_timeseries.zarr",
+        "Greenland": r"/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_timeseries.zarr"
     }
 
 

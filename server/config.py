@@ -13,20 +13,20 @@ if current_os == "Windows" or is_wsl:
     overlay_path_ant = Path(f"{root_drive}/aux_data/overlays/Antarctica")
     landsat_mosaic_path_gr = Path(f"{root_drive}/aux_data/image_mosaic/Greenland/GEE_S2/greenland_tiles_20m")
     SPATIAL_ZARR_PATHS = {
-        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed.zarr"),
-        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed.zarr")
+        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_spatial_200.zarr"),
+        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_spatial_200.zarr")
     }
     TIMESERIES_ZARR_PATHS = {
-        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_optimized.zarr"),
-        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_optimized.zarr")
+        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_timeseries.zarr"),
+        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_timeseries.zarr")
     }
     CUBED_ZARR_PATHS = {
         "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_cubed.zarr"),
         "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_cubed.zarr")
     }
     OMEZARR_PATHS = {
-        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_pyramid.zarr"),
-        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_pyramid.zarr")
+        "Greenland": Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_spatial.zarr"),
+        "Antarctica": Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_spatial.zarr")
     }
     COG_BASE_DIR = {
         "Greenland": Path(f"{root_drive}/aux_data/overlays/Greenland"),
@@ -39,20 +39,20 @@ else:
     overlay_path_ant = Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/overlays")
     landsat_mosaic_path_gr = Path("/mnt/grio1/Shared/SHIVER/data/Greenland/image_mosaic/greenland_tiles_20m")
     SPATIAL_ZARR_PATHS = {
-        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed.zarr"),
-        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed.zarr")
+        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_spatial_200.zarr"),
+        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_spatial_200.zarr")
     }
     TIMESERIES_ZARR_PATHS = {
-        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_optimized.zarr"),
-        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_optimized.zarr")
+        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_timeseries.zarr"),
+        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_timeseries.zarr")
     }
     CUBED_ZARR_PATHS = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_cubed.zarr"),
         "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_cubed.zarr")
     }
     OMEZARR_PATHS = {
-        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_pyramid.zarr"),
-        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_pyramid.zarr")
+        "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_spatial.zarr"),
+        "Antarctica": Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_spatial.zarr")
     }
     COG_BASE_DIR = {
         "Greenland": Path("/mnt/grio1/Shared/SHIVER/data/Greenland/overlays"),
