@@ -20,7 +20,7 @@ const confirmPassword = ref(''); // For registration
 
 // UI States
 // viewMode can be: 'login', 'register', 'reset'
-const viewMode = ref('login'); 
+const viewMode = ref(props.resetToken ? 'confirm-reset' : 'login');
 const isLoading = ref(false);
 const errorMsg = ref('');
 const successMsg = ref('');

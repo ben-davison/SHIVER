@@ -36,32 +36,45 @@ const handleLogout = () => {
 };
 
 
-// --- Redirect to login if needed --- //
+// --- Redirect to login or password reset if needed --- //
 const route = useRoute();
 const router = useRouter();
-// Watch the URL. If it says '?login=required', open the modal
-watch(() => route.query.login, (newVal) => {
-  if (newVal === 'required') {
-    openLoginModal();
-    router.replace({ query: null });  // Clean up the URL so the flag doesn't stay there
-  }
-});
+watch(
+  () => route.query, 
+  (currentQuery) => {
+    // If there are no relevant query parameters, do nothing
+    if (!currentQuery.login && !currentQuery.reset_token) return;
 
-// Watch for a password reset token in the URL
-watch(() => route.query.reset_token, (newToken) => {
-  if (newToken) {
-    // 1. Save the token so we can pass it to the modal
-    resetTokenToPass.value = newToken;
-    
-    // 2. Open the modal
-    showUserLoginModal.value = true;
-    
-    // 3. Clean up the URL so the token doesn't stay in the address bar
-    const query = { ...route.query };
-    delete query.reset_token; // Remove only the token
-    router.replace({ query }); 
-  }
-}, { immediate: true }); // immediate: true ensures this runs immediately on page load
+    let urlNeedsCleanup = false;
+    const nextQuery = { ...currentQuery };
+
+    // 1. Handle '?login=required'
+    if (nextQuery.login === 'required') {
+      openLoginModal();
+      delete nextQuery.login;
+      urlNeedsCleanup = true;
+    }
+
+    // 2. Handle '?reset_token=...'
+    if (nextQuery.reset_token) {
+      resetTokenToPass.value = nextQuery.reset_token;
+      showUserLoginModal.value = true;
+      delete nextQuery.reset_token;
+      urlNeedsCleanup = true;
+    }
+
+    // 3. Clean up the URL in one single action
+    if (urlNeedsCleanup) {
+      // If we deleted all the keys, pass null to remove the '?' entirely
+      const finalQuery = Object.keys(nextQuery).length > 0 ? nextQuery : null;
+      router.replace({ query: finalQuery }).catch(() => {
+        // Catching the promise prevents Vue Router from throwing harmless 
+        // "Navigation cancelled" errors in the console during rapid redirects
+      });
+    }
+  }, 
+  { immediate: true } // Ensures this checks the URL immediately on page load
+);
 
 // --- 2. FOOTER VISIBILITY LOGIC --- //
 // Hide the footer on fullscreen map interfaces
