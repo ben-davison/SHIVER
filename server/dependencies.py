@@ -19,6 +19,9 @@ SECRET_KEY = os.getenv("SECRET_KEY", "fallback_dev_secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
 
+# Uses environment variable if set, otherwise defaults to local Vite server
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://ben-davison.github.io/SHIVER")
+
 # --- EMAIL CONFIGURATION ---
 MAIL_USERNAME = os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")

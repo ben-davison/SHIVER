@@ -1,6 +1,6 @@
 # web/server/utils/email.py
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from dependencies import MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM, MAIL_PORT, MAIL_SERVER
+from dependencies import MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM, MAIL_PORT, MAIL_SERVER, FRONTEND_URL
 import json
 
 conf = ConnectionConfig(
@@ -133,9 +133,8 @@ async def send_dev_error_email(user_email: str, region: str, raw_error: str, pay
         
 
 async def send_password_reset_email(email_to: str, token: str):
-    # CHANGE THIS if your frontend runs on a different port/domain in production
-    frontend_base_url = "http://localhost:5173" 
-    reset_link = f"{frontend_base_url}/reset-password?token={token}"
+    # Pass the token as a query parameter on your main page URL
+    reset_link = f"{FRONTEND_URL}/?reset_token={token}"
 
     html = f"""
     <h3>SHIVER Password Reset</h3>

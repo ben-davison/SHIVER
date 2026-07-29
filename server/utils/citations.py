@@ -4,8 +4,8 @@ from datetime import datetime
 CITATIONS_CONFIG = {
     "common": {
 		  "SHIVER": [
-				"SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX",
-				"SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX",
+				"SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21378057",
+				"SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.21375860",
                 "SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5281/essd.XXXXXXX"
 		  ],
 	},

@@ -100,7 +100,7 @@ def generate_multi_netcdf_cube(
         final_vars.append("data_source")
     if "time_bnds" in ds:
         bnds_dim = [d for d in ds["time_bnds"].dims if d != "time"][0] # Find the boundary dimension (usually 'bnds', 'nv', or 'd2')
-        time_sep = (ds["time_bnds"].isel({bnds_dim: 1}) - ds["time_bnds"].isel({bnds_dim: 0}))-1 # Subtract start time from end time
+        time_sep = (ds["time_bnds"].isel({bnds_dim: 1}) - ds["time_bnds"].isel({bnds_dim: 0})) # Subtract start time from end time
         subset["time_separation"] = (time_sep / np.timedelta64(1, 'D')).astype(float) # Convert timedelta64[ns] directly to float days
         final_vars.append("time_separation")
 
@@ -198,7 +198,7 @@ def generate_multi_netcdf_cube(
             "Data Source": src,
             "First Date": first_date,
             "Last Date": last_date,
-            "Mode Temporal Resolution (days)": mode_res + 1 if isinstance(mode_res, (int, float)) else mode_res,
+            "Mode Temporal Resolution (days)": mode_res if isinstance(mode_res, (int, float)) else mode_res,
             "Epochs (Measurements)": epochs,
             "Citation": clean_cite
         })

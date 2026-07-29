@@ -9,6 +9,7 @@ import AppFooter from './components/AppFooter.vue';
 // This checks if they have logged into their personal account
 const isUserLoggedIn = ref(false);
 const showUserLoginModal = ref(false);
+const resetTokenToPass = ref(null);
 
 // Check for user token on load
 onMounted(() => {
@@ -42,12 +43,25 @@ const router = useRouter();
 watch(() => route.query.login, (newVal) => {
   if (newVal === 'required') {
     openLoginModal();
-    
-    // Clean up the URL so the flag doesn't stay there
-    router.replace({ query: null }); 
+    router.replace({ query: null });  // Clean up the URL so the flag doesn't stay there
   }
 });
 
+// Watch for a password reset token in the URL
+watch(() => route.query.reset_token, (newToken) => {
+  if (newToken) {
+    // 1. Save the token so we can pass it to the modal
+    resetTokenToPass.value = newToken;
+    
+    // 2. Open the modal
+    showUserLoginModal.value = true;
+    
+    // 3. Clean up the URL so the token doesn't stay in the address bar
+    const query = { ...route.query };
+    delete query.reset_token; // Remove only the token
+    router.replace({ query }); 
+  }
+}, { immediate: true }); // immediate: true ensures this runs immediately on page load
 
 // --- 2. FOOTER VISIBILITY LOGIC --- //
 // Hide the footer on fullscreen map interfaces
@@ -70,7 +84,8 @@ const closeMenu = () => { isMenuOpen.value = false; };
     
     <UserLoginModal 
         v-if="showUserLoginModal" 
-        @close="showUserLoginModal = false"
+		:reset-token="resetTokenToPass"
+        @close="showUserLoginModal = false; resetTokenToPass = null"
         @login-success="handleUserLoginSuccess"
     />
 

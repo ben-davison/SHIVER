@@ -1,7 +1,15 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import axios from 'axios'; 
 import { API_URL } from '../api'; 
+
+// 1. Accept the reset token from App.vue
+const props = defineProps({
+  resetToken: {
+    type: String,
+    default: null
+  }
+});
 
 const emit = defineEmits(['close', 'login-success']);
 
@@ -18,12 +26,18 @@ const errorMsg = ref('');
 const successMsg = ref('');
 const showPassword = ref(false);
 
+// 2. Watch for the token prop. If it exists, immediately switch to the confirm-reset view.
+watch(() => props.resetToken, (newToken) => {
+  if (newToken) {
+    switchMode('confirm-reset');
+  }
+}, { immediate: true });
+
 // --- HELPER: RESET STATE WHEN SWITCHING MODES ---
 const switchMode = (mode) => {
   viewMode.value = mode;
   errorMsg.value = '';
   successMsg.value = '';
-  // Keep email if typed, but clear passwords
   password.value = '';
   confirmPassword.value = '';
 };
@@ -103,6 +117,41 @@ const handleResetRequest = async () => {
   }
 };
 
+
+// --- ACTION 4: CONFIRM PASSWORD RESET ---
+const handlePasswordResetConfirm = async () => {
+  if (password.value !== confirmPassword.value) {
+    errorMsg.value = "Passwords do not match.";
+    return;
+  }
+  
+  isLoading.value = true;
+  errorMsg.value = '';
+  successMsg.value = '';
+
+  try {
+    const payload = { 
+      token: props.resetToken, 
+      new_password: password.value 
+    };
+    await axios.post(`${API_URL}/auth/reset-password`, payload);
+    
+    // Switch back to login view and show success
+    switchMode('login');
+    successMsg.value = "Password updated successfully! Please log in with your new password.";
+    
+  } catch (err) {
+    if (err.response && err.response.data && err.response.data.detail) {
+        errorMsg.value = err.response.data.detail; 
+    } else {
+        errorMsg.value = "Failed to reset password. The link may have expired.";
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value;
 };
@@ -138,22 +187,28 @@ const handleMouseUp = (e) => {
       
       <h2 v-if="viewMode === 'login'">User Login</h2>
       <h2 v-else-if="viewMode === 'register'">Create Account</h2>
+	  <h2 v-else-if="viewMode === 'confirm-reset'">Create New Password</h2>
       <h2 v-else>Reset Password</h2>
       
       <p class="subtext" v-if="viewMode === 'login'">Login to access all SHIVER functions.</p>
-      <p class="subtext" v-else-if="viewMode === 'register'">Join SHIVER to access all ice sheet velocity data. <br><br> <strong>Note:</strong> Passwords must be at least 10 characters long, contain at least one letter, at least one number and at least one special character.</p>
+      <p class="subtext" v-else-if="viewMode === 'register' || viewMode === 'confirm-reset'">
+         <strong>Note:</strong> Passwords must be at least 10 characters long, contain at least one letter, at least one number and at least one special character.
+      </p>
       <p class="subtext" v-else>Enter your email to receive a password reset link.</p>
 
       <div v-if="successMsg" class="success-banner">{{ successMsg }}</div>
 
       <form @submit.prevent="
-        viewMode === 'login' ? handleLogin() : 
-        viewMode === 'register' ? handleRegister() : 
-        handleResetRequest()
+			viewMode === 'login' ? handleLogin() : 
+			viewMode === 'register' ? handleRegister() : 
+			viewMode === 'confirm-reset' ? handlePasswordResetConfirm() :
+			handleResetRequest()
       " class="login-form">
         
-        <label>Email</label>
-        <input type="email" v-model="email" required placeholder="name@example.com" class="dark-input">
+        <div v-if="viewMode !== 'confirm-reset'">
+          <label>Email</label>
+          <input type="email" v-model="email" required placeholder="name@example.com" class="dark-input">
+        </div>
         
         <div v-if="viewMode !== 'reset'">
             <label>Password</label>
@@ -177,7 +232,7 @@ const handleMouseUp = (e) => {
             </div>
         </div>
 
-        <div v-if="viewMode === 'register'">
+        <div v-if="viewMode === 'register' || viewMode === 'confirm-reset'">
             <label>Confirm Password</label>
             <input 
                 type="password" 
@@ -194,11 +249,11 @@ const handleMouseUp = (e) => {
           <span v-if="isLoading">Processing...</span>
           <span v-else-if="viewMode === 'login'">Log In</span>
           <span v-else-if="viewMode === 'register'">Create Account</span>
+          <span v-else-if="viewMode === 'confirm-reset'">Update Password</span>
           <span v-else>Send Reset Link</span>
         </button>
 
         <div class="modal-footer">
-            
             <div v-if="viewMode === 'login'">
                 Don't have an account? 
                 <a href="#" class="link-text bold" @click.prevent="switchMode('register')">Register</a>
@@ -209,7 +264,7 @@ const handleMouseUp = (e) => {
                 <a href="#" class="link-text bold" @click.prevent="switchMode('login')">Log In</a>
             </div>
 
-            <button v-if="viewMode === 'reset'" type="button" class="back-btn" @click="switchMode('login')">
+            <button v-if="viewMode === 'reset' || viewMode === 'confirm-reset'" type="button" class="back-btn" @click="switchMode('login')">
                 Back to Log In
             </button>
         </div>
