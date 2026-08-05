@@ -520,10 +520,10 @@
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/dom-to-image-more/dist/dom-to-image-more.min.js?commonjs-es-import": [
-    "/SHIVER/assets/dom-to-image-more.min-Ch_gR2MD.js"
+    "/SHIVER/assets/dom-to-image-more.min-BVHSPmq3.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/dom-to-image-more/dist/dom-to-image-more.min.js?commonjs-module": [
-    "/SHIVER/assets/dom-to-image-more.min-Ch_gR2MD.js"
+    "/SHIVER/assets/dom-to-image-more.min-BVHSPmq3.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/file-saver/dist/FileSaver.min.js?commonjs-es-import": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
@@ -786,25 +786,25 @@
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/leaflet/dist/leaflet-src.js?commonjs-es-import": [
-    "/SHIVER/assets/leaflet-src-mxQ3j80j.js"
+    "/SHIVER/assets/leaflet-src-BQIZYX19.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/leaflet/dist/leaflet-src.js?commonjs-module": [
     "/SHIVER/assets/leaflet-src-D5jDzFjM.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/plotly.js-dist-min/plotly.min.js?commonjs-es-import": [
-    "/SHIVER/assets/plotly.min-BrO6wHfa.js"
+    "/SHIVER/assets/plotly.min-rWJzjX3f.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/plotly.js-dist-min/plotly.min.js?commonjs-module": [
-    "/SHIVER/assets/plotly.min-BrO6wHfa.js"
+    "/SHIVER/assets/plotly.min-rWJzjX3f.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/proj4/lib/index.js?commonjs-proxy": [
-    "/SHIVER/assets/proj4leaflet-G31X2tdO.js"
+    "/SHIVER/assets/proj4leaflet-B-12vgwT.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/proj4leaflet/src/proj4leaflet.js?commonjs-es-import": [
-    "/SHIVER/assets/proj4leaflet-G31X2tdO.js"
+    "/SHIVER/assets/proj4leaflet-B-12vgwT.js"
   ],
   "\u0000/home/runner/work/SHIVER/SHIVER/client/node_modules/proj4leaflet/src/proj4leaflet.js?commonjs-module": [
-    "/SHIVER/assets/proj4leaflet-G31X2tdO.js"
+    "/SHIVER/assets/proj4leaflet-B-12vgwT.js"
   ],
   "\u0000commonjs-dynamic-modules": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
@@ -1131,7 +1131,7 @@
     "/SHIVER/assets/fram_thumb-D2zH6jgs.png",
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
-  "../../../../../../logo/SHIVER_logo_sideview.svg": [
+  "../../../../../../logo/SHIVER_logo_horizontal_v1_white_on_transparent_background_simplified.png": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
     "/SHIVER/assets/UKRI_logo-ChH_alT1.png",
     "/SHIVER/assets/NERC_logo-mQ5gOofu.png",
@@ -5747,7 +5747,7 @@
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
   "node_modules/dom-to-image-more/dist/dom-to-image-more.min.js": [
-    "/SHIVER/assets/dom-to-image-more.min-Ch_gR2MD.js"
+    "/SHIVER/assets/dom-to-image-more.min-BVHSPmq3.js"
   ],
   "node_modules/driver.js/dist/driver.css": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
@@ -6350,7 +6350,7 @@
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
   "node_modules/plotly.js-dist-min/plotly.min.js": [
-    "/SHIVER/assets/plotly.min-BrO6wHfa.js"
+    "/SHIVER/assets/plotly.min-rWJzjX3f.js"
   ],
   "node_modules/proj4/lib/Point.js": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
@@ -12268,7 +12268,7 @@
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
   "node_modules/proj4leaflet/src/proj4leaflet.js": [
-    "/SHIVER/assets/proj4leaflet-G31X2tdO.js"
+    "/SHIVER/assets/proj4leaflet-B-12vgwT.js"
   ],
   "node_modules/shpjs/lib/binaryajax.js": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
@@ -14350,7 +14350,7 @@
     "/SHIVER/assets/fram_thumb-D2zH6jgs.png",
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
-  "src/App.vue?vue&type=style&index=1&scoped=768393c3&lang.css": [
+  "src/App.vue?vue&type=style&index=1&scoped=a8899d19&lang.css": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
     "/SHIVER/assets/UKRI_logo-ChH_alT1.png",
     "/SHIVER/assets/NERC_logo-mQ5gOofu.png",
@@ -20850,7 +20850,7 @@
     "/SHIVER/assets/fram_thumb-D2zH6jgs.png",
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
-  "src/views/MultiSourceMap.vue?vue&type=style&index=0&scoped=bb444075&lang.css": [
+  "src/views/MultiSourceMap.vue?vue&type=style&index=0&scoped=52e062d4&lang.css": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
     "/SHIVER/assets/UKRI_logo-ChH_alT1.png",
     "/SHIVER/assets/NERC_logo-mQ5gOofu.png",
@@ -22670,7 +22670,7 @@
     "/SHIVER/assets/fram_thumb-D2zH6jgs.png",
     "/SHIVER/assets/slide_thumb-CczhkrLq.png"
   ],
-  "src/views/projects/ProjOverviewView.vue?vue&type=style&index=0&scoped=a073270e&lang.css": [
+  "src/views/projects/ProjOverviewView.vue?vue&type=style&index=0&scoped=3c6769e7&lang.css": [
     "/SHIVER/assets/UOSLogo_Primary_MidnightBlack_RGB-By5AWPhv.png",
     "/SHIVER/assets/UKRI_logo-ChH_alT1.png",
     "/SHIVER/assets/NERC_logo-mQ5gOofu.png",
