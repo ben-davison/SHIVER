@@ -22,7 +22,7 @@ class MultiCubeRequest(BaseModel):
     roi_geojson: dict
     date_start: str
     date_end: str
-    variables: List[str] = ["speed", "error"]
+    variables: List[str] = ["speed", "speed_error"]
     sources: List[str] = []
     mode: str = "multi"
     
