@@ -18,11 +18,11 @@ if current_os == "Windows" or is_wsl:
     root_drive = "/mnt/r" if is_wsl else "R:"
     DATA_STORES = {
         'Greenland': {
-            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_timeseries.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/greenland_multisource_velocity_timeseries.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_timeseries.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/antarctica_multisource_velocity_timeseries.zarr"), 
             'crs': "EPSG:3031"
         }
     }
@@ -30,11 +30,11 @@ else:
     print("Environment: Linux (HPC Production - Multi-Source)")
     DATA_STORES = {
         'Greenland': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_timeseries.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/greenland_multisource_velocity_timeseries.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_timeseries.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/antarctica_multisource_velocity_timeseries.zarr"), 
             'crs': "EPSG:3031"
         }
     }
@@ -230,7 +230,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         return _empty_site_response("error", "No valid data or all selected sources masked/NaN")
     
     # Check time separation
-    df['time_separation'] = df['time_separation'] - 1.0
+    #df['time_separation'] = df['time_separation'] - 1.0
     df['time_separation'] = df['time_separation'].apply(lambda x: x if x > 0 else 0.5).fillna(12.0)
     df = df.sort_index()
     

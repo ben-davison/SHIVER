@@ -19,22 +19,22 @@ if current_os == "Windows" or is_wsl:
     root_drive = "/mnt/r" if is_wsl else "R:"
     DATA_STORES = {
         'Greenland': {
-            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/Greenland_multisource_speed_cubed.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/greenland_multisource_velocity_cubed.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/Antarctica_multisource_speed_cubed.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Antarctica/mosaic/subregions/peninsula/antarctica_multisource_velocity_cubed.zarr"), 
             'crs': "EPSG:3031"
         }
     }
 else:
     DATA_STORES = {
         'Greenland': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/Greenland_multisource_speed_cubed.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Greenland/live/greenland_multisource_velocity_cubed.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
-            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/Antarctica_multisource_speed_cubed.zarr"), 
+            'path': Path("/mnt/grio1/Shared/SHIVER/data/Antarctica/live/antarctica_multisource_velocity_cubed.zarr"), 
             'crs': "EPSG:3031"
         }
     }
@@ -144,9 +144,9 @@ def generate_multi_netcdf_cube(
     
     # A. Create the dedicated SHIVER row first
     shiver_citations = (
-        "SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX\n"
-        "SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX\n"
-        "SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5283/essd.XXXXXXX"
+        "SHIVER tool: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
+        "SHIVER zarr compilation method: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
+        "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX"
     )
     
     summary_rows = [{

@@ -92,7 +92,6 @@ onMounted(() => {
 	  
 	  <ProjSectionCard
         title="Roughness modulation of Greenland Ice Sheet hydrology and ice-flow dynamics" 
-        to="https://the-slide-project.github.io/index"
       >
         <template #image>
           <img src="../../assets/documentation/CC.jpg" alt="Cross correlation field from feature tracking">

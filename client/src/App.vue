@@ -105,8 +105,7 @@ const closeMenu = () => { isMenuOpen.value = false; };
     <header>
       <div class="wrapper">
         <RouterLink to="/" class="brand-link" @click="closeMenu">
-          <img src="/logo/SHIVER_logo_sideview.svg" alt="SHIVER Logo" class="brand-logo" />
-          <span class="brand-text">SHIVER</span>
+          <img src="/logo/SHIVER_logo_horizontal_v1_white_on_transparent_background_simplified.png" alt="SHIVER Logo" class="brand-logo" />
         </RouterLink>
 
         <nav class="desktop-nav">
@@ -252,7 +251,7 @@ header {
 .brand-link {
   display: flex;           /* Aligns logo and text side-by-side */
   align-items: center;     /* Centers them vertically */
-  gap: 12px;               /* Adds space between logo and text */
+  gap: 1px;               /* Adds space between logo and text */
   text-decoration: none;   /* Removes underline */
   color: white;
   transition: opacity 0.2s;
@@ -265,7 +264,7 @@ header {
 
 /* Optional: Control logo size specifically */
 .brand-logo {
-  height: 32px;            /* Good size for a 60px header */
+  height: 48px;            /* Good size for a 60px header */
   width: auto;             /* Keeps aspect ratio */
 }
 
