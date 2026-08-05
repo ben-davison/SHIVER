@@ -53,7 +53,7 @@ def generate_multi_netcdf_cube(
     geojson_geometry: dict,
     date_range: tuple[str, str], 
     sources: list[str],
-    variables: list[str] = ["speed", "error"] 
+    variables: list[str] = ["speed", "speed_error"] 
 ) -> tuple[str, str, str, str]:
     """
     Generates a NetCDF file for Multi-Source Zarr data.
@@ -224,7 +224,7 @@ def generate_multi_netcdf_cube(
             subset[var_name].attrs.update({'long_name': "time separation between image pairs in each measurement epoch",'units': "days"})
         elif 'speed' in lower_name:
             subset[var_name].attrs.update({'long_name': "ice surface velocity magnitude", 'units': "m yr-1"})
-        elif 'error' in lower_name:
+        elif 'speed_error' in lower_name:
              subset[var_name].attrs.update({'long_name': "magnitude of ice velocity error", 'units': "m yr-1"})
         elif 'data_source' in lower_name:
              subset[var_name].attrs.update({'long_name': "original satellite data source ID"})

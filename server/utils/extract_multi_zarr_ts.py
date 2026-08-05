@@ -199,12 +199,12 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
 
     # 1. Extraction and Spatial Aggregation 
     if is_single_pixel:
-        df = subset[['speed', 'error', 'data_source', 'time_separation']].to_dataframe()
+        df = subset[['speed', 'speed_error', 'data_source', 'time_separation']].to_dataframe()
         df['valid_count'] = subset['speed'].notnull().astype(int).to_series()
     else:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            spatial_median = subset[['speed', 'error']].median(dim=['x', 'y'])
+            spatial_median = subset[['speed', 'speed_error']].median(dim=['x', 'y'])
         
         valid_count = subset['speed'].notnull().sum(dim=['x', 'y'])
         
@@ -275,7 +275,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
     output_data = {
         # Export as ISO strings so the frontend gets the exact time (e.g., 1986-07-02T06:06:19)
         "dates": full_idx.strftime('%Y-%m-%dT%H:%M:%S').tolist(), 
-        "error": clean_nans(np.round(df_daily['error'].astype(float), 2)),
+        "error": clean_nans(np.round(df_daily['speed_error'].astype(float), 2)),
         "dt": clean_nans(np.round(df_daily['time_separation'].astype(float), 1)),
         "data_source": clean_nans(df_daily['data_source']), 
         "count": df_daily['valid_count'].fillna(0).astype(int).tolist()
