@@ -33,7 +33,7 @@ from utils.extract_zarr_ts import get_glacier_timeseries
 from utils.extract_multi_zarr_ts import get_multi_glacier_timeseries
 from utils.zarr_metadata import load_zarr_metadata, clear_zarr_metadata
 import models
-from routers import auth, cube, multiSourceCube, users, analysis
+from routers import auth, multiSourceCube, users, analysis
 from models import get_db, User, DownloadLog
 from dependencies import get_current_user_optional
 from config import TIFF_PATHS
@@ -143,7 +143,6 @@ app.add_middleware(
 models.Base.metadata.create_all(bind=models.engine)
 
 # --- Activate the new routes ---
-app.include_router(cube.router)
 app.include_router(multiSourceCube.router)
 app.include_router(auth.router)
 app.include_router(users.router)
