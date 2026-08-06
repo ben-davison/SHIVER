@@ -82,6 +82,16 @@ def generate_multi_netcdf_cube(
     # 3. Open Zarr Store (Lazy Load)
     ds = xr.open_zarr(store_info['path'], consolidated=True, chunks={})
     
+    # Handle duplicate times
+    time_series = pd.Series(ds['time'].values)
+    if time_series.duplicated().any():
+        print("Duplicate times detected. Adding nanosecond noise to make them unique...")
+        # cumcount() gives 0 for the first occurrence, 1 for the second, 2 for the third, etc.
+        offsets = time_series.groupby(time_series).cumcount()
+        # Convert offsets to nanosecond timedeltas and add to original times
+        noise = pd.to_timedelta(offsets, unit='ns')
+        ds = ds.assign_coords(time=(time_series + noise).values)
+    
     # 4. Spatial and Temporal Subsetting
     print(f"Subsetting spatially and temporally...")
     buffer = 200 
