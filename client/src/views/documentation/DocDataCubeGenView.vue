@@ -100,11 +100,11 @@ onMounted(() => {
 	  speed. 
 	  </p>
 	  <p>
-	  For each ice sheet, we have two zarr stores. One has a chunk definition optimised for spatial analysis and the other is optimised for 
-	  timeseries analysis.
+	  For each ice sheet, we have three zarr stores. One has a chunk definition optimised for spatial analysis, another is optimised for 
+	  timeseries analysis and another is balanced between the two.
 	  </p>
 	  <p>
-	  Updates to these Zarr stores is not currently automated. We will endeavour to update them as new ice velocity estimates are made available.
+	  Updates to the Greenland Zarr store are automated, though currently only one of the Contributing Datasets (PROMICE) is routinely updated. 
 	  </p>
 	  
 	  <br>
