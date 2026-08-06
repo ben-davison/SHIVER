@@ -109,10 +109,10 @@ def generate_multi_netcdf_cube(
     
     # Add errors to variable list if needed
     if any('vx' in v.lower() for v in variables) and 'vx' in subset:
-        final_vars.append('vx')
+        final_vars.append('vx_error')
     # 7c. Add U error if any U variable is requested
     if any('vy' in v.lower() for v in variables) and 'vy' in subset:
-        final_vars.append('vy')
+        final_vars.append('vy_error')
     # 7d. Add S (Speed) error if any Speed variable is requested
     if any('speed' in v.lower() for v in variables) and 'speed_error' in subset:
         final_vars.append('speed_error')
