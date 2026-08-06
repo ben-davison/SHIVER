@@ -707,22 +707,6 @@
 
 		<div class="controls-body">
 		
-			  <div class="control-card">
-				<label class="section-label">Data Mode</label>
-				<div class="checkbox-grid" style="grid-template-columns: 1fr 1fr;">
-					<label class="checkbox-item" :class="{ 'checked': selectedZarrStore === 'single' }">
-						<input type="radio" value="single" v-model="selectedZarrStore" hidden> 
-						<span class="custom-check" style="border-radius: 50%;"></span>
-						<span class="var-name">SHIFT</span>
-					</label>
-					<label class="checkbox-item" :class="{ 'checked': selectedZarrStore === 'multi' }">
-						<input type="radio" value="multi" v-model="selectedZarrStore" hidden> 
-						<span class="custom-check" style="border-radius: 50%;"></span>
-						<span class="var-name">Multi-Source</span>
-					</label>
-				</div>
-			</div>
-
 			<div class="control-card">
 				<label class="section-label">Time Period</label>
 				<div class="date-row">
@@ -735,24 +719,10 @@
 						<input type="date" v-model="endDate" class="dark-input">
 					</div>
 				</div>
-				
-				<template v-if="selectedZarrStore === 'single'">
-					<label class="section-label mt-3">Frequency</label>
-					<div class="select-wrapper">
-						<select v-model="frequency" class="dark-input full-width">
-							<option value="native">Native (Approx. Weekly)</option>
-							<option value="monthly">Monthly Mean</option>
-							<option value="quarterly">Quarterly Mean</option>
-							<option value="annual">Annual Mean</option>
-						</select>
-					</div>
-				</template>
 			</div>
 
 			<div class="control-card">
-				
-				<template v-if="selectedZarrStore === 'single'">
-					<label class="section-label">Variables</label>
+				    <label class="section-label">Variables</label>
 					<div class="checkbox-scroller">
 						<div class="checkbox-grid">
 							<label v-for="v in availableVariables" :key="v.id" class="checkbox-item" :class="{ 'checked': selectedVariables.includes(v.id) }">
@@ -762,9 +732,9 @@
 							</label>
 						</div>
 					</div>
-				</template>
+			</div>
 
-				<template v-else>
+			<div class="control-card">
 					<div style="display: flex; justify-content: space-between; align-items: center;">
 						<label class="section-label">Data Sources</label>
 						<div style="margin-bottom: 5px;">
@@ -781,9 +751,7 @@
 							</label>
 						</div>
 					</div>
-				</template>
-				
-		  </div>
+			</div>
 
 		  <div class="control-card action-card">
 			<div class="status-area">
@@ -1588,7 +1556,6 @@ const basinOptions = {
 
 // -----------------------------------------------------------------------------------------
 // -- MULTI ZARR --- // -----------------------------------------------------------------------
-const selectedZarrStore = ref('multi'); // Can be 'single' or 'multi'
 // Dictionary of data sources, labelled as stored in the zarr store
 const REGION_SOURCES = {
   'Greenland': [
@@ -1665,32 +1632,23 @@ const unselectAllSources = () => {
 const startDate = ref('2018-01-01');
 const endDate = ref('2018-12-31');
 const frequency = ref('monthly');
-const selectedVariables = ref(['s_filt']);
+const selectedVariables = ref(['speed']);
 
 // Cube limits
 const MAX_AREA_SQKM = 15000; // sq km
 const MAX_DAYS = 366;
 
 const availableVariables = [
-  { id: 's_filt', name: 'Speed (Time-filtered)' },
-  { id: 'u_filt', name: 'U Velocity (Time-filtered)' },
-  { id: 'v_filt', name: 'V Velocity (Time-filtered)' },
-  { id: 's_raw', name: 'Speed (Raw)' },
-  { id: 'u_raw', name: 'U Velocity (Raw)' },
-  { id: 'v_raw', name: 'V Velocity (Raw)' },
+  { id: 'speed', name: 'Speed' },
+  { id: 'vx', name: 'Easting velocity' },
+  { id: 'vy', name: 'Northing velocity' },
 ];
 
 // Computed parameters
 const isReady = computed(() => {
     if (!isRegionDrawn.value) return false;
-    
-    if (selectedZarrStore.value === 'single') {
-        return selectedVariables.value.length > 0;
-    } else {
-        return pendingSources.value.length > 0;
-    }
+	return selectedVariables.value.length > 0 && pendingSources.value.length > 0;
 });
-
 
 
 
@@ -2007,31 +1965,16 @@ const downloadCube = async () => {
       roi_geojson: geometry,
       date_start: startDate.value,
       date_end: endDate.value,
-      mode: selectedZarrStore.value 
+      variables: selectedVariables.value,
+	  sources: pendingSources.value
     };
-
-    // Attach conditional variables
-    if (selectedZarrStore.value === 'single') {
-        payload.variables = selectedVariables.value;
-        payload.frequency = frequency.value;
-    } else {
-        // In multi-source mode, we send the sources. 
-        // Variables are implicitly 'speed' and 'error' in the backend.
-        payload.sources = pendingSources.value; 
-        payload.variables = ['speed', 'error']; 
-    }
 	
 	// Grab the token directly from sessionStorage
     const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
-	
-	// Dynamically point to the new endpoints if desired
-    const endpoint = selectedZarrStore.value === 'single' 
-        ? '/api/cube/download' 
-        : '/api/multiSourceCube/download';
 
     // We request 'blob' because 90% of the time it will be a file.
     // If it is JSON (202 Accepted), we will convert the blob to text manually.
-    const response = await apiClient.post(endpoint, payload, {
+    const response = await apiClient.post('/api/multiSourceCube/download', payload, {
       responseType: 'blob', 
       headers: { 'Authorization': `Bearer ${token}` }
     });

@@ -53,7 +53,7 @@ def generate_multi_netcdf_cube(
     geojson_geometry: dict,
     date_range: tuple[str, str], 
     sources: list[str],
-    variables: list[str] = ["speed", "speed_error"] 
+    variables: list[str] = ["speed", "speed_error", "vx", "vy", "vx_error", "vy_error"] 
 ) -> tuple[str, str, str, str]:
     """
     Generates a NetCDF file for Multi-Source Zarr data.
@@ -94,8 +94,20 @@ def generate_multi_netcdf_cube(
         time=slice(date_range[0], date_range[1])
     )
     
-    # 5. Select variables (Ensure data_source and time boundaries are included)
+    # 5. Select variables 
     final_vars = list(variables) 
+    
+    # Add errors to variable list if needed
+    if any('vx' in v.lower() for v in variables) and 'vx' in subset:
+        final_vars.append('vx')
+    # 7c. Add U error if any U variable is requested
+    if any('vy' in v.lower() for v in variables) and 'vy' in subset:
+        final_vars.append('vy')
+    # 7d. Add S (Speed) error if any Speed variable is requested
+    if any('speed' in v.lower() for v in variables) and 'speed_error' in subset:
+        final_vars.append('speed_error')
+        
+    # Always include data_source and time_bnds
     if "data_source" in ds:
         final_vars.append("data_source")
     if "time_bnds" in ds:
@@ -104,6 +116,7 @@ def generate_multi_netcdf_cube(
         subset["time_separation"] = (time_sep / np.timedelta64(1, 'D')).astype(float) # Convert timedelta64[ns] directly to float days
         final_vars.append("time_separation")
 
+    # Filter the dataset to include only these variables
     vars_to_keep = [v for v in final_vars if v in subset]
     subset = subset[vars_to_keep]
     
@@ -209,7 +222,7 @@ def generate_multi_netcdf_cube(
     # 9. Metadata Check
     if subset.rio.crs is None:
         subset.rio.write_crs(target_crs, inplace=True)
-
+        
     for var_name in subset.variables:
         subset[var_name].attrs['grid_mapping'] = 'spatial_ref'
         
@@ -224,8 +237,16 @@ def generate_multi_netcdf_cube(
             subset[var_name].attrs.update({'long_name': "time separation between image pairs in each measurement epoch",'units': "days"})
         elif 'speed' in lower_name:
             subset[var_name].attrs.update({'long_name': "ice surface velocity magnitude", 'units': "m yr-1"})
+        elif 'vx' in lower_name:
+            subset[var_name].attrs.update({'long_name': "ice surface easting velocity", 'units': "m yr-1"})
+        elif 'vy' in lower_name:
+            subset[var_name].attrs.update({'long_name': "ice surface northing velocity", 'units': "m yr-1"})
         elif 'speed_error' in lower_name:
              subset[var_name].attrs.update({'long_name': "magnitude of ice velocity error", 'units': "m yr-1"})
+        elif 'vx_error' in lower_name:
+             subset[var_name].attrs.update({'long_name': "easting velocity error", 'units': "m yr-1"})
+        elif 'vy_error' in lower_name:
+             subset[var_name].attrs.update({'long_name': "northing velocity error", 'units': "m yr-1"})
         elif 'data_source' in lower_name:
              subset[var_name].attrs.update({'long_name': "original satellite data source ID"})
                

@@ -22,9 +22,8 @@ class MultiCubeRequest(BaseModel):
     roi_geojson: dict
     date_start: str
     date_end: str
-    variables: List[str] = ["speed", "speed_error"]
+    variables: List[str] = ["speed", "speed_error", "vx", "vy", "vx_error", "vy_error"]
     sources: List[str] = []
-    mode: str = "multi"
     
     
 def process_multi_cube(payload: MultiCubeRequest, user_email: str, origin_url: str):
