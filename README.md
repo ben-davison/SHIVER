@@ -6,7 +6,7 @@ __Low-latency access to ice velocity measurements for Greenland and Antarctica__
 
 **SHIVER** is a user-friendly, interactive platform for exploring, visualizing and extracting ice velocity measurements of Greenland and Antarctica.
 
-The velocity datasets incorporated into SHIVER are described in the SHIVER [`Greenland`](https://ben-davison.github.io/SHIVER/#/documentation/greenland) and [`Antarctica`](https://ben-davison.github.io/SHIVER/#/documentation/Antarctica) data source documentation. 
+The velocity datasets incorporated into SHIVER are described in the SHIVER [`Greenland`](https://ben-davison.github.io/SHIVER/documentation/greenland) and [`Antarctica`](https://ben-davison.github.io/SHIVER/documentation/Antarctica) data source documentation. 
 
 You can use SHIVER to:
 
@@ -18,7 +18,7 @@ You can use SHIVER to:
 
 And much more! 
 
-The SHIVER functionality is described in more detail in our [`SHIVER documentation pages`](https://ben-davison.github.io/SHIVER/#/documentation). 
+The SHIVER functionality is described in more detail in our [`SHIVER documentation pages`](https://ben-davison.github.io/SHIVER/documentation/overview). 
 
 Contact: b.j.davison@sheffield.ac.uk & shiver@sheffield.ac.uk
 
