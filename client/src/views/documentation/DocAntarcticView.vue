@@ -72,7 +72,12 @@ onMounted(() => {
 			<img src="../../assets/documentation/antarctica/verification_maps_SHIFT.png" alt="SHIFT data overview">
       </ZoomableFigure>
 	  
-	  See our <AppLink to="/documentation/citation" class="text-link">Citation Documentation</AppLink> for citation details.
+	  <blockquote class="citation-block">
+		Davison, B. J. and Sole, A. J. 2026. SHeffield Ice Flow Tracker (SHIFT) velocity data: Antarctic Peninsula ice surface velocity fields derived from intensity tracking of Sentinel-1 Synthetic Aperture Radar image pairs. [Online]. Available from: https://doi.org/10.15131/shef.data.33113111.v1
+	  </blockquote>
+	  <blockquote class="citation-block">
+		Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492.
+	  </blockquote>
 	  <br>
 	</section>
 	
@@ -284,7 +289,7 @@ onMounted(() => {
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
-		Gardner, A.S., Greene, C.A., Kennedy, J.H., Fahnestock, M.A., Liukis, M., López, L.A., Lei, Y., Scambos, T.A. and Dehecq, A., 2025. ITS_LIVE global glacier velocity data in near-real time. The Cryosphere, 19(9), pp.3517-3533. DOI: https://doi.org/10.5194/tc-19-3517-2025. 
+		Gardner, A.S., Greene, C.A., Kennedy, J.H., Fahnestock, M.A., Liukis, M., LÃ³pez, L.A., Lei, Y., Scambos, T.A. and Dehecq, A., 2025. ITS_LIVE global glacier velocity data in near-real time. The Cryosphere, 19(9), pp.3517-3533. DOI: https://doi.org/10.5194/tc-19-3517-2025. 
 	  </blockquote>
 	  <br>
 	</section>

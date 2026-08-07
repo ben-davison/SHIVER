@@ -481,9 +481,8 @@ const scrollToSection = (sectionId) => {
 			  </p>
 
 			  <p>
-				The result of this process is the <strong>raw date-pair mosaic</strong>: a spatially continuous, calibrated velocity map on a standardized grid. 
-				In the interactive map, this level of data quality is referred to as 'raw' - as you can see from the above processing steps, many filters using spatial 
-				information have been applied, but no time-filtering has been applied.
+				The result of this process is what we term a <strong>raw date-pair mosaic</strong>: a spatially continuous, calibrated velocity map on a standardized grid. 
+				As you can see from the above processing steps, many filters using spatial information have been applied, so it is not truly raw.
 			  </p>
 			  
 				<figure style="text-align: center; margin: 20px 0;">
@@ -493,13 +492,12 @@ const scrollToSection = (sectionId) => {
 					 </figcaption>
 			  </figure>
 			  
-			  <h3>4.6.2. Time-Filtered Mosaics ("Analysis Ready" Data)</h3>
+			  <h3>4.6.2. Time-Filtered Mosaics</h3>
 			  <p>
 				While the "Raw" mosaics provide a spatially continuous view for specific date pairs, we further reduce noise by using time-series information in each spatial cell.
-				In the interactive map, this level of data quality is referred to as 'filt' - it has had outliers removed using both spatial and temporal information.
 			  </p>
 			  <p>
-				To produce our final 'analysis-ready' product, we exploit the high temporal frequency of Sentinel-1. By stacking every available mosaic into a 3D cube 
+				To produce these time-filtered mosaics, we exploit the high temporal frequency of Sentinel-1. By stacking every available mosaic into a 3D cube 
 				(Dimensions: <em>x, y, time</em>), we can analyze the history of every single pixel. This allows us to differentiate between 
 				<strong>transient noise</strong> (random spikes) and <strong>real geophysical signals</strong> (such as seasonal speedups or glacial surges).
 			  </p>
@@ -548,8 +546,8 @@ const scrollToSection = (sectionId) => {
 				Note that we retain the 'raw' mosaics, so we can adapt the temporal filtering as needed. As new image pairs are acquired and new date-pair mosaics are generated,
 				we append them to the raw mosaic stack and re-filter the full time-series every time. 
 				<br><br>
-				The resulting 'stack' of timefiltered, analysis-ready velocity variables are stored as a cloud-optimised, chunked zarr-store, to accelerate 
-				subsequent extraction, analysis and visualisation.
+				SHIVER provides access to our 'raw' mosaics, because in our experience the most suitable filtering step depends on the application and time period studied, so most 
+				researchers prefer to work with data closer to the raw observations. 
 			  </div>
 			  
 			  <figure style="text-align: center; margin: 20px 0;">
@@ -623,7 +621,7 @@ const scrollToSection = (sectionId) => {
 				Guizar-Sicairos, M., Thurman, S.T. and Fienup, J.R., 2008. Efficient subpixel image registration algorithms. Optics letters, 33(2), pp.156-158.
 		  </blockquote>
 		  <blockquote class="citation-block">
-				Lüttig, C., Neckel, N. and Humbert, A., 2017. A combined approach for filtering ice surface velocity fields derived from remote sensing methods. Remote Sensing, 9(10), p.1062.
+				L&uuml;ttig, C., Neckel, N. and Humbert, A., 2017. A combined approach for filtering ice surface velocity fields derived from remote sensing methods. Remote Sensing, 9(10), p.1062.
 		  </blockquote>
 		  <blockquote class="citation-block">
 				Rottmayer, N., Redenbach, C. and Fahrbach, F.O., 2025. A universal and effective variational method for destriping: application to light-sheet microscopy, FIB-SEM, and remote sensing images. Optics Express, 33(3), pp.5800-5809.

@@ -34,6 +34,18 @@ onMounted(() => {
 		  "Ice velocity extracted using the Sheffield Ice Velocity ExploreR (SHIVER; Davison, 2026a,b; Davison et al., 2026) and included the data products detailed in Table X."
 	  </blockquote>
 	  <p>
+	      Where the SHIVER citations are:
+	  </p>
+		  <blockquote class="citation-block">
+			Davison, B. J. (2026a). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
+		  </blockquote>
+		  <blockquote class="citation-block">
+			Davison, B. J. (2026b). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
+		  </blockquote>
+		  <blockquote class="citation-block">
+			Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX"
+		  </blockquote>
+	  <p>
 		   All figures and data generated using SHIVER will be accompanied by an automatically generated table (<strong>citations_summary.csv</strong>) that you can use 
 		   for this purpose. This table will only include citations for the data that your query has intersected. 
 	   </p>
@@ -54,9 +66,9 @@ onMounted(() => {
 			-------------------------<br>
 			If you use this data in a publication, please cite the SHIVER web application, associated paper and the compilation method:<br>
 			<br>
-			* SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX<br>
-			* SHIVER compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX<br>
-			* SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5281/essd.XXXXXXX<br>
+			* SHIVER tool: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
+			* SHIVER data and compilation method: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859<br>
+			* SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX<br>
 			<br>
 			2. ACKNOWLEDGING THE UNDERLYING DATA<br>
 			------------------------------------<br>
@@ -85,7 +97,7 @@ onMounted(() => {
 			<br>
 			* ESA CCI Sentinel-1 (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2019): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn Glacier for 2014-2017 from Sentinel-1 data, v1.1. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/e1c0c34e0cc942898b3626efd1dcc095<br>
 			<br>
-			* SHIFT data: Davison, B. J. and Sole, A. J. (2026). SHIFT Ice Velocity Dataset [Data set]. Figshare. https://doi.org/10.XXXX/figshare.XXXXXXX<br>
+			* SHIFT data: Sole, A. J. and Davison, B. J. 2026. SHeffield Ice Flow Tracker (SHIFT) velocity data: West Greenland ice surface velocity fields derived from intensity tracking of Sentinel-1 Synthetic Aperture Radar image pairs. [Online]. Available from: https://doi.org/10.15131/shef.data.33113009.v1.<br>
 			* SHIFT method: Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492.<br>
 			<br>
 			* ESA CCI Sentinel-2 (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Jakobshavn Glacier between 2017-06-03 and 2017-09-08, generated using Sentinel-2 data, v1.1. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/cfe3102659f34d33b123b2a0043e4068.<br>

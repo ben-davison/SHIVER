@@ -1,4 +1,4 @@
-<script setup>
+ï»¿<script setup>
 import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -111,19 +111,12 @@ onMounted(() => {
 			 symbol.
 		  </p>
           <p>
-		     The advanced options allow you to control which datasets are extracted from our data centre and how they are filtered before being displayed in the chart.
-             You can choose whether to query only our SHIFT dataset or whether to query our 'multi-source' dataset. The multi-source dataset is the default. 
-		   </p>
-		   <p>
-		     When querying the multi-source dataset, you can select which data source(s) to extract. See the <AppLink to="/documentation/greenland"class="text-link">Greenland Data</AppLink> and 
+		     The advanced options allow you to control which variables and contributing datasets and variables are extracted from our data centre and how they are filtered before being displayed in the chart.
+		     See the <AppLink to="/documentation/greenland"class="text-link">Greenland Data</AppLink> and 
 			 <AppLink to="/documentation/antarctic"class="text-link">Antarctic Data</AppLink> documentation pages for details of each data source. 
 		   </p>
 		   <p>
-			 When querying only the SHIFT dataset, you can select which ice velocity variable(s) and processing level(s) to extract. 
-			 See the <AppLink to="/documentation/shift"class="text-link">SHIFT</AppLink> documentation page for details of velocity variables and processing levels.
-		   </p>
-		   <p>
-			 For either dataset, you can modify the parameters used during the ice velocity extraction and filtering. You can adjust the 'buffer' placed around your selection point 
+			 You can modify the parameters used during the ice velocity extraction and filtering. You can adjust the 'buffer' placed around your selection point 
 			 - larger buffers extract data from larger squares around your selection point. You can also adjust the timeseries smoothing parameters, such as the size of data gaps 
 			 to fill and the size of the window used in the time-series smoothing. 
 		   </p>
@@ -142,17 +135,9 @@ onMounted(() => {
             <strong>Variables:</strong>
           </p>
           <ul>
-            <li><strong>S:</strong> Extract speed (horizontal ice surface velocity magnitude).</li>
-            <li><strong>U:</strong> Extract easting velocity (horizontal ice surface easting velocity). Values are positive towards polar stereographic east.</li>
-            <li><strong>V:</strong> Extract northing velocity (horizontal ice surface northing velocity). Values are positive towards polar stereographic north.</li>
-          </ul>
-		  <p>
-            <strong>Processing level:</strong>
-			See the <AppLink to="/documentation/shift#mosaics" class="text-link">Mosaics section of our SHIFT Documentation page</AppLink> for more details.
-          </p>
-          <ul>
-            <li><strong>Raw:</strong> Extract velocity from our 'raw' date-pair velocity mosaics.</li>
-            <li><strong>Time-filtered:</strong> Extract velocity from our 'time filtered' date-pair velocity mosaics.</li>
+            <li><strong>speed:</strong> Extract horizontal ice surface velocity magnitude).</li>
+            <li><strong>vx:</strong> Extract horizontal ice surface easting velocity. Values are positive towards polar stereographic east.</li>
+            <li><strong>vy:</strong> Extract horizontal ice surface northing velocity. Values are positive towards polar stereographic north.</li>
           </ul>
 		  <p>
             <strong>Smoothing parameters:</strong>
@@ -282,15 +267,15 @@ onMounted(() => {
 			<graphIcon class="inline-icon"/> <strong>Download the graph: </strong> 
 			You can download the graph showing your data by clicking the 
 			<graphIcon class="inline-icon"/>
-			button. If one variable or filtering level is selected, this will download a .png of the graph. 
-			If multiple variables or filtering levels are selected, this will download a .zip containing one graph per combination of variable and filtering level.
+			button. This will download a .zip containing .png of the graph (or graphs is multiple variables are selected), along with a .txt file and a .csv detailing how to cite the data presented in the graph(s). 
 		  </p>
 		  <p>
 			<excelIcon class="inline-icon"/> <strong>Download the data: </strong>
 			You can also download your data to an excel spreadsheet by clicking the 
 			<excelIcon class="inline-icon"/>
 			button. This will download a .zip containing one excel file per location
-			along with a geojson of your point location(s).
+			along with a geojson of your point location(s). 
+			The .zip will also contain .txt file and a .csv detailing how to cite the data.
 		  </p>
 		  <p>
             <strong>XLSX naming convention:</strong> <br>
@@ -309,22 +294,19 @@ onMounted(() => {
 		  <p>
             <strong>Point data output variables:</strong>
 			<br>
-			<em>Note: Only "Date", "Error_m_yr", "Time_separation_days", "Pixel_Count", "s_filt" and "data_source" are exported by default. 
-			Other variables can be enabled for download within the Advanced Options menu, depending on whether multi-source queries are selected.</em>
+			<em>Note: Only "Date", "speed_m_yr", "speed_error_m_yr", "time_separation_days", "pixel_count", and "data_source" are exported by default. 
+			Other variables can be enabled for download within the Advanced Options menu, depending on the variables selected.</em>
 		  </p>
           <ul>
             <li><strong>Date:</strong> The central date of the two images used to estimate ice speed.</li>
-            <li><strong>Error_m_yr:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time.</li>
-            <li><strong>Error_U_m_yr:</strong> An estimate of the global uncertainty in easting ice velocity at this time period. Defined as the median absolute easting ice velocity over bedrock regions at that time.</li>
-            <li><strong>Error_V_m_yr:</strong> An estimate of the global uncertainty in northing ice velocity at this time period. Defined as the median absolute northing ice velocity over bedrock regions at that time.</li>
-			<li><strong>Time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
-			<li><strong>Pixel_Count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
-			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
-			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
-			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+            <li><strong>speed_error_m_yr:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the standard deviation of speed over bedrock regions at that time.</li>
+            <li><strong>vx_error_m_yr:</strong> An estimate of the global uncertainty in easting ice velocity at this time period. Defined as the standard deviation of easting ice velocity over bedrock regions at that time.</li>
+            <li><strong>vy_error_m_yr:</strong> An estimate of the global uncertainty in northing ice velocity at this time period. Defined as the standard deviation of northing ice velocity over bedrock regions at that time.</li>
+			<li><strong>time_separation_days:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
+			<li><strong>pixel_count:</strong> The number of valid speed estimates in the extraction location. This will be 1 if buffer=0. Pixel resolution is 200 metres, so the maximum value for e.g. a 500 m buffer is 25 (1000 x 1000 metre region = 5 x 5 pixel region).</li>
+			<li><strong>speed_m_yr:</strong> Horizontal ice surface velocity magnitude in metres per year. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>vx_m_yr:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction). If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>vy_m_yr:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction). If a buffer is used, the median velocity within the resulted area is used.</li>
             <li><strong>data_source:</strong> The data source label corresponding to every measurement epoch.</li>
 
 		  </ul>
@@ -336,12 +318,9 @@ onMounted(() => {
 		  </p>
           <ul>
             <li><strong>Date:</strong> The date of the interpolated velocity.</li>
-			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
-			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable. If a buffer is used, the median speed within the resulted area is used.</li>
-			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
-			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable. If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>speed_m_ye:</strong> Horizontal ice surface velocity magnitude in metres per year. If a buffer is used, the median speed within the resulted area is used.</li>
+			<li><strong>vx_m_yr:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction). If a buffer is used, the median velocity within the resulted area is used.</li>
+			<li><strong>vy_m_yr:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction). If a buffer is used, the median velocity within the resulted area is used.</li>
           </ul>
     </section>
 	
@@ -370,7 +349,7 @@ onMounted(() => {
 		        Mouginot J, Rignot E (2019). Glacier catchments/basins for the Greenland Ice Sheet [Dataset]. Dryad. DOI: 10.7280/D1WT11
 		   </blockquote>
 		   <blockquote class="citation-block">
-		        Mankoff, K.D., Noël, B., Fettweis, X., Ahlstrøm, A.P., Colgan, W., Kondo, K., Langley, K., Sugiyama, S., Van As, D. and Fausto, R.S., 2020. Greenland liquid water discharge from 1958 through 2019. Earth System Science Data, 12(4), pp.2811-2841. DOI: https://doi.org/10.5194/essd-12-2811-2020.
+		        Mankoff, K.D., NoÃ«l, B., Fettweis, X., AhlstrÃ¸m, A.P., Colgan, W., Kondo, K., Langley, K., Sugiyama, S., Van As, D. and Fausto, R.S., 2020. Greenland liquid water discharge from 1958 through 2019. Earth System Science Data, 12(4), pp.2811-2841. DOI: https://doi.org/10.5194/essd-12-2811-2020.
 		   </blockquote>
 		   <blockquote class="citation-block">
 				Mankoff, K. D.: Freshwater runoff, GEUS Dataverse, https://doi.org/10.22008/promice/freshwater, 2020. 		   

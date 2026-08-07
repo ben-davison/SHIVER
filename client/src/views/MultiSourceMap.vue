@@ -731,62 +731,32 @@
 				</div>
 				
 				<div class="card-body custom-scrollbar">
-		  
+
 				<div class="opt-group">
-					<label class="group-label">Data Source Selection</label>
+					<label class="group-label">Variables</label>
 					<div class="checkbox-grid">
-					   <label class="checkbox-pill">
-						 <input type="radio" value="single" v-model="selectedZarrStore"> 
-						 <span>SHIFT</span>
-					   </label>
-					   <label class="checkbox-pill">
-						 <input type="radio" value="multi" v-model="selectedZarrStore"> 
-						 <span>Multi-Source</span>
+					   <label v-for="v in availableVariable" :key="v" class="checkbox-pill">
+						 <input type="checkbox" :value="v" v-model="pendingVariable"> 
+						 <span>{{ v }}</span>
 					   </label>
 					</div>
 				</div>
 				
-				<hr class="divider">
-				
-				<template v-if="selectedZarrStore === 'single'">
-					<div class="opt-group">
-						<label class="group-label">Variables</label>
-						<div class="checkbox-grid">
-						   <label v-for="v in availableVariable" :key="v" class="checkbox-pill">
-							 <input type="checkbox" :value="v" v-model="pendingVariable"> 
-							 <span>{{ v.toUpperCase() }}</span>
-						   </label>
+				<div class="opt-group">
+					<div class="group-header">
+						<label class="group-label">Data Sources</label>
+						<div class="bulk-actions">
+							<button type="button" class="bulk-btn" @click="selectAllSources">Select All</button>
+							<button type="button" class="bulk-btn" @click="unselectAllSources">Unselect All</button>
 						</div>
 					</div>
-
-					<div class="opt-group">
-						<label class="group-label">Processing Level</label>
-						<div class="checkbox-grid">
-						   <label v-for="q in availableQuality" :key="q" class="checkbox-pill">
-							 <input type="checkbox" :value="q" v-model="pendingQuality"> 
-								<span>{{ qualityLabels[q] || q }}</span>
-						   </label>
-						</div>
+					<div class="checkbox-grid">
+					   <label v-for="s in availableSources" :key="s" class="checkbox-pill">
+						 <input type="checkbox" :value="s" v-model="pendingSources"> 
+						 <span>{{ formatSourceName(s) }}</span>
+					   </label>
 					</div>
-				</template>
-				
-				<template v-if="selectedZarrStore === 'multi'">
-					<div class="opt-group">
-						<div class="group-header">
-							<label class="group-label">Data Sources</label>
-							<div class="bulk-actions">
-								<button type="button" class="bulk-btn" @click="selectAllSources">Select All</button>
-								<button type="button" class="bulk-btn" @click="unselectAllSources">Unselect All</button>
-							</div>
-						</div>
-						<div class="checkbox-grid">
-						   <label v-for="s in availableSources" :key="s" class="checkbox-pill">
-							 <input type="checkbox" :value="s" v-model="pendingSources"> 
-							 <span>{{ formatSourceName(s) }}</span>
-						   </label>
-						</div>
-					</div>
-				</template>
+				</div>
 				
 				<hr class="divider">
 		
@@ -1283,11 +1253,9 @@ onMounted(async () => {
         }
         
         const safeCustomSettings = {
-            storeType: selectedZarrStore.value,
             sources: [...pendingSources.value],
             buffer: pointBuffer,
             variable: [...pendingVariable.value],
-            quality: [...pendingQuality.value],
             smoothing: { ...pendingSmoothingParams.value }
         };
 
@@ -1831,7 +1799,6 @@ const dynamicVikStyle = computed(() => {
 
 
 // -- MULTI ZARR ---
-const selectedZarrStore = ref('multi'); // Can be 'single' or 'multi'
 // Dictionary of data sources, labelled as stored in the zarr store
 const REGION_SOURCES = {
   'Greenland': [
@@ -1988,18 +1955,20 @@ const showAdvanced = ref(false);
 // 1. Define Defaults (Single Source of Truth)
 const DEFAULTS = {
   buffer: 500,
-  variable: ['s'],
-  quality: ['filt'],
+  variable: ['speed'],
   smoothing: { gap: 24, win_raw: 1, win_daily: 25, poly: 2 }
 };
 
 // 2. State Definitions 
-const availableVariable = ['s', 'u', 'v'];
-const availableQuality = ['filt', 'raw'];
-const currentPlotVariable = ref('s_filt');    
+const availableVariable = ['speed', 'vx', 'vy'];
+const VARIABLE_LABELS = { 
+  speed: 'Speed', 
+  vx: 'Easting velocity', 
+  vy: 'Northing velocity' 
+};
+const currentPlotVariable = ref(DEFAULTS.variable[0] || 'speed'); 
 const pendingBuffer = ref(DEFAULTS.buffer); 
 const pendingVariable = ref([...DEFAULTS.variable]); 
-const pendingQuality = ref([...DEFAULTS.quality]);
 const pendingSmoothingParams = ref({ ...DEFAULTS.smoothing });
 
 // 3. Restore Defaults
@@ -2007,12 +1976,8 @@ const pendingSmoothingParams = ref({ ...DEFAULTS.smoothing });
 const restoreDefaults = () => {
     // 1. Reset the base plot parameters
     pendingVariable.value = [...DEFAULTS.variable];
-    pendingQuality.value = [...DEFAULTS.quality];
     pendingSmoothingParams.value = { ...DEFAULTS.smoothing };
     pendingBuffer.value = DEFAULTS.buffer;
-
-    // 2. Reset the Zarr Store parameters
-    selectedZarrStore.value = 'multi'; // Reset the toggle choice
     
     // Functionally identical to 'selectAllSources' – grab all available 
     // sources for the currently viewed region and re-check all their boxes.
@@ -2273,28 +2238,30 @@ const smoothingSuffix = computed(() => {
 
 // Computed list of available plots based on USER SELECTION
 const plotOptions = computed(() => {
-    const opts = [];
-    pendingVariable.value.forEach(v => { // 1. Iterate only through the user's SELECTED variables
-        pendingQuality.value.forEach(q => { // 2. Iterate only through the user's SELECTED qualities
-            const labelMap = { s: 'Speed', u: 'Velocity U', v: 'Velocity V' };
-            const typeMap = { filt: '(Filtered)', raw: '(Raw)' };
-            // 3. Create option only if both parts are selected
-            opts.push({ 
-                val: `${v}_${q}`, 
-                label: `${labelMap[v]} ${typeMap[q]}` 
-            });
-        });
-    });
-    return opts;
+  return pendingVariable.value.map(v => ({
+    val: v,
+    label: VARIABLE_LABELS[v] || v
+  }));
 });
 
 // Ensure currentPlotVariable is valid; if not, reset
 watch(plotOptions, (newOpts) => {
-    if (newOpts.length > 0 && !newOpts.find(o => o.val === currentPlotVariable.value)) {
-        currentPlotVariable.value = newOpts[0].val;
-        updateChart();
-    }
-}, { deep: true });
+  // Edge case: User unchecked all variables
+  if (newOpts.length === 0) {
+    currentPlotVariable.value = null;
+    updateChart(); 
+    return;
+  }
+
+  // Check if the currently selected plot variable is still in the options array
+  const isValid = newOpts.some(opt => opt.val === currentPlotVariable.value);
+
+  // If it's no longer valid (user unchecked it), fallback to the first available option
+  if (!isValid) {
+    currentPlotVariable.value = newOpts[0].val;
+    updateChart();
+  }
+});
 
 // Dynamic label for the download button
 const xlsxDownloadLabel = computed(() => selectedPoints.value.length > 1 ? 'Download all data (.zip)' : 'Download data (.xlsx)');
@@ -2349,11 +2316,6 @@ const maxTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '2.5'
 const minTrendLabel = computed(() => currentRegion.value === 'Greenland' ? '-2.5' : '-15');
 const maxCountLabel = computed(() => currentRegion.value === 'Greenland' ? '750' : '200');
 
-const qualityLabels = {
-  'filt': 'Time-filtered',
-  'raw':  'Raw Data'  // (Optional: Makes "raw" look nicer too)
-};
-
 // --- REGION MANAGEMENT ---
 const switchRegion = (updateUrl = true) => {
   clearAll(); 
@@ -2383,32 +2345,17 @@ const debouncedRefetch = () => {
 
 
 const applyAdvancedOptions = async () => {
-  // 1. Validation
-  if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
-      alert("Warning: You must select at least one Variable and one Processing Level.");
-      return; 
-  }
-  
-  // 1. Validation (Conditional based on storeType)
-  if (selectedZarrStore.value === 'single') {
-      if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
-          alert("Warning: You must select at least one Variable and one Processing Level.");
-          return; 
-      }
-  } else if (selectedZarrStore.value === 'multi') {
-      if (pendingSources.value.length === 0) {
-          alert("Warning: Please select at least one Data Source.");
-          return;
-      }
+  // 1. Validation 
+  if (pendingSources.value.length === 0 || pendingVariable.value.length === 0) {
+      alert("Warning: Please select at least one Data Source and one variable.");
+      return;
   }
 
   // 2. Define the "Target" Settings
   const targetSettings = {
-      storeType: selectedZarrStore.value,
       sources: [...pendingSources.value],
       buffer: pendingBuffer.value,
       variable: pendingVariable.value,
-      quality: pendingQuality.value,
       smoothing: pendingSmoothingParams.value
   };
 
@@ -2418,24 +2365,16 @@ const applyAdvancedOptions = async () => {
       const current = point.settings || {}; 
 
       // A. Fundamental Parameters Changed? (Store, Buffer, or Smoothing)
-      if (current.storeType !== targetSettings.storeType) return true;
       if (current.buffer !== targetSettings.buffer) return true;
       if (JSON.stringify(current.smoothing) !== JSON.stringify(targetSettings.smoothing)) return true;
 
-      if (targetSettings.storeType === 'multi') {
-          // B. Multi-Source Check: Did the user add or remove a data source?
-          const missingSource = targetSettings.sources.some(s => !(current.sources || []).includes(s));
-          if (missingSource) return true;
-		  const removedSource = (current.sources || []).some(s => !targetSettings.sources.includes(s));
-          if (removedSource) return true;
-      } else {
-          // C. Single-Source Check: Did the user add a new Variable or Quality?
-          const missingVariable = targetSettings.variable.some(v => !(current.variable || []).includes(v));
-          if (missingVariable) return true;
-
-          const missingQuality = targetSettings.quality.some(q => !(current.quality || []).includes(q));
-          if (missingQuality) return true;
-      }
+	  // B. Multi-Source Check: Did the user add or remove a data source?
+	  const missingSource = targetSettings.sources.some(s => !(current.sources || []).includes(s));
+	  if (missingSource) return true;
+	  const removedSource = (current.sources || []).some(s => !targetSettings.sources.includes(s));
+	  if (removedSource) return true;
+	  const missingVariable = targetSettings.variable.some(v => !(current.variable || []).includes(v));
+	  if (missingVariable) return true;
 
       return false; // Point is compatible (it's a superset or exact match)
   });
@@ -2473,21 +2412,17 @@ const refetchAllPoints = async () => {
   statusMessage.value = "Updating all points...";
 
   // 1. Prepare the Global Settings (The "New" State)
-  const useStoreType = selectedZarrStore.value;
   const useSources = [...pendingSources.value];
   const useBuffer = pendingBuffer.value;
   const useVariable = pendingVariable.value;     
-  const useQuality = pendingQuality.value; 
   const useSmoothing = { ...pendingSmoothingParams.value }; 
   
   // Define newSettings ---
   // We package these together so we can save them into the point later
   const newSettings = {
-    storeType: useStoreType,
     sources: useSources,
     buffer: useBuffer,
     variable: useVariable,
-    quality: useQuality,
     smoothing: useSmoothing
   };
 
@@ -2507,7 +2442,6 @@ const refetchAllPoints = async () => {
       roi: roiList, 
       buffer: useBuffer,
       variable: useVariable,
-      quality: useQuality,
       gap_fill: useSmoothing.gap,
       win_raw: useSmoothing.win_raw,
       win_daily: useSmoothing.win_daily,
@@ -2521,19 +2455,12 @@ const refetchAllPoints = async () => {
         config.headers = { Authorization: `Bearer ${token}` };
     }
 
-    // 4. Conditionally Route the Batch Request
-    let endpointUrl = '';
-    if (useStoreType === 'multi') {
-        endpointUrl = '/api/timeseries/multi/json';
-        payload.sources = useSources;
-    } else {
-        endpointUrl = '/api/timeseries/json';
-        payload.variable = useVariable; 
-        payload.quality = useQuality;
-    }
+    // 4. Set payload extras
+	payload.sources = useSources;
+	payload.variable = useVariable; 
 	
       // 5. Single Batch Request
-      const response = await apiClient.post(endpointUrl, payload);
+      const response = await apiClient.post('/api/timeseries/multi/json', payload);
       const responseData = response.data;
 
     // 5. Map Response back to Points
@@ -2588,17 +2515,10 @@ const onMapClick = async (e) => {
     return;
   }
   
-  // conditional validation: Ensure user hasn't deselected required menu items
-  if (selectedZarrStore.value === 'single') {
-      if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
-          alert("Warning: Please select at least one Variable and Processing Level in Advanced Options.");
-          return;
-      }
-  } else if (selectedZarrStore.value === 'multi') {
-      if (pendingSources.value.length === 0) {
-          alert("Warning: Please select at least one Data Source.");
-          return;
-      }
+  // Validation: Ensure user hasn't deselected required menu items
+  if (pendingSources.value.length === 0 || pendingVariable.value.length === 0) {
+	  alert("Warning: Please select at least one Data Source and variable.");
+	  return;
   }
   
   // Check free tier limit
@@ -2623,11 +2543,9 @@ const onMapClick = async (e) => {
   // Instead of updating global state, we create a specific settings object 
   // for THIS new point based on the current menu state.
   const newPointSettings = {
-      storeType: selectedZarrStore.value,   
       sources: [...pendingSources.value],
       buffer: pendingBuffer.value,
       variable: [...pendingVariable.value],
-      quality: [...pendingQuality.value],
       smoothing: { ...pendingSmoothingParams.value }
   };
   
@@ -2851,28 +2769,18 @@ const handleFileUpload = async (event) => {
     region: currentRegion.value,
   });
   
-  // 1. Validation (Conditional based on storeType)
-  if (selectedZarrStore.value === 'single') {
-      if (pendingVariable.value.length === 0 || pendingQuality.value.length === 0) {
-          alert("Warning: Please select at least one Variable and Processing Level in Advanced Options before uploading.");
-          event.target.value = ''; 
-          return;
-      }
-  } else if (selectedZarrStore.value === 'multi') {
-      if (pendingSources.value.length === 0) {
-          alert("Warning: Please select at least one Data Source before uploading.");
-          event.target.value = '';
-          return;
-      }
+  // 1. Validation 
+  if (pendingSources.value.length === 0 || pendingVariable.value.length === 0) {
+	  alert("Warning: Please select at least one Data Source and variable before uploading.");
+	  event.target.value = '';
+	  return;
   }
 
   // 2. Prepare Settings Snapshot (Crucial for chart to work!)
   const uploadSettings = {
-      storeType: selectedZarrStore.value,
       sources: [...pendingSources.value],
       buffer: pendingBuffer.value,
       variable: [...pendingVariable.value],       
-      quality: [...pendingQuality.value], 
       smoothing: { ...pendingSmoothingParams.value } 
   };
 
@@ -2883,14 +2791,9 @@ const handleFileUpload = async (event) => {
   formData.append("file", file);
   formData.append("buffer", uploadSettings.buffer);
   
-  if (uploadSettings.storeType === 'multi') {
-      // Append multi-source arrays
-      uploadSettings.sources.forEach(s => formData.append("sources", s));
-  } else {
-      // Append single-source arrays
-      uploadSettings.variable.forEach(v => formData.append("variable", v));
-      uploadSettings.quality.forEach(q => formData.append("quality", q));
-  }
+  // Append multi-source arrays
+  uploadSettings.sources.forEach(s => formData.append("sources", s));
+  uploadSettings.variable.forEach(v => formData.append("variable", v));
   
   // Append smoothing
   formData.append("gap_fill", uploadSettings.smoothing.gap);
@@ -2905,16 +2808,11 @@ const handleFileUpload = async (event) => {
     if (token) {
 	    config.headers['Authorization'] = `Bearer ${token}`;
     }
-	
-	// 5. Determine the Upload Endpoint
-    const endpointUrl = uploadSettings.storeType === 'multi' 
-        ? `${API_URL}/api/timeseries/multi/upload` 
-        : `${API_URL}/api/timeseries/upload`;
 
   try {
   
 	// ping backend
-	const response = await axios.post(endpointUrl, formData, config);
+	const response = await axios.post(`${API_URL}/api/timeseries/multi/upload`, formData, config);
 	
 	// read results
     const results = response.data;
@@ -2982,11 +2880,9 @@ const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
   // If customSettings is null (New Point Click), snapshot the current Advanced Options.
   // If customSettings exists (Refresh or Mass Update), use those.
   const settings = customSettings || {
-      storeType: selectedZarrStore.value,
       sources: [...pendingSources.value],
       buffer: pendingBuffer.value,
       variable: [...pendingVariable.value],
-      quality: [...pendingQuality.value],
       smoothing: { ...pendingSmoothingParams.value }
   };
   
@@ -2996,7 +2892,7 @@ const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
 	  event_label: "data_fetch",
 	  buffer: settings.buffer,
       variable: settings.variable,
-      quality: settings.quality,
+      quality: "raw",
       region: currentRegion.value,
 	  lat: lat,
 	  lon: lon
@@ -3008,32 +2904,20 @@ const fetchSinglePoint = async (id, lat, lon, color, customSettings = null) => {
         roi: [[lat, lon]], 
         buffer: settings.buffer,
         variable: settings.variable, 
-        quality: settings.quality,
         gap_fill: settings.smoothing.gap,
         win_raw: settings.smoothing.win_raw,
         win_daily: settings.smoothing.win_daily,
-        poly: settings.smoothing.poly
+        poly: settings.smoothing.poly,
+		sources: settings.sources
     };
-	
-	// Define the endpoint URL
-	let endpointUrl = '';
-    if (settings.storeType === 'multi') {
-        endpointUrl = '/api/timeseries/multi/json';
-        payload.sources = settings.sources;
-    } else {
-        endpointUrl = '/api/timeseries/json';
-        payload.variable = settings.variable; 
-        payload.quality = settings.quality;
-    }
 	
 	// 2. Prepare Headers (CORRECT WAY)
 	const token = typeof window !== 'undefined' ? sessionStorage.getItem('shiver_token') : null;
 	const config = { headers: {} };
 	if (token) config.headers['Authorization'] = `Bearer ${token}`; 
   
-	
 	// Request 
-    const response = await apiClient.post(endpointUrl, payload, config);
+    const response = await apiClient.post('/api/timeseries/multi/json', payload, config);
     const rawData = response.data;
     const firstKey = Object.keys(rawData)[0];
     const siteData = rawData[firstKey];
@@ -3068,7 +2952,7 @@ const refreshPointData = async (point) => {
     // Construct settings using the point's existing variables/smoothing
     // but the new buffer from the input box.
     const updatedSettings = {
-        ...point.settings, // Copy old variable, quality, smoothing
+        ...point.settings, // Copy old variable, smoothing
         buffer: point.buffer // Use the new buffer value
     };
     
@@ -3106,10 +2990,11 @@ const maxChartDate = computed(() => {
 // Set a static hard floor for how far back they can look
 const minChartDate = '1950-01-01';
 
-// BUILD CHART DATA (Returns {data, layout} for a given quality level)
+// BUILD CHART DATA (Returns {data, layout})
 const buildChartConfig = (plotKey) => {
   const traces = [];
   const renderedSources = new Set();
+  
   // Track min/max to tightly bind the axes to valid data only
   let globalMinX = null;
   let globalMaxX = null;
@@ -3118,212 +3003,162 @@ const buildChartConfig = (plotKey) => {
   
   // Reset Legend Items
   legendItems.value = [];
-  
-  // 1. PREPARE KEYS FOR FILTERING
-  // Split 's_filt' into 's' and 'filt'
-  const [targetVariable, targetQuality] = plotKey.split('_'); 
 
   selectedPoints.value.forEach((point, idx) => {
-    // A. DATA EXISTENCE CHECK (Existing)
-    if (point.data.status === 'error' || !point.data.data) return;
+    // A. DATA EXISTENCE CHECK
+    if (point.data?.status === 'error' || !point.data?.data) return;
     
-    // Check if this is a multi-source point
-    const settings = point.settings || { variable: [], quality: [], storeType: 'single' };
-    const isMulti = settings.storeType === 'multi';
+    const settings = point.settings || { variable: [] };
     const rootData = point.data.data;
     
-    let isEnabled = false;
-    let varData = null;
-    let activeErrorArray = null;
-
     // B. SETTINGS CHECK & DATA MAPPING
-    if (isMulti) {
-        // Multi-source data only has speed. 
-        // Skip plotting this point if the chart is set to Easting (u) or Northing (v)
-        if (!plotKey.startsWith('s')) return; 
+    // Ensure this variable was selected in point settings and exists in payload
+    const isEnabled = Array.isArray(settings.variable) && settings.variable.includes(plotKey); 
+    if (!isEnabled || !rootData[plotKey]) return;
 
-        isEnabled = true; // Always enabled if we are on a speed chart
-        varData = rootData.speed; // Payload contains data.speed.raw and data.speed.smoothed
-        activeErrorArray = rootData.error; // Payload error array
-    } else {
-        // Single-source logic
-        isEnabled = settings.variable.includes(targetVariable) && 
-                    settings.quality.includes(targetQuality);
+    const varData = rootData[plotKey]; // Contains { raw: [], smoothed: [] }
+    const activeErrorArray = rootData[`${plotKey}_error`] || rootData.speed_error || [];
 
-        if (!rootData[plotKey] || !isEnabled) return;
-        varData = rootData[plotKey];
-        
-        activeErrorArray = rootData.error; // Default to Speed
-        if (plotKey.startsWith('u')) activeErrorArray = rootData.error_u || rootData.error;
-        else if (plotKey.startsWith('v')) activeErrorArray = rootData.error_v || rootData.error;
-    }
-
-    if (!varData) return; // Safety check
-    
     // Setup styles
     const pale = makePale(point.color);
-    const label = /^Site_\d+$/.test(point.name) ? `Site${idx+1}` : point.name;
-    const suffix = plotKey.includes('raw') ? '' : '';
-    
-    // Check visibility (Default to true if undefined)
+    const label = /^Site_\d+$/.test(point.name) ? `Site${idx + 1}` : point.name;
     const isVisible = point.visible !== false;
     
     // --- PREPARE HOVER DATA ---
-    // Zip count, dt, error, and data_source together
     const customData = rootData.count.map((c, i) => [
-        c, 
-        rootData.dt ? rootData.dt[i] : null, 
-        activeErrorArray ? activeErrorArray[i] : null,
-        isMulti && rootData.data_source ? rootData.data_source[i] : 'N/A' // Inject source!
+      c, 
+      rootData.dt ? rootData.dt[i] : null, 
+      activeErrorArray ? activeErrorArray[i] : null,
+      rootData.data_source ? rootData.data_source[i] : 'N/A'
     ]);
     
-    // Build Dynamic Hover Template
-    let hoverTemplate = 
-        `<b>Date</b>: %{x|%Y-%m-%d}<br>` +
-        `<b>Value</b>: %{y:.1f} &plusmn; %{customdata[2]:.1f} m/yr<br>` + 
-        `<b>Pixels</b>: %{customdata[0]}<br>` +
-        `<b>dt</b>: %{customdata[1]} days`;
+    // Dynamic Hover Template
+    const hoverTemplate = 
+      `<b>Date</b>: %{x|%Y-%m-%d}<br>` +
+      `<b>Value</b>: %{y:.1f} &plusmn; %{customdata[2]:.1f} m/yr<br>` + 
+      `<b>Pixels</b>: %{customdata[0]}<br>` +
+      `<b>dt</b>: %{customdata[1]} days<br>` +
+      `<b>Source</b>: %{customdata[3]}` +
+      `<extra></extra>`;
     
-    // Add the Data Source to the tooltip if it's a multi-source point
-    if (isMulti) {
-        hoverTemplate += `<br><b>Source</b>: %{customdata[3]}`;
-    }
-    hoverTemplate += `<extra></extra>`;
-	
-	// --- COLOR BY SOURCE LOGIC ---
-    if (isMulti && colorBySource.value) {
-        // Group the data by data source
-        const sourceGroups = {};
+    // --- COLOR BY SOURCE LOGIC ---
+    if (colorBySource.value) {
+      const sourceGroups = {};
+      
+      rootData.dates.forEach((dateStr, i) => {
+        const rawValue = varData.raw[i];
+        if (rawValue === null || rawValue === undefined || rawValue === 'NaN' || Number.isNaN(Number(rawValue))) return;
         
-        rootData.dates.forEach((dateStr, i) => {
-            const rawSpeed = varData.raw[i];
-            if (rawSpeed === null || rawSpeed === undefined || rawSpeed === 'NaN' || Number.isNaN(Number(rawSpeed))) return;
-			
-			// --- Track min and max ---
-            const cTime = new Date(dateStr).getTime();
-            if (globalMinX === null || cTime < globalMinX) globalMinX = cTime;
-            if (globalMaxX === null || cTime > globalMaxX) globalMaxX = cTime;
-            if (rawSpeed < globalMinY) globalMinY = rawSpeed;
-            if (rawSpeed > globalMaxY) globalMaxY = rawSpeed;
-            
-            // Note: Make sure rootData.data_source actually exists in your backend payload!
-            const source = rootData.data_source ? rootData.data_source[i] : 'Unknown';
-            if (!sourceGroups[source]) {
-                sourceGroups[source] = { x: [], y: [], dt: [], error: [], custom: [] };
-            }
-            
-            sourceGroups[source].x.push(new Date(dateStr));
-            sourceGroups[source].y.push(rawSpeed);
-            //sourceGroups[source].dt.push(rootData.dt ? rootData.dt[i] : 0);
-			sourceGroups[source].dt.push(rootData.dt && rootData.dt[i] !== null ? Number(rootData.dt[i]) + 0 : 0);
-            sourceGroups[source].error.push(activeErrorArray ? activeErrorArray[i] : 0);
-            sourceGroups[source].custom.push(customData[i]);
-        });
-
-        // Create the segmented traces for each source
-        Object.keys(sourceGroups).forEach(source => {
-            const group = sourceGroups[source];
-            const sColor = getSourceColor(source);
-            const sPale = makePale(sColor);
-            
-            // 1. Horizontal Bars for this specific satellite source (hX, hY)
-            const hX = [], hY = [];
-            group.x.forEach((dateObj, idx) => {
-                const dtDays = group.dt[idx];
-                if (dtDays > 0) {
-                    const cTime = dateObj.getTime();
-                    const halfMs = (dtDays / 2) * 86400000;
-                    hX.push(new Date(cTime - halfMs), new Date(cTime + halfMs), null);
-                    hY.push(group.y[idx], group.y[idx], null);
-                }
-            });
-
-            traces.push({
-                x: hX, y: hY, mode: 'lines', type: 'scatter', showlegend: false,
-                hoverinfo: 'skip', legendgroup: source, visible: isVisible,
-                line: { color: sPale, width: 2 }
-            });
-
-            // 2. Scatter / Vertical Error for this specific satellite source
-            const isNewSourceInLegend = !renderedSources.has(source);
-            if (isNewSourceInLegend) renderedSources.add(source);
-
-            traces.push({
-                x: group.x, y: group.y, mode: 'markers', type: 'scatter',
-                name: source, 
-                showlegend: isNewSourceInLegend, // Only add source to legend once!
-                legendgroup: source, visible: isVisible,
-                marker: { color: sPale, size: 5, line: { width: 1, color: sColor } },
-                error_y: { type: 'data', array: group.error, visible: true, color: sPale, thickness: 1, width: 0 },
-                customdata: group.custom,
-                hovertemplate: hoverTemplate
-            });
-        });
-
-    } else {
-        // --- COLOR BY SITE LOGIC ---
+        // Track min and max
+        const cTime = new Date(dateStr).getTime();
+        if (globalMinX === null || cTime < globalMinX) globalMinX = cTime;
+        if (globalMaxX === null || cTime > globalMaxX) globalMaxX = cTime;
+        if (rawValue < globalMinY) globalMinY = rawValue;
+        if (rawValue > globalMaxY) globalMaxY = rawValue;
         
-        // Horizontal Error Bars (hBarX, hBarY)
-        const hBarX = [];
-        const hBarY = [];
+        const source = rootData.data_source ? rootData.data_source[i] : 'Unknown';
+        if (!sourceGroups[source]) {
+          sourceGroups[source] = { x: [], y: [], dt: [], error: [], custom: [] };
+        }
+        
+        sourceGroups[source].x.push(new Date(dateStr));
+        sourceGroups[source].y.push(rawValue);
+        sourceGroups[source].dt.push(rootData.dt && rootData.dt[i] !== null ? Number(rootData.dt[i]) : 0);
+        sourceGroups[source].error.push(activeErrorArray ? activeErrorArray[i] : 0);
+        sourceGroups[source].custom.push(customData[i]);
+      });
 
-        rootData.dates.forEach((dateStr, i) => {
-            const rawSpeed = varData.raw[i];
-            const dtDays = rootData.dt ? rootData.dt[i] : 0;
-			
-			// skip nans
-			if (rawSpeed === null || rawSpeed === undefined || rawSpeed === 'NaN' || Number.isNaN(Number(rawSpeed))) {
-                return; 
-            }
-			
-			// --- Track min & max ---
-            const cTime = new Date(dateStr).getTime();
-            if (globalMinX === null || cTime < globalMinX) globalMinX = cTime;
-            if (globalMaxX === null || cTime > globalMaxX) globalMaxX = cTime;
-            if (rawSpeed < globalMinY) globalMinY = rawSpeed;
-            if (rawSpeed > globalMaxY) globalMaxY = rawSpeed;
-
-            if (rawSpeed !== null && rawSpeed !== undefined && dtDays > 0) {
-                const centerTime = new Date(dateStr).getTime();
-                const halfDtMs = (dtDays / 2) * 86400000; 
-
-                hBarX.push(new Date(centerTime - halfDtMs));
-                hBarX.push(new Date(centerTime + halfDtMs));
-                hBarX.push(null); 
-
-                hBarY.push(rawSpeed);
-                hBarY.push(rawSpeed);
-                hBarY.push(null);
-            }
+      // Create segmented traces for each source
+      Object.keys(sourceGroups).forEach(source => {
+        const group = sourceGroups[source];
+        const sColor = getSourceColor(source);
+        const sPale = makePale(sColor);
+        
+        // 1. Horizontal Bars for dt range
+        const hX = [], hY = [];
+        group.x.forEach((dateObj, idx) => {
+          const dtDays = group.dt[idx];
+          if (dtDays > 0) {
+            const cTime = dateObj.getTime();
+            const halfMs = (dtDays / 2) * 86400000;
+            hX.push(new Date(cTime - halfMs), new Date(cTime + halfMs), null);
+            hY.push(group.y[idx], group.y[idx], null);
+          }
         });
 
         traces.push({
-            x: hBarX,
-            y: hBarY,
-            mode: 'lines',
-            type: 'scatter',
-            showlegend: false,
-            visible: isVisible,
-            legendgroup: `g${point.id}`,
-            hoverinfo: 'skip', 
-            line: { color: pale, width: 2 }
+          x: hX, y: hY, mode: 'lines', type: 'scatter', showlegend: false,
+          hoverinfo: 'skip', legendgroup: source, visible: isVisible,
+          line: { color: sPale, width: 2 }
         });
 
-        // Scatter / Vertical Error (Points)
+        // 2. Scatter / Vertical Error
+        const isNewSourceInLegend = !renderedSources.has(source);
+        if (isNewSourceInLegend) renderedSources.add(source);
+
         traces.push({
-          x: rootData.dates.map(d => new Date(d)), 
-          y: varData.raw, 
-          mode: 'markers', 
-          type: 'scatter', 
-          name: label, 
-          showlegend: false, 
-          visible: isVisible,
-          legendgroup: `g${point.id}`, 
-          marker: { color: pale, size: 5, line: {width:1, color: point.color} },
-          error_y: { type: 'data', array: activeErrorArray, visible: true, color: pale, thickness: 1, width: 0 },
-          customdata: customData,
+          x: group.x, y: group.y, mode: 'markers', type: 'scatter',
+          name: source, 
+          showlegend: isNewSourceInLegend,
+          legendgroup: source, visible: isVisible,
+          marker: { color: sPale, size: 5, line: { width: 1, color: sColor } },
+          error_y: { type: 'data', array: group.speed_error, visible: true, color: sPale, thickness: 1, width: 0 },
+          customdata: group.custom,
           hovertemplate: hoverTemplate
         });
+      });
+
+    } else {
+      // --- COLOR BY SITE LOGIC ---
+      const hBarX = [];
+      const hBarY = [];
+
+      rootData.dates.forEach((dateStr, i) => {
+        const rawValue = varData.raw[i];
+        const dtDays = rootData.dt ? rootData.dt[i] : 0;
+        
+        if (rawValue === null || rawValue === undefined || rawValue === 'NaN' || Number.isNaN(Number(rawValue))) return;
+        
+        const cTime = new Date(dateStr).getTime();
+        if (globalMinX === null || cTime < globalMinX) globalMinX = cTime;
+        if (globalMaxX === null || cTime > globalMaxX) globalMaxX = cTime;
+        if (rawValue < globalMinY) globalMinY = rawValue;
+        if (rawValue > globalMaxY) globalMaxY = rawValue;
+
+        if (dtDays > 0) {
+          const halfDtMs = (dtDays / 2) * 86400000; 
+          hBarX.push(new Date(cTime - halfDtMs), new Date(cTime + halfDtMs), null);
+          hBarY.push(rawValue, rawValue, null);
+        }
+      });
+
+      traces.push({
+        x: hBarX,
+        y: hBarY,
+        mode: 'lines',
+        type: 'scatter',
+        showlegend: false,
+        visible: isVisible,
+        legendgroup: `g${point.id}`,
+        hoverinfo: 'skip', 
+        line: { color: pale, width: 2 }
+      });
+
+      // Scatter / Vertical Error
+      traces.push({
+        x: rootData.dates.map(d => new Date(d)), 
+        y: varData.raw, 
+        mode: 'markers', 
+        type: 'scatter', 
+        name: label, 
+        showlegend: false, 
+        visible: isVisible,
+        legendgroup: `g${point.id}`, 
+        marker: { color: pale, size: 5, line: { width: 1, color: point.color } },
+        error_y: { type: 'data', array: activeErrorArray, visible: true, color: pale, thickness: 1, width: 0 },
+        customdata: customData,
+        hovertemplate: hoverTemplate
+      });
     }
     
     // --- TRACE 2: LINES (Smoothed) ---
@@ -3339,129 +3174,112 @@ const buildChartConfig = (plotKey) => {
       line: { color: point.color, width: 3 }
     });
     
-    // TREND LINE LOGIC
+    // --- TREND LINE LOGIC ---
     let trendText = null;
     if (showTrends.value && trendStart.value && trendEnd.value) {
-        
-        // 1. Filter Data to the selected Trend Range
-        const tStart = new Date(trendStart.value).getTime();
-        const tEnd = new Date(trendEnd.value).getTime();
-        const filteredDates = [];
-        const filteredVals = [];
-        rootData.dates.forEach((d, i) => {
-            const t = new Date(d).getTime();
-            const val = varData.raw[i]; 
-            if (t >= tStart && t <= tEnd && val !== null && val !== undefined) {
-                filteredDates.push(d);
-                filteredVals.push(val);
-            }
-        });
+      const tStart = new Date(trendStart.value).getTime();
+      const tEnd = new Date(trendEnd.value).getTime();
+      const filteredDates = [];
+      const filteredVals = [];
 
-        // 2. Calculate Regression
-        const stats = calculateRegression(filteredDates, filteredVals);
-
-        if (stats) {
-            const x1 = tStart;
-            const x2 = tEnd;
-            const y1 = stats.slope * x1 + stats.intercept;
-            const y2 = stats.slope * x2 + stats.intercept;
-            
-            // Format trend values
-            const trendVal = stats.slopePerYear > 0 
-               ? `+${stats.slopePerYear.toFixed(1)}` 
-               : stats.slopePerYear.toFixed(1);
-
-            let sig = '';
-            if (stats.pValue < 0.001) sig = '***';
-            else if (stats.pValue < 0.01) sig = '**';
-            else if (stats.pValue < 0.05) sig = '*';
-            else sig = 'ns'; // not significant
-            
-            // Define trend text
-            trendText = `${trendVal} m/yr<sup>2</sup> (${sig})`;
-
-            // Define trend data
-            traces.push({
-                x: [trendStart.value, trendEnd.value],
-                y: [y1, y2],
-                mode: 'lines',
-                type: 'scatter',
-                legendgroup: `g${point.id}`,
-                showlegend: false,
-                visible: isVisible,
-                line: { color: point.color, width: 2, dash: 'dash' },
-                hoverinfo: 'skip' 
-            });
+      rootData.dates.forEach((d, i) => {
+        const t = new Date(d).getTime();
+        const val = varData.raw[i]; 
+        if (t >= tStart && t <= tEnd && val !== null && val !== undefined) {
+          filteredDates.push(d);
+          filteredVals.push(val);
         }
+      });
+
+      const stats = calculateRegression(filteredDates, filteredVals);
+
+      if (stats) {
+        const x1 = tStart;
+        const x2 = tEnd;
+        const y1 = stats.slope * x1 + stats.intercept;
+        const y2 = stats.slope * x2 + stats.intercept;
+        
+        const trendVal = stats.slopePerYear > 0 
+          ? `+${stats.slopePerYear.toFixed(1)}` 
+          : stats.slopePerYear.toFixed(1);
+
+        let sig = 'ns';
+        if (stats.pValue < 0.001) sig = '***';
+        else if (stats.pValue < 0.01) sig = '**';
+        else if (stats.pValue < 0.05) sig = '*';
+        
+        trendText = `${trendVal} m/yr<sup>2</sup> (${sig})`;
+
+        traces.push({
+          x: [trendStart.value, trendEnd.value],
+          y: [y1, y2],
+          mode: 'lines',
+          type: 'scatter',
+          legendgroup: `g${point.id}`,
+          showlegend: false,
+          visible: isVisible,
+          line: { color: point.color, width: 2, dash: 'dash' },
+          hoverinfo: 'skip' 
+        });
+      }
     }
     
     // --- POPULATE CUSTOM LEGEND ---
-    // Instead of a dummy trace, we push to our Vue array
     legendItems.value.push({
-        id: point.id,
-        label: `${label}${suffix}`,
-        color: point.color,
-        trendText: trendText,
-        isVisible: isVisible
+      id: point.id,
+      label: label,
+      color: point.color,
+      trendText: trendText,
+      isVisible: isVisible
     });
-    
   });
   
-  // Define axis labels
+  // Define axis labels based on plotKey
   let yAxisLabel = "Velocity (m/yr)";
-  if (plotKey.startsWith('s') && plotKey.includes('raw')) yAxisLabel = "Raw speed (m/yr)"; 
-  else if (plotKey.startsWith('s')) yAxisLabel = "Filtered speed (m/yr)";
-  else if (plotKey.startsWith('u') && plotKey.includes('raw')) yAxisLabel = "Raw easting velocity (m/yr)"; 
-  else if (plotKey.startsWith('u')) yAxisLabel = "Filtered easting velocity (m/yr)";
-  else if (plotKey.startsWith('v') && plotKey.includes('raw')) yAxisLabel = "Raw northing velocity (m/yr)"; 
-  else if (plotKey.startsWith('v')) yAxisLabel = "Filtered northing velocity (m/yr)";
+  if (plotKey === 'speed') yAxisLabel = "Speed (m/yr)"; 
+  else if (plotKey === 'vx') yAxisLabel = "Easting velocity (m/yr)"; 
+  else if (plotKey === 'vy') yAxisLabel = "Northing velocity (m/yr)";
   
-  // Define the SVG Data URI for the word "SHIVER"
-    const watermarkSvg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20">
-        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
-              font-family="sans-serif" font-weight="900" font-size="18" 
-              fill="rgba(135, 206, 235, 0.15)">
-          S H I V E R
-        </text>
-      </svg>`;
+  // Base64 SVG Watermark
+  const watermarkSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20">
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
+            font-family="sans-serif" font-weight="900" font-size="18" 
+            fill="rgba(135, 206, 235, 0.15)">
+        S H I V E R
+      </text>
+    </svg>`;
+  const watermarkUrl = "data:image/svg+xml;base64," + btoa(watermarkSvg);
 
-    // Convert it to a Base64 string for Plotly
-    const watermarkUrl = "data:image/svg+xml;base64," + btoa(watermarkSvg);
-
-  // calculate axis ranges
+  // Calculate axis ranges
   let xaxis_range = null;
   let yaxis_range = null;
 
   if (globalMinX !== null && globalMaxX !== null && globalMinX !== globalMaxX) {
-      const xRange = globalMaxX - globalMinX;
-      const xBuffer = xRange * 0.03; // 3% time buffer on the left and right
-      const minStr = new Date(globalMinX - xBuffer).toISOString().replace('T', ' ').substring(0, 19); // Convert to Plotly-friendly string: "YYYY-MM-DD HH:MM:SS"
-      const maxStr = new Date(globalMaxX + xBuffer).toISOString().replace('T', ' ').substring(0, 19);
-      xaxis_range = [new Date(globalMinX - xBuffer), new Date(globalMaxX + xBuffer)];
+    const xRange = globalMaxX - globalMinX;
+    const xBuffer = xRange * 0.03;
+    xaxis_range = [new Date(globalMinX - xBuffer), new Date(globalMaxX + xBuffer)];
   }
   
   if (globalMinY !== Infinity && globalMaxY !== -Infinity) {
-      const yRange = globalMaxY - globalMinY;
-      const yBuffer = yRange === 0 ? globalMinY * 0.1 : yRange * 0.1; // Add a 10% buffer above and below the points (avoids markers getting cut in half by the border)
-      yaxis_range = [globalMinY - yBuffer, globalMaxY + yBuffer];
+    const yRange = globalMaxY - globalMinY;
+    const yBuffer = yRange === 0 ? globalMinY * 0.1 : yRange * 0.1;
+    yaxis_range = [globalMinY - yBuffer, globalMaxY + yBuffer];
   }
   
   const layout = {
-    images: [
-        {
-          source: watermarkUrl,
-          xref: "paper", yref: "paper",
-          x: 0.5, y: 0.5,
-          sizex: 0.8, sizey: 0.8, // 80% of the chart width/height
-          xanchor: "center", yanchor: "middle",
-          layer: "below",
-          opacity: 1 // Opacity is handled inside the SVG fill color
-        }
-    ],
-	xaxis: { title: { text: 'Date', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true, type: 'date', range: xaxis_range, autorange: xaxis_range ? false : true },
-    yaxis: { title: { text: yAxisLabel, standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true, range: yaxis_range, autorange: yaxis_range ? false : true },
-    margin: {t:5, r:20, l:60, b:40}, 
+    images: [{
+      source: watermarkUrl,
+      xref: "paper", yref: "paper",
+      x: 0.5, y: 0.5,
+      sizex: 0.8, sizey: 0.8,
+      xanchor: "center", yanchor: "middle",
+      layer: "below",
+      opacity: 1
+    }],
+    xaxis: { title: { text: 'Date', standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true, type: 'date', range: xaxis_range, autorange: !xaxis_range },
+    yaxis: { title: { text: yAxisLabel, standoff: 15 }, showline: true, linewidth: 1, linecolor: 'black', mirror: true, automargin: true, range: yaxis_range, autorange: !yaxis_range },
+    margin: { t: 5, r: 20, l: 60, b: 40 }, 
     showlegend: colorBySource.value, 
     legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' },
     autosize: true
@@ -3551,8 +3369,9 @@ const updateChart = async () => {
   };
   
   // Render the plot
+  let graphDiv = null;
   if (plotlyLib.value) {
-	const graphDiv = await plotlyLib.value.newPlot('velocity-chart', data, layout, config);
+    graphDiv = await plotlyLib.value.newPlot('velocity-chart', data, layout, config);
   }
   
   //Attach listener for axis updates
@@ -3809,8 +3628,7 @@ const downloadChartImage = async () => {
         const rootData = p.data?.data;
         if (!rootData) return;
 
-        const isMulti = p.settings && p.settings.storeType === 'multi';
-        const excludeKeys = ['dates', 'dates_daily', 'error', 'error_u', 'error_v', 'dt', 'count', 'data_source'];
+        const excludeKeys = ['dates', 'dates_daily', 'speed_error', 'vx_error', 'vy_error', 'dt', 'count', 'data_source'];
         const availableKeys = Object.keys(rootData).filter(k => !excludeKeys.includes(k));
 
         if (rootData.dates) {
@@ -3825,7 +3643,7 @@ const downloadChartImage = async () => {
             }
 
             if (isValid) {
-               const source = (isMulti && rootData.data_source) ? rootData.data_source[i] : "SHIFT";
+               const source = (rootData.data_source) ? rootData.data_source[i] : "SHIFT";
                
                if (source && source !== 'Unknown') {
                    if (!sourceStats[source]) {
@@ -3876,7 +3694,7 @@ const downloadChartImage = async () => {
       // 1. Add the SHIVER row first
       const shiverCitations = 
           "SHIVER tool: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
-          "SHIVER zarr compilation method: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release of Zarr creation code (Version [specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
+          "SHIVER zarr compilation method: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
           "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX";
       
       csvContent += `SHIVER,,,,,"${shiverCitations.replace(/"/g, '""')}"\n`;
@@ -4019,11 +3837,9 @@ const handleDownload = async () => {
     selectedPoints.value.forEach(p => {
       const rootData = p.data?.data;
       if (!rootData) return;
-
-      const isMulti = p.settings && p.settings.storeType === 'multi';
       
       // IDENTIFY VARIABLES
-      const excludeKeys = ['dates', 'dates_daily', 'error', 'error_u', 'error_v', 'dt', 'count', 'data_source'];
+      const excludeKeys = ['dates', 'dates_daily', 'speed_error', 'vx_error', 'vy_error', 'dt', 'count', 'data_source'];
       const availableKeys = Object.keys(rootData).filter(k => !excludeKeys.includes(k));
 
       // LOOP THROUGH ROWS TO FIND VALID DATA & TRACK STATS
@@ -4041,7 +3857,7 @@ const handleDownload = async () => {
 
           if (isValid) {
              // Determine source (Default to SHIFT if single-source)
-             const source = (isMulti && rootData.data_source) ? rootData.data_source[i] : "SHIFT";
+             const source = (rootData.data_source) ? rootData.data_source[i] : "SHIFT";
              
              if (source && source !== 'Unknown') {
                  // Initialize stats object for this source if it doesn't exist yet
@@ -4165,10 +3981,8 @@ const generateXLSX = (point, index) => {
   
   if (!rootData) return wb;
   
-  const isMulti = point.settings && point.settings.storeType === 'multi';
-
   // 1. IDENTIFY VARIABLES
-  const excludeKeys = ['dates', 'dates_daily', 'error', 'error_u', 'error_v', 'dt', 'count', 'data_source'];
+  const excludeKeys = ['dates', 'dates_daily', 'speed_error', 'vx_error', 'vy_error', 'dt', 'count', 'data_source'];
   const availableKeys = Object.keys(rootData).filter(k => !excludeKeys.includes(k));
   const displayKeys = availableKeys.map(key => `${key}_m_yr`);
 
@@ -4179,11 +3993,7 @@ const generateXLSX = (point, index) => {
   
   // Create headers dynamically
   let pointHeaders = [];
-  if (isMulti) {
-      pointHeaders = ["Date", "Data_Source", "Error_m_yr", "Time_Separation_days", "Pixel_Count", ...displayKeys];
-  } else {
-      pointHeaders = ["Date", "Error_m_yr", "Error_U_m_yr", "Error_V_m_yr", "Time_Separation_days", "Pixel_Count", ...displayKeys];
-  }
+  pointHeaders = ["Date", "Data_Source", "speed_error_m_yr", "vx_error_m_yr", "vy_error_m_yr", "time_separation_days", "pixel_count", ...displayKeys];
   pointRows.push(pointHeaders);
 
   rootData.dates.forEach((date, i) => {
@@ -4194,20 +4004,16 @@ const generateXLSX = (point, index) => {
         if (checkVal === null || checkVal === undefined || Number.isNaN(checkVal)) { return; } // SKIP ROW
      }
 
-     const errorMag = rootData.error ? rootData.error[i] : '';
+     const errorMag = rootData.speed_error ? rootData.speed_error[i] : '';
      const dt = rootData.dt ? rootData.dt[i] : '';
      const count = rootData.count ? rootData.count[i] : 0;
 
      // Construct the base row dynamically
      let row = [];
-     if (isMulti) {
-         const source = rootData.data_source ? rootData.data_source[i] : 'Unknown';
-         row = [date, source, errorMag, dt, count];
-     } else {
-         const errorU = rootData.error_u ? rootData.error_u[i] : '';
-         const errorV = rootData.error_v ? rootData.error_v[i] : '';
-         row = [date, errorMag, errorU, errorV, dt, count];
-     }
+	 const source = rootData.data_source ? rootData.data_source[i] : 'Unknown';
+	 const errorVX = rootData.vx_error ? rootData.vx_error[i] : '';
+	 const errorVY = rootData.vy_error ? rootData.vy_error[i] : '';
+	 row = [date, source, errorMag, errorVX, errorVY, dt, count];
 	 
 	 // Append the actual velocity variables
      availableKeys.forEach(k => {
@@ -4259,17 +4065,12 @@ const generateXLSX = (point, index) => {
       ["Buffer (m)", meta.buffer_used || pendingBuffer.value],
       ["Region", currentRegion.value],
       ["Smoothing Suffix", smoothingSuffix.value],
-	  ["Data Store", isMulti ? "Multi-Source" : "Single-Source"],
       ["Export Date", new Date().toISOString()]
   ];
   
   // Log the specific query settings used for this point
-  if (isMulti && point.settings.sources) {
-      metaRows.push(["Sources", point.settings.sources.join(', ')]);
-  } else if (!isMulti && point.settings.variable && point.settings.quality) {
-      metaRows.push(["Variables", point.settings.variable.join(', ')]);
-      metaRows.push(["Quality", point.settings.quality.join(', ')]);
-  }
+  metaRows.push(["Sources", point.settings.sources.join(', ')]);
+  metaRows.push(["Variables", point.settings.variable.join(', ')]);
 
   const wsMeta = XLSX.utils.aoa_to_sheet(metaRows);
   XLSX.utils.book_append_sheet(wb, wsMeta, "Metadata");

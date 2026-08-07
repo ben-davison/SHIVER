@@ -29,7 +29,6 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 # --- BACKEND FUNCTIONS --- 
-from utils.extract_zarr_ts import get_glacier_timeseries
 from utils.extract_multi_zarr_ts import get_multi_glacier_timeseries
 from utils.zarr_metadata import load_zarr_metadata, clear_zarr_metadata
 import models
@@ -169,20 +168,11 @@ static_path.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
-# --- DATA MODELS (Pydantic) ---
-class RoiRequest(BaseModel):
-    roi: List[List[float]]
-    buffer: int = 500
-    variable: List[str] = ["s"] # s, u, and/or v
-    quality: List[str] = ["filt"] # filt and/or raw
-    gap_fill: int = 24
-    win_raw: int = 25
-    win_daily: int = 25
-    poly: int = 2
-    
+# --- DATA MODELS (Pydantic) --- 
 class MultiRoiRequest(BaseModel):
     roi: List[List[float]]
     buffer: int = 500
+    variable: List[str] = ["speed"]
     sources: Optional[List[str]] = None
     gap_fill: int = 24
     win_raw: int = 25
@@ -494,13 +484,6 @@ def _empty_wms(width: int, height: int):
     tile_headers = {"Cache-Control": "public, max-age=86400, stale-while-revalidate=3600"}
     return Response(content=buf.getvalue(), media_type="image/png", headers=tile_headers)
 
-
-# Helper function for transparent tiles
-def _empty_wms(width: int, height: int):
-    buf = io.BytesIO()
-    Image.new('RGBA', (width, height), (0, 0, 0, 0)).save(buf, format="PNG")
-    return Response(content=buf.getvalue(), media_type="image/png")
-
  
 @app.post("/api/auth")
 def authenticate(payload: LoginRequest):
@@ -518,58 +501,7 @@ def authenticate(payload: LoginRequest):
         return {"status": "success"}
     else:
         raise HTTPException(status_code=401, detail="Incorrect password")
-
-
-@app.post("/api/timeseries/json")
-def extract_from_json(
-    payload: RoiRequest,
-    # logging dependencies
-    db: Session = Depends(get_db), 
-    user: Optional[User] = Depends(get_current_user_optional)
-):
-    """
-    Extracts time series for coordinates provided in JSON body.
-    """
-    print(f"JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer} | Vars: {payload.variable} | Qual: {payload.quality}")
-    
-    # --- LOGGING LOGIC ---
-    if user:
-        try:
-            # Create a label (e.g. "Map Selection (1 points)")
-            count = len(payload.roi)
-            log_name = f"Map Selection ({count} points)"
-            
-            # Create the log entry
-            log = DownloadLog(
-                user_id=user.id,
-                interaction_type="map_click",
-                filename=log_name,
-                file_size_mb=0.005 * count # Small estimate (5KB per point)
-            )
-            db.add(log)
-            db.commit()
-        except Exception as e:
-            # We wrap this in try/except so logging errors don't break the actual data fetch
-            print(f"Logging failed: {e}")
-    
-    try:
-        results = get_glacier_timeseries(
-            location_input=payload.roi,
-            buffer=payload.buffer,
-            variable=payload.variable,
-            quality=payload.quality,
-            # Pass new params
-            gap_fill=payload.gap_fill,
-            win_raw=payload.win_raw,
-            win_daily=payload.win_daily,
-            poly=payload.poly
-        )
-        return results
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-        
-        
+                
 
 @app.post("/api/timeseries/multi/json")
 def extract_multi_from_json(
@@ -580,7 +512,7 @@ def extract_multi_from_json(
     """
     Extracts time series from the multi-source Zarr store for coordinates provided in JSON body.
     """
-    print(f"Multi-Source JSON Request | Pts: {len(payload.roi)} | Buf: {payload.buffer}")
+    print(f"Multi-Source JSON Request | Pts: {len(payload.roi)} | Vars: {payload.variable} | Buf: {payload.buffer}")
     
     # --- LOGGING LOGIC ---
     if user:
@@ -604,6 +536,7 @@ def extract_multi_from_json(
         results = get_multi_glacier_timeseries(
             location_input=payload.roi,
             buffer=payload.buffer,
+            variable=payload.variable,
             sources=payload.sources,
             gap_fill=payload.gap_fill,
             win_raw=payload.win_raw,
@@ -627,69 +560,11 @@ def extract_multi_from_json(
         raise HTTPException(status_code=500, detail="An internal server error occurred during timeseries extraction.")
         
 
-
-@app.post("/api/timeseries/upload")
-def upload_shapefile(
-    file: UploadFile = File(...), 
-    buffer: float = Form(500),
-    variable: List[str] = Form(["s"]),
-    quality: List[str] = Form(["filt"]),
-    # New Form params
-    gap_fill: int = Form(24),
-    win_raw: int = Form(25),
-    win_daily: int = Form(25),
-    poly: int = Form(2),
-    # logging dependencies
-    db: Session = Depends(get_db),
-    user: Optional[User] = Depends(get_current_user_optional)
-):
-    
-    # 1. LOGGING LOGIC
-    if user:
-        try:
-            # Estimate file size (file.size might be unavailable in spool, so we guess 0.5MB or check)
-            # Or use: file.file.seek(0, 2); size = file.file.tell(); file.file.seek(0)
-            size_mb = 0.5 
-            
-            log = DownloadLog(
-                user_id=user.id,
-                interaction_type="file_upload",
-                filename=file.filename,
-                file_size_mb=size_mb
-            )
-            db.add(log)
-            db.commit()
-        except Exception as e:
-            print(f"Logging failed: {e}")
-            
-    suffix = os.path.splitext(file.filename)[1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-
-    try:
-        print(f"File Upload: {tmp_path} | Buf: {buffer}")
-        results = get_glacier_timeseries(
-            tmp_path, 
-            buffer=buffer, 
-            variable=variable, 
-            quality=quality,
-            gap_fill=gap_fill, win_raw=win_raw, win_daily=win_daily, poly=poly
-        )
-        return results
-    except Exception as e:
-        print(f"Error processing file: {e}")
-        return {"status": "error", "message": str(e)}
-    finally:
-        if os.path.exists(tmp_path):
-            try: os.remove(tmp_path)
-            except PermissionError: pass
-        
-
 @app.post("/api/timeseries/multi/upload")
 def upload_multi_shapefile(
     file: UploadFile = File(...), 
     buffer: float = Form(500),
+    variable: List[str] = Form(["speed"]),
     sources: List[str] = Form([]), 
     gap_fill: int = Form(24),
     win_raw: int = Form(25),
@@ -727,7 +602,8 @@ def upload_multi_shapefile(
         # Call the multi-source extraction function instead of the single-source one!
         results = get_multi_glacier_timeseries(
             location_input=tmp_path, 
-            buffer=buffer, 
+            buffer=buffer,
+            variable=variable,
             sources=sources, 
             gap_fill=gap_fill, 
             win_raw=win_raw, 

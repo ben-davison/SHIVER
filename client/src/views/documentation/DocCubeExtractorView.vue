@@ -1,4 +1,4 @@
-<script setup>
+ï»¿<script setup>
 import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -48,12 +48,6 @@ onMounted(() => {
 			select your time period and variables/data sources of interest then initiate the download. 
 		  </p>
 		  <p>
-		    SHIVER allows you to extract data cubes from two different data sets. The "SHIFT" data set provides access to all horizontal velocity components and
-			two levels of speed quality (raw and time-filtered). The SHIFT data set can be resampled to monthly, quarterly or annual resolution, on top of the 'native' 
-			temporal resolution of 6- or 12-days. The "Multisource" data set allows access to numerous data sources (as well as SHIFT), but only 
-			serves speed and speed error data. 
-		  </p>
-		  <p>
 		    Your download request will be sent to the server and you will be emailed with a download link once the data cube extraction is complete.
 		  </p>
 		  <p>
@@ -63,7 +57,7 @@ onMounted(() => {
 			(<antarcticaIcon class="inline-icon"/>)
 		  </p>
 		  <p>
-		    <strong>Data Cube limits:</strong> To reduce the load on our server, we limit individual data cube extraction volumes to a maximum of 10,000 kilometres squared
+		    <strong>Data Cube limits:</strong> To reduce the load on our server, we limit individual data cube extraction volumes to a maximum of 15,000 kilometres squared
 			and one year. If you require a larger data cube, then split your download into multiple requests or contact the SHIVER team via email (shiver@sheffield.ac.uk) with your request.
 		  </p>
 		  <br>
@@ -177,14 +171,12 @@ onMounted(() => {
 		  </p>
 		  <p><strong>NetCDF naming convention:</strong></p>
 		  <ul>
-			<li>SHIFT data cubes have this format: IceSheet_Frequency_StartTime_EndTime_RANDOM.nc e.g., Greenland_native_2018-01-01_2018-03-31_6b78cebb.nc. 
-			Is a data cube for Greenland at the 'native' temporal resolution of the Sentinel-1 measurements from the 1st of January 2018 to the 31st of March 2018. The random suffix is to prevent overwrites from other users.</li>
-			<li>Multisource data cubes have this format: IceSheet_multisource_StartTime_EndTime_RANDOM.nc e.g., Greenland_native_2018-01-01_2018-03-31_6j48egb.nc. 
-			Is a data cube for Greenland from the multisource data set from the 1st of January 2018 to the 31st of March 2018.</li>
+			<li>IceSheet_multisource_StartTime_EndTime_RANDOM.nc e.g., Greenland_native_2018-01-01_2018-03-31_6j48egb.nc. 
+			Is a data cube for Greenland from the 1st of January 2018 to the 31st of March 2018.</li>
 		  </ul>
 		  
 		  <p>
-			<strong>Each SHIFT NetCDF file could contain contain:</strong>
+			<strong>Each NetCDF file contains:</strong>
 			<br>
 			<em>Note: Only "x", "y", and "time" are exported by default. 
 			Other exported variables depend on the selected options. </em>
@@ -192,48 +184,13 @@ onMounted(() => {
 		  <ul>
             <li><strong>x:</strong> The easting coordinates of the grid, in the local projection.</li>
 			<li><strong>y:</strong> The northing coordinates of the grid, in the local projection.</li>
-			<li><strong>time:</strong> The date of the measurement. For exports at the 'native' resolution, this represents the mid-date of the measurement epoch. For exports at other temporal resolution, this will be the beginning of the averaging period.</li>
-            <li><strong>s_error:</strong> An estimate of the global uncertainty in ice speed at this time period. Defined as the median speed over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
-			<li><strong>u_error:</strong> An estimate of the global uncertainty in the easting ice velocity at this time period. Defined as the median easting velocity over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
-			<li><strong>v_error:</strong> An estimate of the global uncertainty in the northing ice velocity at this time period. Defined as the median northing velocity over bedrock regions at that time. If data are exported at a resolution other than native, then the mean error over the aggregation period is provided.</li>
-			<li><strong>s_filt:</strong> Horizontal ice surface speed in metres per year, from the time-filtered zarr store variable.</li>
-			<li><strong>s_raw:</strong> Horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable.</li>
-			<li><strong>u_filt:</strong> Horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable.</li>
-			<li><strong>u_raw:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable.</li>
-			<li><strong>v_filt:</strong> Horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable.</li>
-			<li><strong>v_raw:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable.</li>
-          </ul>
-		  <p>
-			<em>If the data are exported at the native temporal resolution, there is an additional variable:</em>
-		  </p>
-		  <ul>
-            <li><strong>time_separation:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on Date-Time_separation_days/2, and the second image on Date+Time_separation_days/2.</li>
-		  </ul>
-		  <p>
-			<em>If the data are exported any temporal resolution other than native, then we also provide the standard deviation of each variable during each aggregation period and the count of non-nan measurements during each aggregation period:</em>
-		  </p>
-		  <ul>
-            <li><strong>s_error_std:</strong> The standard deviation of the global uncertainty in ice speed during the aggregation period.</li>
-			<li><strong>u_error_std:</strong> The standard deviation of the global uncertainty in the easting ice velocity during the aggregation period.</li>
-			<li><strong>v_error_std:</strong> The standard deviation of the global uncertainty in the northing ice velocity during the aggregation period.</li>
-			<li><strong>s_filt_std:</strong> The standard deviation of the horizontal ice surface speed in metres per year, from the time-filtered zarr store variable.</li>
-			<li><strong>s_raw_std:</strong> The standard deviation fo the horizontal ice surface speed in metres per year, from the raw (no time filtering) zarr store variable.</li>
-			<li><strong>u_filt_std:</strong> The standard deviation of the horizontal  ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the time-filtered zarr store variable.</li>
-			<li><strong>u_raw_std:</strong> The standard deviation of the horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction), from the raw (no time filtering) zarr store variable.</li>
-			<li><strong>v_filt_std:</strong> The standard deviation of the horizontal  ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the time-filtered zarr store variable.</li>
-			<li><strong>v_raw_std:</strong> The standard deviation of the horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction), from the raw (no time filtering) zarr store variable.</li>
-			<li><strong>measurement_count:</strong> The number of non-nan measurements in each aggregation period.</li>
-		  </ul>
-		  
-		  <p>
-			<strong>Each Mutltisource NetCDF file contains:</strong>
-		  </p>
-		  <ul>
-            <li><strong>x:</strong> The easting coordinates of the grid, in the local projection.</li>
-			<li><strong>y:</strong> The northing coordinates of the grid, in the local projection.</li>
 			<li><strong>time:</strong> The date of the measurement. This represents the mid-date of the measurement epoch.</li>
-            <li><strong>speed:</strong> Horizontal ice surface speed in metres per year.</li>
-			<li><strong>error:</strong> Horizontal ice surface speed error in metres per year. This is as provided with each of the underlying data sources or 5% of the speed if no error is provided.</li>
+            <li><strong>speed:</strong> Horizontal ice surface velocity magnitude in metres per year.</li>
+			<li><strong>vx:</strong> Horizontal ice surface easting velocity in metres per year (positive in the polar stereographic eastwards direction).</li>
+			<li><strong>vy:</strong> Horizontal ice surface northing velocity in metres per year (positive in the polar stereographic northwards direction).</li>
+			<li><strong>speed_error:</strong> Horizontal ice surface velocity magnitude error in metres per year. This is as provided with each of the underlying data sources or 5% of the speed if no error is provided.</li>
+			<li><strong>vx_error:</strong> Horizontal ice surface easting velocity error in metres per year. This is as provided with each of the underlying data sources or 5% of the absolute easting velocity if no error is provided.</li>
+			<li><strong>vy_error:</strong> Horizontal ice surface northing velocity error in metres per year. This is as provided with each of the underlying data sources or 5% of the absolute northing velocity if no error is provided.</li>
 			<li><strong>data_source:</strong> The name of the data source corresponding to each row in 'time' i.e. each measurement epoch in 'speed'.</li>
             <li><strong>time_separation:</strong> The number of days between the two images used to estimate ice speed. So the first image was acquired on time-time_separation/2, and the second image on time+time_separation/2.</li>
 		  </ul>
@@ -265,7 +222,7 @@ onMounted(() => {
 		        Mouginot J, Rignot E (2019). Glacier catchments/basins for the Greenland Ice Sheet [Dataset]. Dryad. DOI: 10.7280/D1WT11
 		   </blockquote>
 		   <blockquote class="citation-block">
-		        Mankoff, K.D., Noël, B., Fettweis, X., Ahlstrøm, A.P., Colgan, W., Kondo, K., Langley, K., Sugiyama, S., Van As, D. and Fausto, R.S., 2020. Greenland liquid water discharge from 1958 through 2019. Earth System Science Data, 12(4), pp.2811-2841. DOI: https://doi.org/10.5194/essd-12-2811-2020.
+		        Mankoff, K.D., NoÃ«l, B., Fettweis, X., AhlstrÃ¸m, A.P., Colgan, W., Kondo, K., Langley, K., Sugiyama, S., Van As, D. and Fausto, R.S., 2020. Greenland liquid water discharge from 1958 through 2019. Earth System Science Data, 12(4), pp.2811-2841. DOI: https://doi.org/10.5194/essd-12-2811-2020.
 		   </blockquote>
 		   <blockquote class="citation-block">
 				Mankoff, K. D.: Freshwater runoff, GEUS Dataverse, https://doi.org/10.22008/promice/freshwater, 2020. 		   

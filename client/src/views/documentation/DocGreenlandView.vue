@@ -73,7 +73,12 @@ onMounted(() => {
 			<img src="../../assets/documentation/greenland/verification_maps_SHIFT.png" alt="SHIFT data overview">
       </ZoomableFigure>
 	  
-	  See our <AppLink to="/documentation/citation" class="text-link">Citation Documentation</AppLink> for citation details.
+	  <blockquote class="citation-block">
+		Sole, A. J. and Davison, B. J. 2026. SHeffield Ice Flow Tracker (SHIFT) velocity data: West Greenland ice surface velocity fields derived from intensity tracking of Sentinel-1 Synthetic Aperture Radar image pairs. [Online]. Available from: https://doi.org/10.15131/shef.data.33113009.v1.
+	  </blockquote>
+	  <blockquote class="citation-block">
+		Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492.
+	  </blockquote>
 	  <br>
 	</section>
 	

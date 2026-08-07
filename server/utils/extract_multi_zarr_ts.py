@@ -18,7 +18,7 @@ if current_os == "Windows" or is_wsl:
     root_drive = "/mnt/r" if is_wsl else "R:"
     DATA_STORES = {
         'Greenland': {
-            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/greenland_multisource_velocity_timeseries.zarr"), 
+            'path': Path(f"{root_drive}/SCADI/output/Sentinel1/Greenland/mosaic/subregions/lev/greenland_multisource_velocity_timeseries_subset.zarr"), 
             'crs': "EPSG:3413"
         },
         'Antarctica': {
@@ -50,30 +50,36 @@ def get_cached_timeseries_zarr(zarr_path):
     return xr.open_zarr(zarr_path, consolidated=True).sortby('time')
 
 
-def _empty_site_response(status="error", message=""):
+def _empty_site_response(status="error", message="", variable=["speed"]):
     """
-    Returns a standardized empty structure to guarantee downstream 
-    routers/serializers never suffer from a KeyError.
+    Returns a standardized empty structure to guarantee downstream routers never suffer from a KeyError.
+    Dynamically generates the response structure based on requested variables.
     """
+    data_dict = {
+        "dates": [],
+        "dt": [],
+        "data_source": [],
+        "count": []
+    }
+    
+    # Initialize dictionary structure for each requested variable
+    for var in variable:
+        data_dict[f"{var}_error"] = []
+        data_dict[var] = {
+            "raw": [],
+            "smoothed": []
+        }
+        
     return {
         "status": status,
         "message": message,
-        "data": {
-            "dates": [],
-            "error": [],
-            "dt": [],
-            "data_source": [],
-            "count": [],
-            "speed": {
-                "raw": [],
-                "smoothed": []
-            }
-        }
+        "data": data_dict
     }
 
 def get_multi_glacier_timeseries(
     location_input, 
     buffer=500, 
+    variable=['speed'], 
     sources=None, # List of strings to filter by
     name_column=None, 
     gap_fill=24,
@@ -119,7 +125,7 @@ def get_multi_glacier_timeseries(
             except (ValueError, TypeError): current_buffer = buffer
             
         site_data = _process_single_site_multi(
-            ds, row.geometry, store_info['crs'], current_buffer, sources,
+            ds, row.geometry, store_info['crs'], current_buffer, variable, sources,
             gap_fill, win_raw, win_daily, poly
         )
         
@@ -131,6 +137,7 @@ def get_multi_glacier_timeseries(
             "lat": round(centroid.y, 5),
             "lon": round(centroid.x, 5),
             "type": "Polygon" if isinstance(row.geometry, Polygon) else "Point",
+            "variable": variable,
             "sources_requested": sources if sources else "All",
             "params": { "gap": gap_fill, "win_raw": win_raw, "win_daily": win_daily, "poly": poly }
         }
@@ -144,7 +151,7 @@ def get_multi_glacier_timeseries(
 
     return results
 
-def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fill, win_raw, win_daily, poly):
+def _process_single_site_multi(ds, geometry, target_crs, buffer, variable, sources, gap_fill, win_raw, win_daily, poly):
     temp_gdf = gpd.GeoDataFrame({'geometry': [geometry]}, crs="EPSG:4326").to_crs(target_crs)
     proj_geom = temp_gdf.geometry.iloc[0]
     
@@ -154,7 +161,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
 
     px, py = proj_geom.centroid.x, proj_geom.centroid.y
     if not (x_min <= px <= x_max) or not (y_min <= py <= y_max):
-        return _empty_site_response("error", "Location outside data coverage.")
+        return _empty_site_response("error", "Location outside data coverage.", variable=variable)
     
     is_single_pixel = False
     if isinstance(proj_geom, Point):
@@ -176,7 +183,7 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         try:
             subset = ds.sel(x=proj_geom.centroid.x, y=proj_geom.centroid.y, method='nearest')
         except Exception as e:
-            return _empty_site_response("error", f"Pixel selection failed: {e}")
+            return _empty_site_response("error", f"Pixel selection failed: {e}", variable=variable)
             
     if 'time_bnds' in subset.data_vars or 'time_bnds' in subset.coords:
         tb = subset['time_bnds']
@@ -198,15 +205,19 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
 
 
     # 1. Extraction and Spatial Aggregation 
+    # Build list of required columns dynamically based on `variable`
+    extract_vars = variable + [f"{v}_error" for v in variable]
+    
     if is_single_pixel:
-        df = subset[['speed', 'speed_error', 'data_source', 'time_separation']].to_dataframe()
-        df['valid_count'] = subset['speed'].notnull().astype(int).to_series()
+        df = subset[extract_vars + ['data_source', 'time_separation']].to_dataframe()
+        # Use the first requested variable to determine valid counts
+        df['valid_count'] = subset[variable[0]].notnull().astype(int).to_series()
     else:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            spatial_median = subset[['speed', 'speed_error']].median(dim=['x', 'y'])
+            spatial_median = subset[extract_vars].median(dim=['x', 'y'])
         
-        valid_count = subset['speed'].notnull().sum(dim=['x', 'y'])
+        valid_count = subset[variable[0]].notnull().sum(dim=['x', 'y'])
         
         # Combine into a lightweight time-indexed pandas dataframe
         df = spatial_median.to_dataframe()
@@ -226,46 +237,24 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
     if sources is not None and len(sources) > 0:
         df = df[df['data_source'].astype(str).isin(sources)]
         
-    if df.empty or df['speed'].dropna().empty:
-        return _empty_site_response("error", "No valid data or all selected sources masked/NaN")
+    if df.empty or df[variable[0]].dropna().empty:
+        return _empty_site_response("error", "No valid data or all selected sources masked/NaN", variable=variable)
     
     # Check time separation
-    #df['time_separation'] = df['time_separation'] - 1.0
     df['time_separation'] = df['time_separation'].apply(lambda x: x if x > 0 else 0.5).fillna(12.0)
     df = df.sort_index()
     
     if df.index.duplicated().any():
         df = df.groupby(level=0).first()
-
+        
     # =========================================================================
-    # PROCESSING LOOP
+    # GLOBAL TIMELINE SETUP
     # =========================================================================
-    
-    # --- OUTLIER REJECTION ---
-    # Apply physical speed limits
-    df.loc[(df['speed'] < -100) | (df['speed'] > 100000), 'speed'] = np.nan
-    
-    # Apply a rolling Z-score filter to drop extreme outliers before any math
-    rolling_mean = df['speed'].rolling(window=5, center=True, min_periods=1).mean()
-    rolling_std = df['speed'].rolling(window=5, center=True, min_periods=1).std()
-    
-    # Use overall std as fallback if rolling std is 0 or NaN (e.g., too few points)
-    fallback_std = df['speed'].std()
-    if pd.isna(fallback_std) or fallback_std == 0: fallback_std = 1.0
-    rolling_std = rolling_std.fillna(fallback_std).replace(0, fallback_std)
-    
-    # Flag points that deviate more than 3 standard deviations from local mean
-    outliers = (df['speed'] - rolling_mean).abs() > (3 * rolling_std)
-    df.loc[outliers, 'speed'] = np.nan
-
-    # Create combined time vector (exact times and regular times)
     exact_idx = df.index
     daily_idx = pd.date_range(start=exact_idx.min().floor('D'), end=exact_idx.max().ceil('D'), freq='D')
     full_idx = exact_idx.union(daily_idx).sort_values()
 
-    # Map the raw data onto this combined timeline
     df_daily = df.reindex(full_idx) 
-    valid_dates_mask = df_daily['speed'].notnull() # only keep points where speed is not null
     
     def clean_nans(data_series):
         if hasattr(data_series, 'values'): data_series = data_series.values 
@@ -273,101 +262,124 @@ def _process_single_site_multi(ds, geometry, target_crs, buffer, sources, gap_fi
         return [x if (pd.notnull(x) and (isinstance(x, str) or np.isfinite(x))) else None for x in data_series]
 
     output_data = {
-        # Export as ISO strings so the frontend gets the exact time (e.g., 1986-07-02T06:06:19)
         "dates": full_idx.strftime('%Y-%m-%dT%H:%M:%S').tolist(), 
-        "error": clean_nans(np.round(df_daily['speed_error'].astype(float), 2)),
         "dt": clean_nans(np.round(df_daily['time_separation'].astype(float), 1)),
         "data_source": clean_nans(df_daily['data_source']), 
         "count": df_daily['valid_count'].fillna(0).astype(int).tolist()
     }
-
-    current_speed_series = df['speed']
     
-    # --- STEP 1: RAW SMOOTHING (Points) ---
-    daily_temp = current_speed_series.reindex(full_idx)
-    daily_filled = daily_temp.interpolate(method='time', limit=gap_fill)
-    processed_raw_series = df_daily['speed'] 
-    
-    try:
-        temp_series = daily_filled.interpolate(method='time', limit_direction='both')
-        curr_len = len(temp_series)
-        effective_window = win_raw
-        if curr_len < effective_window: effective_window = curr_len
-        if effective_window % 2 == 0: effective_window -= 1 
-
-        if effective_window >= 3:
-            smoothed_values = savgol_filter(temp_series.values, window_length=effective_window, polyorder=poly)
-            daily_smoothed_raw = pd.Series(smoothed_values, index=full_idx)
-            processed_raw_series = daily_smoothed_raw.where(valid_dates_mask)
-    except Exception:
-        pass
-
-    # --- STEP 2: WEIGHTED DAILY AVERAGE ---
+    # Pre-calculate shared temporal data for the weighted daily average
     capped_separation = df['time_separation'].clip(upper=gap_fill)
     time_sep_days = pd.to_timedelta(capped_separation, unit='D')
     starts_arr = (df.index - (time_sep_days / 2)).dt.floor('D').values
     ends_arr   = (df.index + (time_sep_days / 2)).dt.ceil('D').values
-    daily_stack = []
-    
-    # Pre-extract numpy arrays to bypass slow Pandas row indexers inside the loop
-    speeds_arr = current_speed_series.values
     dt_arr = df['time_separation'].values
     times_arr = df.index
+
+    # =========================================================================
+    # PROCESSING LOOP
+    # =========================================================================
     
-    for i in range(len(df)):
-        if pd.isna(speeds_arr[i]): continue 
+    for var in variable:
+        var_series = df[var].copy()
         
-        val_to_use = speeds_arr[i]
+        # --- OUTLIER REJECTION ---
+        if var == 'speed':
+            var_series.loc[(var_series < -100) | (var_series > 100000)] = np.nan
+        else: # Handles vx, vy, etc. (allows negative directional values)
+            var_series.loc[var_series.abs() > 100000] = np.nan
+        
+        rolling_mean = var_series.rolling(window=5, center=True, min_periods=1).mean()
+        rolling_std = var_series.rolling(window=5, center=True, min_periods=1).std()
+        
+        fallback_std = var_series.std()
+        if pd.isna(fallback_std) or fallback_std == 0: fallback_std = 1.0
+        rolling_std = rolling_std.fillna(fallback_std).replace(0, fallback_std)
+        
+        outliers = (var_series - rolling_mean).abs() > (3 * rolling_std)
+        var_series.loc[outliers] = np.nan
+        
+        # Map raw data onto combined timeline
+        df_daily_var = var_series.reindex(full_idx)
+        valid_dates_mask = df_daily_var.notnull() 
+        
+        # Save error metadata for this specific variable
+        output_data[f"{var}_error"] = clean_nans(np.round(df_daily[f"{var}_error"].astype(float), 2))
+
+        # --- STEP 1: RAW SMOOTHING (Points) ---
+        daily_filled = df_daily_var.interpolate(method='time', limit=gap_fill)
+        processed_raw_series = df_daily_var.copy() 
+        
         try:
-            if pd.notnull(processed_raw_series.loc[times_arr[i]]):
-                val_to_use = processed_raw_series.loc[times_arr[i]]
-        except: pass
+            temp_series = daily_filled.interpolate(method='time', limit_direction='both')
+            curr_len = len(temp_series)
+            effective_window = win_raw
+            if curr_len < effective_window: effective_window = curr_len
+            if effective_window % 2 == 0: effective_window -= 1 
+
+            if effective_window >= 3:
+                smoothed_values = savgol_filter(temp_series.values, window_length=effective_window, polyorder=poly)
+                daily_smoothed_raw = pd.Series(smoothed_values, index=full_idx)
+                processed_raw_series = daily_smoothed_raw.where(valid_dates_mask)
+        except Exception:
+            pass
+
+        # --- STEP 2: WEIGHTED DAILY AVERAGE ---
+        daily_stack = []
+        vals_arr = var_series.values
         
-        dt_val = dt_arr[i] if (pd.notnull(dt_arr[i]) and dt_arr[i] >= 1) else 1.0
-        weight_val = 1.0 / dt_val
+        for i in range(len(df)):
+            if pd.isna(vals_arr[i]): continue 
+            
+            val_to_use = vals_arr[i]
+            try:
+                if pd.notnull(processed_raw_series.loc[times_arr[i]]):
+                    val_to_use = processed_raw_series.loc[times_arr[i]]
+            except: pass
+            
+            dt_val = dt_arr[i] if (pd.notnull(dt_arr[i]) and dt_arr[i] >= 1) else 1.0
+            weight_val = 1.0 / dt_val
 
-        # Lightening the creation loop
-        date_rng = pd.date_range(start=starts_arr[i], end=ends_arr[i], freq='D')
-        if not date_rng.empty:
-            daily_stack.append(pd.DataFrame({
-                'date': date_rng, 
-                'speed': val_to_use,
-                'weight': weight_val
-            }))
+            date_rng = pd.date_range(start=starts_arr[i], end=ends_arr[i], freq='D')
+            if not date_rng.empty:
+                daily_stack.append(pd.DataFrame({
+                    'date': date_rng, 
+                    'val': val_to_use,
+                    'weight': weight_val
+                }))
 
-    if daily_stack:
-        big_df = pd.concat(daily_stack, ignore_index=True)
-        big_df['weighted_speed'] = big_df['speed'] * big_df['weight']
-        grouped = big_df.groupby('date')
-        daily_ts = grouped['weighted_speed'].sum() / grouped['weight'].sum()
-        daily_ts = daily_ts.reindex(full_idx)
-    else:
-        daily_ts = pd.Series(dtype=float, index=full_idx)
+        if daily_stack:
+            big_df = pd.concat(daily_stack, ignore_index=True)
+            big_df['weighted_val'] = big_df['val'] * big_df['weight']
+            grouped = big_df.groupby('date')
+            daily_ts = grouped['weighted_val'].sum() / grouped['weight'].sum()
+            daily_ts = daily_ts.reindex(full_idx)
+        else:
+            daily_ts = pd.Series(dtype=float, index=full_idx)
 
-    # --- DAILY SMOOTHING & GAP RE-MASKING ---
-    daily_ts_filled = daily_ts.interpolate(method='time', limit=gap_fill)
-    daily_final = daily_ts.copy() 
-    
-    try:
-        temp_series_daily = daily_ts_filled.interpolate(method='time', limit_direction='both')
-        curr_len_d = len(temp_series_daily)
-        eff_win_daily = win_daily
-        if curr_len_d < eff_win_daily: eff_win_daily = curr_len_d
-        if eff_win_daily % 2 == 0: eff_win_daily -= 1
-
-        if eff_win_daily >= 3:
-            smooth_vals_daily = savgol_filter(temp_series_daily.values, window_length=eff_win_daily, polyorder=poly)
-            daily_final = pd.Series(smooth_vals_daily, index=full_idx)
-            daily_final[daily_ts_filled.isna()] = np.nan
-    except Exception: 
-        pass
+        # --- DAILY SMOOTHING & GAP RE-MASKING ---
+        daily_ts_filled = daily_ts.interpolate(method='time', limit=gap_fill)
+        daily_final = daily_ts.copy() 
         
-    trend_on_dates = daily_final 
+        try:
+            temp_series_daily = daily_ts_filled.interpolate(method='time', limit_direction='both')
+            curr_len_d = len(temp_series_daily)
+            eff_win_daily = win_daily
+            if curr_len_d < eff_win_daily: eff_win_daily = curr_len_d
+            if eff_win_daily % 2 == 0: eff_win_daily -= 1
 
-    output_data['speed'] = {
-        "raw": clean_nans(np.round(processed_raw_series.astype(float), 2)), 
-        "smoothed": clean_nans(np.round(trend_on_dates.astype(float), 2))              
-    }
+            if eff_win_daily >= 3:
+                smooth_vals_daily = savgol_filter(temp_series_daily.values, window_length=eff_win_daily, polyorder=poly)
+                daily_final = pd.Series(smooth_vals_daily, index=full_idx)
+                daily_final[daily_ts_filled.isna()] = np.nan
+        except Exception: 
+            pass
+            
+        # Write back to parent JSON structure
+        output_data[var] = {
+            "raw": clean_nans(np.round(processed_raw_series.astype(float), 2)), 
+            "smoothed": clean_nans(np.round(daily_final.astype(float), 2))              
+        }
 
     return {
         "status": "success",
