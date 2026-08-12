@@ -814,12 +814,11 @@
         <div class="modal-body">
           <h3>1. Basic Usage</h3>
 		    <ul>
-                <li>Draw a polygon and choose a time-period to extract a data cube. Only one polygon can be drawn at a time.</li>
 				<li>Navigate to your preferred ice sheet by clicking the Greenland button (<greenlandIcon class="inline-icon"/>)
 						or the Antarctica button (<antarcticaIcon class="inline-icon"/>)</li>
+				<li>Draw a polygon and choose a time-period to extract a data cube. Only one polygon can be drawn at a time.</li>
 		    </ul>
-			<p><strong>Note 1: Due to server constraints, only five data cube downloads per day per user are permitted.</strong></p>
-			<p><strong>Note 2: Polygon drawing can be laggy.</strong></p>
+			<p><strong>Note: Due to server constraints, only five data cube downloads per day per user are permitted.</strong></p>
 			
 		<h3>1. Advanced Usage</h3>
 		    <ul>

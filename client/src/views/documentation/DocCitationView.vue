@@ -37,7 +37,7 @@ onMounted(() => {
 	      Where the SHIVER citations are:
 	  </p>
 		  <blockquote class="citation-block">
-			Davison, B. J. (2026a). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
+			Davison, B. J. (2026a). SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
 		  </blockquote>
 		  <blockquote class="citation-block">
 			Davison, B. J. (2026b). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
@@ -66,7 +66,7 @@ onMounted(() => {
 			-------------------------<br>
 			If you use this data in a publication, please cite the SHIVER web application, associated paper and the compilation method:<br>
 			<br>
-			* SHIVER tool: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
+			* SHIVER tool: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
 			* SHIVER data and compilation method: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859<br>
 			* SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX<br>
 			<br>
