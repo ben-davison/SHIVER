@@ -15,6 +15,7 @@ import DocShiftView from '../views/documentation/DocShiftView.vue'
 import DocDataCubeGenView from '../views/documentation/DocDataCubeGenView.vue'
 import DocTimeseriesExplorerView from '../views/documentation/DocTimeseriesExplorerView.vue'
 import DocCubeExtractorView from '../views/documentation/DocCubeExtractorView.vue'
+import DocCloudView from '../views/documentation/DocCloudView.vue'
 import DocCitationView from '../views/documentation/DocCitationView.vue'
 
 // Project pages
@@ -46,6 +47,7 @@ export const routes = [
       { path: 'datacubegen', name: 'doc-datacubegen', component: DocDataCubeGenView },
       { path: 'timeseriesexplore', name: 'doc-timeseriesexplore', component: DocTimeseriesExplorerView },
       { path: 'cubeextract', name: 'doc-cubeextract', component: DocCubeExtractorView },
+	  { path: 'cloud', name: 'doc-cloud', component: DocCloudView },
       { path: 'citation', name: 'doc-citation', component: DocCitationView }
     ]
   },

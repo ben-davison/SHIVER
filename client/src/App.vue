@@ -128,6 +128,7 @@ const closeMenu = () => { isMenuOpen.value = false; };
 				  <RouterLink to="/documentation/shift" active-class="active-sublink">SHIFT Algorithms</RouterLink>
 				  <RouterLink to="/documentation/datacubegen" active-class="active-sublink">Data Cube Generation</RouterLink>
 				  <RouterLink to="/documentation/timeseriesexplore" active-class="active-sublink">SHIVER Timeseries Explorer</RouterLink>
+				  <RouterLink to="/documentation/cloud" active-class="active-sublink">Cloud Data Access</RouterLink>
 				  <RouterLink to="/documentation/citation" active-class="active-sublink">Citation & License</RouterLink>
 				</div>
 		  </div>

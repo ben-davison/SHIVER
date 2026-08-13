@@ -37,10 +37,10 @@ onMounted(() => {
 	      Where the SHIVER citations are:
 	  </p>
 		  <blockquote class="citation-block">
-			Davison, B. J. (2026a). SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
+			Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
 		  </blockquote>
 		  <blockquote class="citation-block">
-			Davison, B. J. (2026b). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
+			Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
 		  </blockquote>
 		  <blockquote class="citation-block">
 			Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX"
@@ -66,8 +66,8 @@ onMounted(() => {
 			-------------------------<br>
 			If you use this data in a publication, please cite the SHIVER web application, associated paper and the compilation method:<br>
 			<br>
-			* SHIVER tool: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
-			* SHIVER data and compilation method: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859<br>
+			* SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
+			* SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859<br>
 			* SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX<br>
 			<br>
 			2. ACKNOWLEDGING THE UNDERLYING DATA<br>
@@ -91,7 +91,7 @@ onMounted(() => {
 			* PROMICE data: Solgaard, Anne Munck; Kusk, Anders, 2026, Greenland Ice Velocity from Sentinel-1 Edition 5, https://doi.org/10.22008/FK2/K70OPK, GEUS Dataverse, V6<br>
 			* PROMICE method: Solgaard, A., Kusk, A., Merryman Boncori, J.P., Dall, J., Mankoff, K.D., Ahlstr?m, A.P., Andersen, S.B., Citterio, M., Karlsson, N.B., Kjeldsen, K.K. and Korsgaard, N.J., 2021. Greenland ice velocity maps from the PROMICE project. Earth System Science Data, 13(7), pp.3491-3512. DOI: https://doi.org/10.5194/essd-13-3491-2021.<br>
 			<br>
-			* ENVEO annual method: Wuite, J., (2026): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026).<br>
+			* ENVEO annual data: Copernicus Climate Change Service, Climate Data Store (2020): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026).<br>
 			<br>
 			* ESA CCI winter data: ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map, Winter 2017-2018, v1.0. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/eaed9fba86c44e9c854dfbdec9d16b99.<br>
 			<br>

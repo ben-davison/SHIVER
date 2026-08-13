@@ -134,9 +134,13 @@ const handleHashNav = async (targetPath, sectionId) => {
 				<li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'references')">5. References</a></li>
               </ul>
             </li>
+			
+			<li>
+              <RouterLink to="/documentation/cloud" active-class="active-doc-link">8. Cloud Data Access</RouterLink>
+            </li>
             
             <li>
-              <RouterLink to="/documentation/citation" active-class="active-doc-link">8. Citation & License</RouterLink>
+              <RouterLink to="/documentation/citation" active-class="active-doc-link">9. Citation & License</RouterLink>
             </li>
             
           </ul>

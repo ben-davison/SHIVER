@@ -3693,8 +3693,8 @@ const downloadChartImage = async () => {
       
       // 1. Add the SHIVER row first
       const shiverCitations = 
-          "SHIVER tool: Davison, B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): initial release (Version v1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
-          "SHIVER zarr compilation method: B. J. (2026). SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
+          "SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
+          "SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
           "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX";
       
       csvContent += `SHIVER,,,,,"${shiverCitations.replace(/"/g, '""')}"\n`;
@@ -3910,9 +3910,9 @@ const handleDownload = async () => {
     
     // 1. Add the SHIVER row first
     const shiverCitations = 
-        "SHIVER tool: Davison, B. J. (2026). SHIVER Web Application (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.XXXXXXX\n" +
-        "SHIVER zarr compilation method: Davison, B. J. (2026). SHIVER Zarr Creation (Version 1.0.0) [Software]. Zenodo. https://doi.org/10.5282/zenodo.XXXXXXX\n" +
-        "SHIVER method paper: Davison, B. J. et al. (2026). SHIVER: Sheffield Ice Velocity ExploreR. Earth System Science Data. https://doi.org/10.5283/essd.XXXXXXX";
+          "SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
+          "SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
+          "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX";
     
     // Empty commas represent the blank data columns
     csvContent += `SHIVER,,,,,"${shiverCitations.replace(/"/g, '""')}"\n`;

@@ -123,6 +123,21 @@ onMounted(() => {
         </template>
       </DocSectionCard>
 	  
+	  <DocSectionCard 
+        title="Cloud Data Access" 
+        to="/documentation/cloud"
+      >
+        <template #image>
+          <img src="../../assets/documentation/overview/source_logo.png" alt="Source Cooperative logo">
+        </template>
+        <template #description>
+          <p>
+            This page provides a summary of how to access the <strong>SHIVER</strong> data programmatically.
+            By accessing the data through the cloud, you can scale up and expand on any analysis or discoveries you've made in the application.
+          </p>
+        </template>
+      </DocSectionCard>
+	  
 	  <DocSectionCardShort 
         title="Citation & License" 
         to="/documentation/citation"
