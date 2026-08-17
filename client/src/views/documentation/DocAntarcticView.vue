@@ -291,7 +291,7 @@ onMounted(() => {
 	  <blockquote class="citation-block">
 		Gardner, A.S., Greene, C.A., Kennedy, J.H., Fahnestock, M.A., Liukis, M., López, L.A., Lei, Y., Scambos, T.A. and Dehecq, A., 2025. ITS_LIVE global glacier velocity data in near-real time. The Cryosphere, 19(9), pp.3517-3533. DOI: https://doi.org/10.5194/tc-19-3517-2025. 
 	  </blockquote>
-	  blockquote class="citation-block">
+	  <blockquote class="citation-block">
 		Gardner, A. S., Fahnestock, M. & Scambos, T. (2022). MEaSUREs ITS_LIVE Regional Glacier and Ice Sheet Surface Velocities. (NSIDC-0776, Version 1). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/6II6VW8LLWJ7. Date Accessed 08-17-2026. 
 	  </blockquote>
 	  <br>

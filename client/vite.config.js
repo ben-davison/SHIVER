@@ -13,6 +13,7 @@ const shiverRoutes = [
   '/SHIVER/documentation/datacubegen',
   '/SHIVER/documentation/timeseriesexplore',
   '/SHIVER/documentation/cubeextract',
+  '/SHIVER/documentation/cloud',
   '/SHIVER/documentation/citation',
   '/SHIVER/documentation/projects/overview',
   '/SHIVER/documentation/projects/people'
