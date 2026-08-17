@@ -161,13 +161,13 @@ onMounted(() => {
 	
 	
 	<section id="enveo_alos">
-      <h2>3.7. ENVEO ALOS</h2>
-	  <p>The ENVEO ALOS data provide estimates of ice speed covering the Larsen-B Embayment region of the Antarctic Peninsula from the 29th September 2009 to 13th November 2009
-	  and the 2nd January 2011 to 17th February 2011. The measurements are derived from offset tracking of a combination of ALOS PALSAR image pairs. 
+      <h2>3.7. ENVEO ALOS-PALSAR</h2>
+	  <p>The ENVEO ALOS-PALSAR data provide estimates of ice speed covering the Larsen-B Embayment region of the Antarctic Peninsula from the 29th September 2009 to 13th November 2009
+	  and the 2nd January 2011 to 17th February 2011. The measurements are derived from offset tracking of a combination of ALOS-PALSAR image pairs. 
 	  The data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
-	  <ZoomableFigure caption="Fig. 3.7: Overview of the ENVEO ALOS data.">
-			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_ALOS.png" alt="ENVEO ALOS data overview">
+	  <ZoomableFigure caption="Fig. 3.7: Overview of the ENVEO ALOS-PALSAR data.">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_ALOS.png" alt="ENVEO ALOS-PALSAR data overview">
       </ZoomableFigure>
 	  <br>
 	</section>
@@ -193,15 +193,15 @@ onMounted(() => {
 	
 	
 	<section id="enveo_tsx_palsar">
-      <h2>3.9. ENVEO TSX & PALSAR</h2>
-	  <p>The ENVEO TSX & PALSAR data provide estimates of ice speed covering the Larsen-B Embayment region of the Antarctic Peninsula from the 2nd July 2010 to the 10th March 2012. 
-	  The measurements are derived from offset tracking of TerraSAR-X image pairs with gaps filled using PALSAR data. 
+      <h2>3.9. ENVEO TSX & ALOS-PALSAR</h2>
+	  <p>The ENVEO TSX & ALOS-PALSAR data provide estimates of ice speed covering the Larsen-B Embayment region of the Antarctic Peninsula from the 2nd July 2010 to the 10th March 2012. 
+	  The measurements are derived from offset tracking of TerraSAR-X image pairs with gaps filled using ALOS-PALSAR data. 
 	  The processing techniques used to derive these velocity estimates are described in
       <AppLink to="https://tc.copernicus.org/articles/12/1273/2018/" target="_blank" rel="noopener" class="text-link">Rott et al. (2018)</AppLink>
 	  and the data can be downloaded from <AppLink to="https://cryoportal.enveo.at/data/" target="_blank" rel="noopener" class="text-link">the ENVEO cryoportal</AppLink>.</p>
 	  
-	  <ZoomableFigure caption="Fig. 3.9: Overview of the ENVEO TSX & PALSAR data.">
-			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_TSX_PALSAR.png" alt="ENVEO TSX & PALSAR data overview">
+	  <ZoomableFigure caption="Fig. 3.9: Overview of the ENVEO TSX & ALOS-PALSAR data.">
+			<img src="../../assets/documentation/antarctica/verification_maps_ENVEO_TSX_PALSAR.png" alt="ENVEO TSX & ALOS-PALSAR data overview">
       </ZoomableFigure>
 	  
 	  <blockquote class="citation-block">
@@ -290,6 +290,9 @@ onMounted(() => {
 	  
 	  <blockquote class="citation-block">
 		Gardner, A.S., Greene, C.A., Kennedy, J.H., Fahnestock, M.A., Liukis, M., López, L.A., Lei, Y., Scambos, T.A. and Dehecq, A., 2025. ITS_LIVE global glacier velocity data in near-real time. The Cryosphere, 19(9), pp.3517-3533. DOI: https://doi.org/10.5194/tc-19-3517-2025. 
+	  </blockquote>
+	  blockquote class="citation-block">
+		Gardner, A. S., Fahnestock, M. & Scambos, T. (2022). MEaSUREs ITS_LIVE Regional Glacier and Ice Sheet Surface Velocities. (NSIDC-0776, Version 1). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/6II6VW8LLWJ7. Date Accessed 08-17-2026. 
 	  </blockquote>
 	  <br>
 	</section>
