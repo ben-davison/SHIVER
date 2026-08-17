@@ -4148,7 +4148,7 @@ const replayTour = () => {
   }, 300); // 300ms allows the modal fade-out animation to finish
 };
 
-// Point to your video path (place your recorded MP4s inside the 'public/' directory)
+// Point to your video path
 const tutorialVideoSrc = ref('https://www.youtube.com/embed/O4mW5bOfp8g?si=SjTWUKv9DZ5eO2tC');
 
 
