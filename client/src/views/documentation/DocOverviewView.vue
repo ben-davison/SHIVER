@@ -43,60 +43,16 @@ onMounted(() => {
     <section id="introduction">
       <h1>Documentation Overview</h1>
       <p class="intro-text">
-        Welcome to the technical documentation for <strong>SHIFT</strong> (SHeffield Ice Flow Tracker) 
-        and <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR). Select a section below to explore 
-        our methodology, data sources, and interactive tools.
+        Welcome to the technical documentation for <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR). Select a section below to explore 
+        our methodology, data and interactive tools.
       </p>
     </section>
 
     <section class="overview-cards-container">
-      
-      <DocSectionCardShort 
-        title="Greenland Data Sources" 
-        to="/documentation/greenland"
-      >
-        <template #image>
-          <img src="../../assets/documentation/overview/greenland_thumb.png" alt="Map of Greenland">
-        </template>
-        <template #description>
-          <p>
-            This page provides details of all data sources contributing to our Greenland data cube.
-          </p>
-        </template>
-      </DocSectionCardShort>
-	  
+	
 	  <DocSectionCardShort 
-        title="Antarctic Data Sources" 
-        to="/documentation/antarctic"
-      >
-        <template #image>
-          <img src="../../assets/documentation/overview/antarctica_thumb.png" alt="Map of Antarctica">
-        </template>
-        <template #description>
-          <p>
-            This page provides details of all data sources contributing to our Antarctic data cube.
-          </p>
-        </template>
-      </DocSectionCardShort>
-
-      <DocSectionCard 
-        title="SHIFT Algorithms" 
-        to="/documentation/shift"
-      >
-        <template #image>
-          <img src="../../assets/documentation/CC.jpg" alt="SHIFT Diagram">
-        </template>
-        <template #description>
-          <p>
-            This page provides technical documentation for <strong>SHIFT</strong> (SHeffield Ice Flow Tracker).
-            SHIFT is the processing pipeline we use to derive velocity fields from Sentinel-1 Synthetic Aperture Radar (SAR) image pairs.
-          </p>
-        </template>
-      </DocSectionCard>
-	  
-	  <DocSectionCardShort 
-        title="Data Cube Generation" 
-        to="/documentation/datacubegen"
+        title="Zarr Data" 
+        to="/documentation/whatiszarr"
       >
         <template #image>
           <img src="../../assets/documentation/zarr/zarr.png" alt="Zarr logo">
@@ -107,7 +63,50 @@ onMounted(() => {
           </p>
         </template>
       </DocSectionCardShort>
+      
+      <DocSectionCardShort 
+        title="Contributing Datasets" 
+        to="/documentation/contributingdata"
+      >
+        <template #image>
+          <img src="../../assets/documentation/overview/antarctica_thumb.png" alt="Map of Antarctica">
+        </template>
+        <template #description>
+          <p>
+            This page provides details of all the contributing datasets incorporated into our unified dataset.
+          </p>
+        </template>
+      </DocSectionCardShort>
+	  
+	  <DocSectionCardShort 
+        title="Unified Datasets" 
+        to="/documentation/unifieddata"
+      >
+        <template #image>
+          <img src="../../assets/documentation/overview/raster_stack.png" alt="Raster Stack schematic">
+        </template>
+        <template #description>
+          <p>
+            This page provides details of our unified dataset.
+          </p>
+        </template>
+      </DocSectionCardShort>
 
+      <DocSectionCard 
+        title="Dataset Comparison" 
+        to="/documentation/datacomparison"
+      >
+        <template #image>
+          <img src="../../assets/documentation/overview/ensemble_range.png" alt="Velocity difference overview">
+        </template>
+        <template #description>
+          <p>
+            This page summarises the differences in speed estimates during overlapping time periods between each of the Contributing Datasets
+			after they have been incorporated into our Unified Dataset. The comparisons show that, on the whole, the datasets closely agree.
+          </p>
+        </template>
+      </DocSectionCard>
+	  
       <DocSectionCard 
         title="SHIVER Timeseries Explorer" 
         to="/documentation/timeseriesexplore"
@@ -117,8 +116,23 @@ onMounted(() => {
         </template>
         <template #description>
           <p>
-            This page provides detailed documentation for <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR).
-            SHIVER allows you to explore and download a multitude of ice velocity measurements for Greenland and Antarctica using one simple interface.
+            This page provides detailed documentation for the <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR) Timeseries Explorer.
+            The Explorer allows you to explore and download a multitude of ice velocity timeseries for Greenland and Antarctica using one simple interface.
+          </p>
+        </template>
+      </DocSectionCard>
+	  
+	  <DocSectionCard 
+        title="SHIVER NetCDF Extractor" 
+        to="/documentation/netcdfextract"
+      >
+        <template #image>
+          <img src="../../assets/images/NetCDF.png" alt="NetCDF logo">
+        </template>
+        <template #description>
+          <p>
+            This page provides detailed documentation for <strong>SHIVER</strong> (SHeffield Ice Velocity ExploreR) Data Cube Extractor.
+            The Extractor allows you to extract and download a multitude of ice velocity measurements for Greenland and Antarctica over large areas and time periods using one simple interface.
           </p>
         </template>
       </DocSectionCard>
@@ -139,7 +153,7 @@ onMounted(() => {
       </DocSectionCard>
 	  
 	  <DocSectionCardShort 
-        title="Citation & License" 
+        title="Citation" 
         to="/documentation/citation"
       >
         <template #image>
@@ -147,7 +161,7 @@ onMounted(() => {
         </template>
         <template #description>
           <p>
-            This page provides details of how to cite SHIFT, SHIVER and other datasets incorporated into our interface.
+            This page provides details of how to cite SHIVER and other datasets incorporated into our Unified Dataset.
           </p>
         </template>
       </DocSectionCardShort>

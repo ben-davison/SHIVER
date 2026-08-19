@@ -114,16 +114,16 @@ const goToMap = () => {
 		</DocSectionCardShort>
 		
 		<DocSectionCardShort 
-			title="SHeffield Ice Flow Tracker (SHIFT)" 
-			to="/documentation/shift"
+			title="Contributing Datasets" 
+			to="/documentation/contributingdata"
 		  >
 			<template #image>
-			  <img src="../assets/documentation/CC.jpg" alt="SHIFT Diagram">
+			  <img src="../assets/documentation/overview/antarctica_thumb.png" alt="Antarctica image">
 			</template>
 			<template #description>
 			  <p>
-			    SHIFT is our processing system to generate the some of the ice velocity measurements available in SHIVER.
-			    With it, we measure ice motion ~weekly, regardless of weather and during polar darkness.
+			    SHIVER provides access to a compilation of many ice velocity datasets that have been developed thanks to years of work by many research groups and organisations. 
+				This page provides details of all of these Contributing Datasets and how to cite them.
 			  </p>
 			</template>
 		</DocSectionCardShort>

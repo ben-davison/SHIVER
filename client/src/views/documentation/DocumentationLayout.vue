@@ -52,8 +52,9 @@ const handleHashNav = async (targetPath, sectionId) => {
             <li>
               <RouterLink to="/documentation/contributingdata" active-class="active-doc-link">3. Contributing Datasets</RouterLink>
 			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/contributingdata'">
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'greenland_data')">Greenland</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'antarctica_data')">Antarctica</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'greenland-data')">Greenland</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'antarctica-data')">Antarctica</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'summary')">Summary</a></li>
               </ul>
             </li>
 			
@@ -61,6 +62,12 @@ const handleHashNav = async (targetPath, sectionId) => {
               <RouterLink to="/documentation/unifieddata" active-class="active-doc-link">4. Unified Datasets</RouterLink>
 			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/unifieddata'">
 					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'overview')">Overview</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'zarr-chunk-definition')">Zarr Chunk Definition</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'ome-zarr')">OME-Zarr</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'reprojection')">Reprojection</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'timestamps')">Timestamps</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'measurement-error')">Error</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'variables')">Variables</a></li>
               </ul>
             </li>
             
@@ -70,10 +77,26 @@ const handleHashNav = async (targetPath, sectionId) => {
 
 			<li>
               <RouterLink to="/documentation/timeseriesexplore" active-class="active-doc-link">6. SHIVER Timeseries Explorer</RouterLink>
+				<ul class="sub-nav-list" v-show="$route.path === '/documentation/timeseriesexplore'">
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'basic-usage')">Basic Usage</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'uploading-files-uploadicon')">Uploading Files</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'advanced-options-advancedicon')">Advanced Options</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'navigating-interpreting-the-map')">Navigating & Interpreting the Map</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'interpreting-the-chart')">Interpreting the Chart</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'output')">Output</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'references')">References</a></li>
+              </ul>
             </li>
 			
 			<li>
               <RouterLink to="/documentation/netcdfextract" active-class="active-doc-link">7. SHIVER Data Cube Extractor</RouterLink>
+				<ul class="sub-nav-list" v-show="$route.path === '/documentation/netcdfextract'">
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/netcdfextract', 'basic-usage')">Basic Usage</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/netcdfextract', 'uploading-files-uploadicon')">Uploading Files</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/netcdfextract', 'navigating-interpreting-the-map')">Navigating & Interpreting the Map</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/netcdfextract', 'output')">Output</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/netcdfextract', 'references')">References</a></li>
+              </ul>
             </li>
 			
 			<li>

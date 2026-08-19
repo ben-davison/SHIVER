@@ -123,11 +123,12 @@ const closeMenu = () => { isMenuOpen.value = false; };
 				<RouterLink to="/documentation" class="dropdown-trigger" active-class="active-link" :class="{ 'active-link': $route.path.startsWith('/documentation') }">Documentation</RouterLink>
 				<div class="dropdown-content">
 				  <RouterLink to="/documentation/overview" active-class="active-sublink">Overview</RouterLink>
-				  <RouterLink to="/documentation/greenland" active-class="active-sublink">Greenland Data</RouterLink>
-				  <RouterLink to="/documentation/antarctic" active-class="active-sublink">Antarctic Data</RouterLink>
-				  <RouterLink to="/documentation/shift" active-class="active-sublink">SHIFT Algorithms</RouterLink>
-				  <RouterLink to="/documentation/datacubegen" active-class="active-sublink">Data Cube Generation</RouterLink>
+				  <RouterLink to="/documentation/whatiszarr" active-class="active-sublink">Zarr Data</RouterLink>
+				  <RouterLink to="/documentation/contributingdata" active-class="active-sublink">Contributing Datasets</RouterLink>
+				  <RouterLink to="/documentation/unifieddata" active-class="active-sublink">Unified Datasets</RouterLink>
+				  <RouterLink to="/documentation/datacomparison" active-class="active-sublink">Dataset Comparison</RouterLink>
 				  <RouterLink to="/documentation/timeseriesexplore" active-class="active-sublink">SHIVER Timeseries Explorer</RouterLink>
+				  <RouterLink to="/documentation/netcdfextract" active-class="active-sublink">SHIVER Data Cube Extractor</RouterLink>
 				  <RouterLink to="/documentation/cloud" active-class="active-sublink">Cloud Data Access</RouterLink>
 				  <RouterLink to="/documentation/citation" active-class="active-sublink">Citation & License</RouterLink>
 				</div>

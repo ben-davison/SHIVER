@@ -113,4 +113,44 @@ onMounted(async () => {
 .rtd-injected-content :deep(.onlyprint) {
   display: none !important;
 }
+
+
+/* 1. BASE RULES: Apply to all icons for proper inline text alignment */
+.rtd-injected-content :deep(img[alt="AntarcticaIcon"]),
+.rtd-injected-content :deep(img[alt="GreenlandIcon"]),
+.rtd-injected-content :deep(img[alt="PaletteIcon"]),
+.rtd-injected-content :deep(img[alt="UploadIcon"]),
+.rtd-injected-content :deep(img[alt="AdvancedIcon"]),
+.rtd-injected-content :deep(img[alt="LayersIcon"]),
+.rtd-injected-content :deep(img[alt="TrendIcon"]),
+.rtd-injected-content :deep(img[alt="GraphIcon"]),
+.rtd-injected-content :deep(img[alt="ExcelIcon"]) {
+    display: inline-block;
+    width: auto;
+    margin: 0 0.15em;
+}
+
+/* 2. DEFAULT SIZE: */
+.rtd-injected-content :deep(img[alt="UploadIcon"]),
+.rtd-injected-content :deep(img[alt="AdvancedIcon"]),
+.rtd-injected-content :deep(img[alt="TrendIcon"]) {
+    height: 0.8em;
+    vertical-align: 0.1em;
+}
+
+/* 3. SIZE 1: */
+.rtd-injected-content :deep(img[alt="LayersIcon"]),
+.rtd-injected-content :deep(img[alt="PaletteIcon"]) {
+    height: 2.0em;
+    vertical-align: -0.5em; 
+}
+
+/* 4 & 5. SIZE 2 and 3 (Combined since they share the same values): */
+.rtd-injected-content :deep(img[alt="AntarcticaIcon"]),
+.rtd-injected-content :deep(img[alt="GreenlandIcon"]),
+.rtd-injected-content :deep(img[alt="GraphIcon"]),
+.rtd-injected-content :deep(img[alt="ExcelIcon"]) {
+    height: 2.4em;
+    vertical-align: -0.8em; 
+}
 </style>
