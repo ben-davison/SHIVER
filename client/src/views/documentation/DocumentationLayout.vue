@@ -104,7 +104,7 @@ const handleHashNav = async (targetPath, sectionId) => {
             </li>
             
             <li>
-              <RouterLink to="/documentation/citation" active-class="active-doc-link">9. Citation & License</RouterLink>
+              <RouterLink to="/documentation/citation" active-class="active-doc-link">9. Cite</RouterLink>
             </li>
             
           </ul>
