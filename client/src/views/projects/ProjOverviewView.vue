@@ -10,7 +10,7 @@ useHead({
   meta: [
     { 
       name: 'description', 
-      content: 'SHIVER and SHIFT have benefitted from support from several projects including FRAM and SLIDE, and we have been supported by funding from UKRI (NERC) and NSF. Learn more about those projects here.' 
+      content: 'SHIVER has benefitted from support from several projects including FRAM and SLIDE, and we have been supported by funding from UKRI (NERC) and NSF. Learn more about those projects here.' 
     }
   ]
 })
@@ -41,7 +41,7 @@ onMounted(() => {
     <section id="introduction">
       <h1>SHIVER Projects Overview</h1>
       <p class="intro-text">
-        <strong>SHIVER</strong> and <strong>SHIFT</strong> have benefitted from support from several projects.
+        <strong>SHIVER</strong> has benefitted from support from several projects.
 		Learn more about those projects below.
       </p>
     </section>
