@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ben-davison.github.io/sitemap.xml
+Sitemap: https://shiver-ice-velocity.github.io/sitemap.xml
