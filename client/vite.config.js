@@ -25,7 +25,7 @@ export default defineConfig({
     vue(),
     Sitemap({
       // 2. Use the bare domain (the subfolder is handled by your routes array)
-      hostname: 'https://ben-davison.github.io', 
+      hostname: 'https://shiver-ice-velocity.github.io', 
       
       // 3. Tell the plugin to ignore its incomplete auto-scan root
       exclude: ['/'],
