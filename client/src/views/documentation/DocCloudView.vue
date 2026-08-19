@@ -31,7 +31,7 @@ onMounted(() => {
           All of the data provided through the SHIVER GUIs are available programmatically via <AppLink to="https://source.coop/" target="_blank" rel="noopener" class="text-link">Source Cooperative</AppLink>
 	  </p>
 	  <p>
-		  For details of how to access these data, please see our ReadTheDocs page (<AppLink to="https://shiver-zarr.readthedocs.io/" target="_blank" rel="noopener" class="text-link">https://shiver-zarr.readthedocs.io/</AppLink>), which provides an overview of the data and several examples.
+		  For details of how to access these data, please see our ReadTheDocs page (<AppLink to="https://shiver-zarr.readthedocs.io/" target="_blank" rel="noopener" class="text-link">https://shiver-zarr.readthedocs.io/</AppLink>), which provides several examples of how to access these data programmatically.
 	  </p>
     </section>
 

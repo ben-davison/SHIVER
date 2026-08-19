@@ -9,12 +9,12 @@ import ResetPasswordView from '../views/ResetPasswordView.vue'
 // Documentation pages
 import DocumentationLayout from '../views/documentation/DocumentationLayout.vue'
 import DocOverviewView from '../views/documentation/DocOverviewView.vue'
-import DocGreenlandView from '../views/documentation/DocGreenlandView.vue'
-import DocAntarcticView from '../views/documentation/DocAntarcticView.vue'
-import DocShiftView from '../views/documentation/DocShiftView.vue'
-import DocDataCubeGenView from '../views/documentation/DocDataCubeGenView.vue'
-import DocTimeseriesExplorerView from '../views/documentation/DocTimeseriesExplorerView.vue'
-import DocCubeExtractorView from '../views/documentation/DocCubeExtractorView.vue'
+import DocWhatIsZarr from '../views/documentation/DocWhatIsZarr.vue'
+import DocContributingData from '../views/documentation/DocContributingDataView.vue'
+import DocUnifiedData from '../views/documentation/DocUnifiedData.vue'
+import DocDataComparison from '../views/documentation/DocDataComparison.vue'
+import DocTimeseriesExplorer from '../views/documentation/DocTimeseriesExplorerView.vue'
+import DocNetcdfExtractor from '../views/documentation/DocNetcdfExtractorView.vue'
 import DocCloudView from '../views/documentation/DocCloudView.vue'
 import DocCitationView from '../views/documentation/DocCitationView.vue'
 
@@ -41,12 +41,12 @@ export const routes = [
     children: [
       { path: '', redirect: { name: 'doc-overview' } },
       { path: 'overview', name: 'doc-overview', component: DocOverviewView },
-      { path: 'greenland', name: 'doc-greenland', component: DocGreenlandView },
-      { path: 'antarctic', name: 'doc-antarctic', component: DocAntarcticView },
-      { path: 'shift', name: 'doc-shift', component: DocShiftView },
-      { path: 'datacubegen', name: 'doc-datacubegen', component: DocDataCubeGenView },
-      { path: 'timeseriesexplore', name: 'doc-timeseriesexplore', component: DocTimeseriesExplorerView },
-      { path: 'cubeextract', name: 'doc-cubeextract', component: DocCubeExtractorView },
+      { path: 'whatiszarr', name: 'doc-whatiszarr', component: DocWhatIsZarr },
+      { path: 'contributingdata', name: 'doc-contributingdata', component: DocContributingData },
+      { path: 'unifieddata', name: 'doc-unifieddata', component: DocUnifiedData },
+      { path: 'datacomparison', name: 'doc-datacomparison', component: DocDataComparison },
+      { path: 'timeseriesexplore', name: 'doc-timeseriesexplore', component: DocTimeseriesExplorer },
+      { path: 'netcdfextract', name: 'doc-netcdfextract', component: DocNetcdfExtractor },
 	  { path: 'cloud', name: 'doc-cloud', component: DocCloudView },
       { path: 'citation', name: 'doc-citation', component: DocCitationView }
     ]

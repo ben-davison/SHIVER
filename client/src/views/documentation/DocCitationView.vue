@@ -1,131 +1,116 @@
 <script setup>
-import { onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 
-const route = useRoute()
+const route = useRoute();
+const docContent = ref('<p>Loading citation documentation...</p>');
 
-// Handles URL hash jumping on first load
-onMounted(() => {
-  if (route.hash) {
-    nextTick(() => {
+onMounted(async () => {
+  // 1. Point to the specific RTD page
+  const rtdUrl = encodeURIComponent(
+    'https://shiver-zarr.readthedocs.io/en/latest/getting_started/cite.html'
+  );
+  const apiUrl = `https://app.readthedocs.org/api/v3/embed/?url=${rtdUrl}`;
+
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error('Failed to fetch RTD content');
+    
+    const data = await response.json();
+    docContent.value = data.content;
+
+    // 2. CRITICAL: Handle scrolling if the user navigated directly to a hash URL
+    if (route.hash) {
+      // Wait for Vue to render the newly fetched HTML into the DOM
+      await nextTick();
+      
+      // Add a tiny timeout to ensure the browser has painted the injected HTML
       setTimeout(() => {
-        const element = document.getElementById(route.hash.slice(1))
+        const sectionId = route.hash.slice(1);
+        const element = document.getElementById(sectionId);
+        
         if (element) {
-          const headerOffset = 100;
+          const headerOffset = 100; // Matches your layout's sticky header
           const elementPosition = element.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.scrollY - headerOffset;
-          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+          
+          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
         }
-      }, 100)
-    })
+      }, 100);
+    }
+
+  } catch (error) {
+    console.error(error);
+    docContent.value = '<p>Error loading documentation. Please check your connection or visit the main docs site.</p>';
   }
-})
+});
 </script>
 
 <template>
-  <div class="doc-inner-page">
-    
-    <section id="citation">
-      <h2>Citation & License</h2>
-	  <p>
-          <strong>The recommended approach to citing these data in your work is:</strong> 
-	  </p>
-	  <blockquote class="citation-block">
-		  "Ice velocity extracted using the Sheffield Ice Velocity ExploreR (SHIVER; Davison, 2026a,b; Davison et al., 2026) and included the data products detailed in Table X."
-	  </blockquote>
-	  <p>
-	      Where the SHIVER citations are:
-	  </p>
-		  <blockquote class="citation-block">
-			Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057"
-		  </blockquote>
-		  <blockquote class="citation-block">
-			Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859"
-		  </blockquote>
-		  <blockquote class="citation-block">
-			Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX"
-		  </blockquote>
-	  <p>
-		   All figures and data generated using SHIVER will be accompanied by an automatically generated table (<strong>citations_summary.csv</strong>) that you can use 
-		   for this purpose. This table will only include citations for the data that your query has intersected. 
-	   </p>
-	  <p>
-	      SHIVER will also generate a <strong>citations_and_usage.txt</strong> file. This text file will outline the citations for
-		  SHIVER tool and underlying data extracted. NetCDF data cubes will contain this information embedded in their metadata.
-		  For example, the text file below includes the citation information for a time-series in West Greenland:
-	   </p>
-	   <blockquote class="citation-block">
-			=========================================<br>
-			 SHIVER DATA EXTRACTION CITATION RECORD<br>
-			=========================================<br>
-			<br>
-			Date Extracted: 2026-04-22<br>
-			Region: GREENLAND<br>
-			<br>
-			1. ACKNOWLEDGING THE TOOL<br>
-			-------------------------<br>
-			If you use this data in a publication, please cite the SHIVER web application, associated paper and the compilation method:<br>
-			<br>
-			* SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057<br>
-			* SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859<br>
-			* SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX<br>
-			<br>
-			2. ACKNOWLEDGING THE UNDERLYING DATA<br>
-			------------------------------------<br>
-			This extraction intersects the following original datasets. You must cite these original sources:<br>
-			<br>
-			* ITS_LIVE observations: Gardner, A.S., Greene, C.A., Kennedy, J.H., Fahnestock, M.A., Liukis, M., L?pez, L.A., Lei, Y., Scambos, T.A. and Dehecq, A., 2025. ITS_LIVE global glacier velocity data in near-real time. The Cryosphere, 19(9), pp.3517-3533. DOI: https://doi.org/10.5194/tc-19-3517-2025. <br>
-			* ITS_LIVE data: Gardner, A. S., Fahnestock, M. & Scambos, T. (2022). MEaSUREs ITS_LIVE Regional Glacier and Ice Sheet Surface Velocities. (NSIDC-0776, Version 1). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/6II6VW8LLWJ7. Date Accessed 08-17-2026. <br>
-			<br>
-			* ESA CCI ERS-1/2 & Envisat data (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn glacier from ERS-1, ERS2 and ENVISAT data for 1992-2010, v1.2. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/a0d9764a3068439b997c42928ef739d2.<br>
-			<br>
-			* ESA CCI ERS-2 (1995-1996) data: ESA Greenland Ice Sheet CCI project team (2016): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity data for the Greenland Margin from ERS-2 for winter 1995-1996, v1.1 (June 2016 release). Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/0b23b3c771db4fff8958196432d978cb.<br>
-			<br>
-			* Mouginot annual method: Mouginot, J., Rignot, E., Scheuchl, B. and Millan, R., 2017. Comprehensive annual ice sheet velocity mapping using Landsat-8, Sentinel-1, and RADARSAT-2 data. Remote Sensing, 9(4), p.364. DOI: https://doi.org/10.3390/rs9040364. <br>
-			<br>
-			* ESA CCI CSK (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn Glacier from COSMO-SkyMed for 2012-2014, v1.0. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/2e54b40f184b44c797db36e192d2b679.<br>
-			<br>
-			* MEaSUREs monthly data: Joughin, I. (2023). MEaSUREs Greenland Monthly Ice Sheet Velocity Mosaics from SAR and Landsat. (NSIDC-0731, Version 5). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/EGKZX6FXXM4P. Date Accessed 04-21-2026.<br>
-			* MEaSUREs monthly method: Joughin, I., B. Smith, I. Howat, T. Scambos, and T. Moon. 2010. Greenland flow variability from icesheet-wide velocity mapping, Journal of Glaciology. 56. 415-430. https://doi.org/10.3189/002214310792447734<br>
-			* MEaSUREs monthly method: Joughin, I., B. Smith, and I. Howat. 2018. Greenland Ice Mapping Project: ice flow velocity variation at sub-monthly to decadal timescales, The Cryosphere. 12. 2211-2227. https://doi.org/10.5194/tc-12-2211-2018.<br>
-			<br>
-			* PROMICE data: Solgaard, Anne Munck; Kusk, Anders, 2026, Greenland Ice Velocity from Sentinel-1 Edition 5, https://doi.org/10.22008/FK2/K70OPK, GEUS Dataverse, V6<br>
-			* PROMICE method: Solgaard, A., Kusk, A., Merryman Boncori, J.P., Dall, J., Mankoff, K.D., Ahlstr?m, A.P., Andersen, S.B., Citterio, M., Karlsson, N.B., Kjeldsen, K.K. and Korsgaard, N.J., 2021. Greenland ice velocity maps from the PROMICE project. Earth System Science Data, 13(7), pp.3491-3512. DOI: https://doi.org/10.5194/essd-13-3491-2021.<br>
-			<br>
-			* ENVEO annual data: Copernicus Climate Change Service, Climate Data Store (2020): Ice sheet velocity for Antarctica and Greenland derived from satellite observations. Copernicus Climate Change Service (C3S) Climate Data Store (CDS), DOI: 10.24381/cds.0b96b838 (Accessed on 26-Apr-2026).<br>
-			<br>
-			* ESA CCI winter data: ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Greenland Ice Velocity Map, Winter 2017-2018, v1.0. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/eaed9fba86c44e9c854dfbdec9d16b99.<br>
-			<br>
-			* ESA CCI Sentinel-1 (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2019): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Ice Velocity time series for the Jakobshavn Glacier for 2014-2017 from Sentinel-1 data, v1.1. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/e1c0c34e0cc942898b3626efd1dcc095<br>
-			<br>
-			* SHIFT data: Sole, A. J. and Davison, B. J. 2026. SHeffield Ice Flow Tracker (SHIFT) velocity data: West Greenland ice surface velocity fields derived from intensity tracking of Sentinel-1 Synthetic Aperture Radar image pairs. [Online]. Available from: https://doi.org/10.15131/shef.data.33113009.v1.<br>
-			* SHIFT method: Davison, B.J., Sole, A.J., Cowton, T.R., Lea, J.M., Slater, D.A., Fahrner, D. and Nienow, P.W., 2020. Subglacial drainage evolution modulates seasonal ice flow variability of three tidewater glaciers in southwest Greenland. Journal of Geophysical Research: Earth Surface, 125(9), p.e2019JF005492. DOI: https://doi.org/10.1029/2019JF005492.<br>
-			<br>
-			* ESA CCI Sentinel-2 (Jakobshavn Isbrae): ESA Greenland Ice Sheet CCI project team (2018): ESA Greenland Ice Sheet Climate Change Initiative (Greenland_Ice_Sheet_cci): Optical ice velocity of the Jakobshavn Glacier between 2017-06-03 and 2017-09-08, generated using Sentinel-2 data, v1.1. Centre for Environmental Data Analysis, 16/04/2026. https://catalogue.ceda.ac.uk/uuid/cfe3102659f34d33b123b2a0043e4068.<br>
-	   </blockquote>
-	   <p>
-			<strong>Note: The ESA_CCI_Sentinel-1, ESA_CCI_Sentinel-2 and ESA_CCI_ERS1-2_Envisat over selected glacier sites in Greenland require separate citations for each
-			glacier site. Our dataset compilation method combines all of those glacier sites into one datasource. Our automated citation generator will therefore provide the 
-			citation information for all glacier sites even if only one is intersected. You should remove the unnecessary citations when incorporating them into your work.</strong>
-	   </p>
-    </section>
-
-  </div>
+  <section class="rtd-injected-content" v-html="docContent"></section>
 </template>
 
 
-
-// ----- CSS ---- //
 <style scoped>
-
-
-.citation-block {
-  background: #f5f5f5;
-  padding: 20px;
-  font-family: 'Courier New', Courier, monospace;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+/* 
+  1. Fix the Image Sizes 
+  Forces all images to never exceed the width of their container, 
+  and maintains their aspect ratio.
+*/
+.rtd-injected-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
+/* 
+  2. Hide the Sphinx Headerlinks 
+  Hides the "#" symbols that appear when hovering over headers.
+*/
+.rtd-injected-content :deep(.headerlink) {
+  display: none !important;
+}
 
+/* 
+  3. Hide the Top Toolbar 
+  Hides the GitHub, download, and light/dark mode buttons.
+*/
+.rtd-injected-content :deep(.bd-header-article),
+.rtd-injected-content :deep(.article-header-buttons) {
+  display: none !important;
+}
+
+/* 
+  4. Hide the Right-Hand Contents Menu 
+  Hides the in-page TOC that usually sits on the right.
+*/
+.rtd-injected-content :deep(.bd-sidebar-secondary),
+.rtd-injected-content :deep(.toc-item) {
+  display: none !important;
+}
+
+/* 
+  5. Hide the Next / Previous Buttons 
+  Hides the bottom navigation blocks.
+*/
+.rtd-injected-content :deep(.prev-next-area),
+.rtd-injected-content :deep(.related) {
+  display: none !important;
+}
+
+/* Optional: Clean up code block styling if needed */
+.rtd-injected-content :deep(pre) {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/*
+  6. Hide the extra title and contents
+*/
+.rtd-injected-content :deep(#jb-print-docs-body),
+.rtd-injected-content :deep(.onlyprint) {
+  display: none !important;
+}
 </style>

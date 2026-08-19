@@ -41,98 +41,39 @@ const handleHashNav = async (targetPath, sectionId) => {
             <li>
               <RouterLink to="/documentation/overview" active-class="active-doc-link">1. Documentation Overview</RouterLink>
             </li>
-            
+			
+			<li>
+              <RouterLink to="/documentation/whatiszarr" active-class="active-doc-link">2. What is Zarr</RouterLink>
+			  <ul class="sub-nav-list" v-show="$route.path === '/documentation/whatiszarr'">
+				<li><a href="#" @click.prevent="handleHashNav('/documentation/whatiszarr', 'working-with-zarr')">Working with Zarr</a></li>
+			  </ul>
+            </li>
+			
             <li>
-              <RouterLink to="/documentation/greenland" active-class="active-doc-link">2. Greenland Data Sources</RouterLink>
-			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/greenland'">
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'introduction')">1. Introduction</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'shift')">2. SHIFT</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'promice')">3. PROMICE</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_monthly')">4. MEaSUREs monthly</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_quarterly')">5. MEaSUREs quarterly</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_winter')">6. MEaSUREs winter</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'measures_annual')">7. MEaSUREs annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'itslive_annual')">8. ITS_LIVE Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'mouginot_annual')">9. Mouginot Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'enveo_annual')">10. ENVEO Annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_winter')">11. ESA CCI Winter</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers1_1991')">12. ESA CCI ERS-1</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers2_1995')">13. ESA CCI ERS-2</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_palsar')">14. ESA CCI PALSAR</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_ers_env')">15. ESA CCI ERS & Envisat</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_csk')">16. ESA CCI CSK</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel2')">17. ESA CCI Sentinel-2</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/greenland', 'esa_sentinel1')">18. ESA CCI Sentinel-1</a></li>
+              <RouterLink to="/documentation/contributingdata" active-class="active-doc-link">3. Contributing Datasets</RouterLink>
+			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/contributingdata'">
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'greenland_data')">Greenland</a></li>
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/contributingdata', 'antarctica_data')">Antarctica</a></li>
+              </ul>
+            </li>
+			
+			<li>
+              <RouterLink to="/documentation/unifieddata" active-class="active-doc-link">4. Unified Datasets</RouterLink>
+			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/unifieddata'">
+					<li><a href="#" @click.prevent="handleHashNav('/documentation/unifieddata', 'overview')">Overview</a></li>
               </ul>
             </li>
             
             <li>
-              <RouterLink to="/documentation/antarctic" active-class="active-doc-link">3. Antarctic Data Sources</RouterLink>
-			    <ul class="sub-nav-list" v-show="$route.path === '/documentation/antarctic'">
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'introduction')">1. Introduction</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'shift')">2. SHIFT</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_monthly')">3. ENVEO Monthly</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_pig')">4. ENVEO (Pine Island)</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_ers')">5. ENVEO ERS</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_tsx')">6. ENVEO TSX</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_alos')">7. ENVEO ALOS</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_tsx_s1')">8. ENVEO TSX & Sentinel-1</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'enveo_tsx_palsar')">9. ENVEO TSX & PALSAR</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'measures_multiyear')">10. MEaSUREs multi-year</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'measures_annual')">11. MEaSUREs annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'measures_ase')">12. MEaSUREs ASE</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'itslive_annual')">13. ITS_LIVE annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'esa_annual')">14. ESA CCI annual</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'esa_sentinel1')">15. ESA CCI Sentinel-1</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'joughin_s1')">16. Joughin Sentinel-1</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'joughin_tsx')">17. Joughin TSX</a></li>
-					<li><a href="#" @click.prevent="handleHashNav('/documentation/antarctic', 'li_totten')">18. Li et al. (Totten)</a></li>
-              </ul>
-			  
-            </li>
-            
-            <li>
-              <RouterLink to="/documentation/shift" active-class="active-doc-link">4. SHIFT Algorithms</RouterLink>
-              
-              <ul class="sub-nav-list" v-show="$route.path === '/documentation/shift'">
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'introduction')">Introduction</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'overview')">1. Overview</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'data-sources')">2. Data Sources</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'pre-processing')">3. Pre-processing</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'algorithms')">4. Algorithms</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'post-processing')">5. Post-processing</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'mosaics')">6. Mosaics</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'automation')">7. Automation</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/shift', 'references')">7. References</a></li>
-              </ul>
+              <RouterLink to="/documentation/datacomparison" active-class="active-doc-link">5. Comparison of Datasets</RouterLink>
             </li>
 
-            <li>
-              <RouterLink to="/documentation/datacubegen" active-class="active-doc-link">5. Data Cube Generation</RouterLink>
-            </li>
-			
 			<li>
               <RouterLink to="/documentation/timeseriesexplore" active-class="active-doc-link">6. SHIVER Timeseries Explorer</RouterLink>
-              <ul class="sub-nav-list" v-show="$route.path === '/documentation/timeseriesexplore'">
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'basic-usage')">1. Basic Usage</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'file-upload')">2. Uploading Files</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'advanced-options')">3. Advanced Options</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'map-interpret')">4. Interpreting the Map</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'chart-interpret')">5. Interpreting the Chart</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'output')">6. Output</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/timeseriesexplore', 'references')">7. References</a></li>
-              </ul>
             </li>
 			
 			<li>
-              <RouterLink to="/documentation/cubeextract" active-class="active-doc-link">7. SHIVER Data Cube Extractor</RouterLink>
-              <ul class="sub-nav-list" v-show="$route.path === '/documentation/cubeextract'">
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'basic-usage')">1. Basic Usage</a></li>
-                <li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'file-upload')">2. Uploading Files</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'map-interpret')">3. Interpreting the Map</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'output')">4. Output</a></li>
-				<li><a href="#" @click.prevent="handleHashNav('/documentation/cubeextract', 'references')">5. References</a></li>
-              </ul>
+              <RouterLink to="/documentation/netcdfextract" active-class="active-doc-link">7. SHIVER Data Cube Extractor</RouterLink>
             </li>
 			
 			<li>

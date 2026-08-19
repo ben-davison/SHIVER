@@ -3,12 +3,12 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const docContent = ref('<p>Loading timeseries explorer documentation...</p>');
+const docContent = ref('<p>Loading NetCDF extractor documentation...</p>');
 
 onMounted(async () => {
   // 1. Point to the specific RTD page
   const rtdUrl = encodeURIComponent(
-    'https://shiver-zarr.readthedocs.io/en/latest/gui/timeseries_explore.html'
+    'https://shiver-zarr.readthedocs.io/en/latest/gui/netcdf_extract.html'
   );
   const apiUrl = `https://app.readthedocs.org/api/v3/embed/?url=${rtdUrl}`;
 
