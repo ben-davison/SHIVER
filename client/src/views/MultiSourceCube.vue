@@ -1559,14 +1559,14 @@ const basinOptions = {
 const REGION_SOURCES = {
   'Greenland': [
     'PROMICE', 'SHIFT', 'MEaSUREs_monthly', 'MEaSUREs_quarterly', 'MEaSUREs_winter', 
-	'MEaSUREs_annual', 'ENVEO_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
+	'MEaSUREs_annual', 'ESA_CCI_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
     'ESA_CCI_winter', 'ESA_CCI_Sentinel-1', 'ESA_CCI_Sentinel-2', 'ESA_CCI_CSK', 
     'ESA_CCI_ERS1-2_Envisat', 'ESA_CCI_ERS2_1995-1996', 'ESA_CCI_PALSAR', 'ESA_CCI_ERS1_1991-1992'
   ],
   'Antarctica': [
     'ENVEO_monthly', 'ITS_LIVE_annual', 'MEaSUREs_annual', 'MEaSUREs_multiyear', 
     'MEaSUREs_ASE', 'SID_annual', 'ESA_CCI_annual', 'Joughin_Sentinel-1', 'Joughin_TSX', 
-    'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_ALOS', 
+    'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_PALSAR', 
     'ENVEO_TSX_Sentinel-1', 'ENVEO_TSX_PALSAR', 'SHIFT'
   ]
 };
@@ -1587,7 +1587,6 @@ const SOURCE_DISPLAY_NAMES = {
 	'MEaSUREs_multiyear': 'MEaSUREs (multi-year)',
 	'MEaSUREs_ASE': 'MEaSUREs (ASE only)',
 	'ENVEO_monthly': 'ENVEO (monthly)',
-	'ENVEO_annual': 'ENVEO (annual)',
     'ENVEO_TSX_PALSAR': 'ENVEO TSX & PALSAR',
 	'ENVEO_TSX_Sentinel-1': 'ENVEO TSX & Sentinel-1',
 	'ENVEO_Sentinel-1_PIG': 'ENVEO Sentinel-1 pairs (Pine Island)',

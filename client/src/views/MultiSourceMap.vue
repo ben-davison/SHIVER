@@ -1459,7 +1459,7 @@ const FIXED_SOURCE_COLORS = {
   'MEaSUREs_winter': 'rgb(154,205,50)',       // yellow green
   'MEaSUREs_annual': 'rgb(0,100,0)',       // dark green
   'Mouginot_annual': 'rgb(60,179,113)', // medium sea green
-  'ENVEO_annual': 'rgb(100,149,237)',           // cornflower blue
+  'ESA_CCI_annual': 'rgb(255,69,0)', // orangered
   'ESA_CCI_winter': 'rgb(255,160,122)',// light salmon
   'ESA_CCI_Sentinel-1': 'rgb(250,128,114)', // salmon
   'ESA_CCI_Sentinel-2': 'rgb(205,92,92)',  // indian red
@@ -1482,7 +1482,7 @@ const FIXED_SOURCE_COLORS = {
   'ENVEO_Sentinel-1_PIG': 'rgb(189, 158, 57)', // Gold
   'ENVEO_ERS': 'rgb(65,105,225)',      // royal blue
   'ENVEO_TSX': 'rgb(0,0,255)',     // blue
-  'ENVEO_ALOS': 'rgb(0,0,205)',      // medium blue
+  'ENVEO_PALSAR': 'rgb(0,0,205)',      // medium blue
   'ENVEO_TSX_Sentinel-1': 'rgb(0,0,139)',    // dark blue
   'ENVEO_TSX_PALSAR': 'rgb(30,144,255)'// dodger blue
 };
@@ -1803,14 +1803,14 @@ const dynamicVikStyle = computed(() => {
 const REGION_SOURCES = {
   'Greenland': [
     'PROMICE', 'SHIFT', 'MEaSUREs_monthly', 'MEaSUREs_quarterly', 'MEaSUREs_winter', 
-	'MEaSUREs_annual', 'ENVEO_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
+	'MEaSUREs_annual', 'ESA_CCI_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
     'ESA_CCI_winter', 'ESA_CCI_Sentinel-1', 'ESA_CCI_Sentinel-2', 'ESA_CCI_CSK', 
     'ESA_CCI_ERS1-2_Envisat', 'ESA_CCI_ERS2_1995-1996', 'ESA_CCI_PALSAR', 'ESA_CCI_ERS1_1991-1992'
   ],
   'Antarctica': [
     'ENVEO_monthly', 'ITS_LIVE_annual', 'MEaSUREs_annual', 'MEaSUREs_multiyear', 
     'MEaSUREs_ASE', 'SID_annual', 'ESA_CCI_annual', 'Joughin_Sentinel-1', 'Joughin_TSX', 
-    'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_ALOS', 
+    'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_PALSAR', 
     'ENVEO_TSX_Sentinel-1', 'ENVEO_TSX_PALSAR', 'SHIFT'
   ]
 };
@@ -1831,7 +1831,6 @@ const SOURCE_DISPLAY_NAMES = {
 	'MEaSUREs_multiyear': 'MEaSUREs (multi-year)',
 	'MEaSUREs_ASE': 'MEaSUREs (ASE only)',
 	'ENVEO_monthly': 'ENVEO (monthly)',
-	'ENVEO_annual': 'ENVEO (annual)',
     'ENVEO_TSX_PALSAR': 'ENVEO TSX & PALSAR',
 	'ENVEO_TSX_Sentinel-1': 'ENVEO TSX & Sentinel-1',
 	'ENVEO_Sentinel-1_PIG': 'ENVEO Sentinel-1 pairs (Pine Island)',
@@ -3693,7 +3692,6 @@ const downloadChartImage = async () => {
       
       // 1. Add the SHIVER row first
       const shiverCitations = 
-          "SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
           "SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
           "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX";
       
@@ -3910,7 +3908,6 @@ const handleDownload = async () => {
     
     // 1. Add the SHIVER row first
     const shiverCitations = 
-          "SHIVER tool: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets (Version v[specify version number]) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21378057\n" +
           "SHIVER data and compilation method: Davison, B. J. (2026). The SHeffield Ice Velocity ExploreR (SHIVER): A unified satellite-derived ice velocity dataset for Earth's ice sheets (Version v[specify version number]) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21375859\n" +
           "SHIVER method paper: Davison, B. J. et al. (in prep). The SHeffield Ice Velocity ExploreR (SHIVER): an online tool for low latency exploration, analysis and sub-setting of unified satellite-derived ice velocity data for Earth's ice sheets. [specify journal]. https://doi.org/10.xxxx/XXXXXXX";
     

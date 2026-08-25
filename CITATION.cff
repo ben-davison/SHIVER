@@ -1,0 +1,30 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  The SHeffield Ice Velocity ExploreR (SHIVER): an online
+  tool for low latency exploration, analysis and sub-setting
+  of unified satellite-derived ice velocity data for Earth's
+  ice sheets
+type: software
+authors:
+  - given-names: Benjamin Joseph
+    family-names: Davison
+    email: b.j.davison@sheffield.ac.uk
+    affiliation: University of Sheffield
+    orcid: 'https://orcid.org/0000-0001-9483-2956'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21378056
+    description: >-
+      This DOI represents all versions of the dataset, and
+      will always resolve to the latest one.
+repository-code: 'https://github.com/shiver-ice-velocity/SHIVER'
+keywords:
+  - ice velocity
+  - Greenland Ice Sheet
+  - Antarctic Ice Sheet
+  - Earth Observation
+  - SHIVER
+license: GPL-3.0

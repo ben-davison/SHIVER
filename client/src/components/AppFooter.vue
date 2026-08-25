@@ -37,10 +37,6 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
             <img :src="NERCLogo" alt="NERC" class="partner-logo" />
           </a>
         </div>
-        <p class="footer-text mt-3">
-          The FRAM project is funded by NSFGEO-NERC<br>
-          Grant Number: #2053169, "Investigating the Direct Influence of Meltwater on Antarctic Ice Sheet Dynamics"
-        </p>
       </div>
         
       <div class="footer-column">
@@ -51,7 +47,7 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
           </a>
         </div>
         <p class="footer-text mt-3">
-          SHIFT and SHIVER are powered by the University of Sheffield HPC Stanage.
+          SHIVER is powered by the University of Sheffield HPC Stanage.
         </p>
       </div>
         
@@ -69,13 +65,8 @@ import StanageLogo from '../assets/Stanage_logo/Stanage_Black.png';
         <h4 class="mt-4">Resources</h4>
         <ul class="resource-links">
           <li>
-            <a href="https://github.com/ben-davison/SHIVER" target="_blank" rel="noopener noreferrer" class="text-link">
+            <a href="https://github.com/shiver-ice-velocity/SHIVER" target="_blank" rel="noopener noreferrer" class="text-link">
               Find us on GitHub
-            </a>
-          </li>
-          <li>
-            <a href="mailto:shiver@sheffield.ac.uk" class="text-link">
-              Request custom velocity products
             </a>
           </li>
           <li>

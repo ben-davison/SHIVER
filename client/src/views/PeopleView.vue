@@ -43,7 +43,9 @@ const teamMembers = [
     role: "SHIVER Principal Developer",
 	institution: "University of Sheffield",
     image: photoBenD,
-    bio: "Ben automated SHIFT and developed SHIVER."
+    bio: "Ben automated SHIFT and developed SHIVER.",
+	website: "https://sheffield.ac.uk/geography-planning/people/academic-research/benjamin-davison", 
+    websiteDisplay: "https://sheffield.ac.uk/geography-planning/people/academic-research/benjamin-davison"
   },
   {
     id: 2,
@@ -51,7 +53,9 @@ const teamMembers = [
     role: "SHIFT Principal Developer",
 	institution: "University of Sheffield",
     image: photoAndrewS,
-    bio: "Andrew led the development of the SHIFT processing algorithm."
+    bio: "Andrew led the development of the SHIFT processing algorithm.",
+	website: "https://sheffield.ac.uk/geography-planning/people/academic-research/andrew-sole", 
+    websiteDisplay: "https://sheffield.ac.uk/geography-planning/people/academic-research/andrew-sole"
   }
 ];
 </script>
