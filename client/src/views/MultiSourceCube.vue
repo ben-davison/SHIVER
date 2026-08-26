@@ -1559,13 +1559,13 @@ const basinOptions = {
 const REGION_SOURCES = {
   'Greenland': [
     'PROMICE', 'SHIFT', 'MEaSUREs_monthly', 'MEaSUREs_quarterly', 'MEaSUREs_winter', 
-	'MEaSUREs_annual', 'ESA_CCI_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
+	'MEaSUREs_annual', 'C3S_annual', 'Mouginot_annual', 'ITS_LIVE_annual', 
     'ESA_CCI_winter', 'ESA_CCI_Sentinel-1', 'ESA_CCI_Sentinel-2', 'ESA_CCI_CSK', 
     'ESA_CCI_ERS1-2_Envisat', 'ESA_CCI_ERS2_1995-1996', 'ESA_CCI_PALSAR', 'ESA_CCI_ERS1_1991-1992'
   ],
   'Antarctica': [
     'ENVEO_monthly', 'ITS_LIVE_annual', 'MEaSUREs_annual', 'MEaSUREs_multiyear', 
-    'MEaSUREs_ASE', 'SID_annual', 'ESA_CCI_annual', 'Joughin_Sentinel-1', 'Joughin_TSX', 
+    'MEaSUREs_ASE', 'SID_annual', 'C3S_annual', 'Joughin_Sentinel-1', 'Joughin_TSX', 
     'Li_Totten', 'ENVEO_Sentinel-1_PIG', 'ENVEO_ERS', 'ENVEO_TSX', 'ENVEO_PALSAR', 
     'ENVEO_TSX_Sentinel-1', 'ENVEO_TSX_PALSAR', 'SHIFT'
   ]
@@ -1576,7 +1576,7 @@ const SOURCE_DISPLAY_NAMES = {
     'ESA_CCI_ERS2_1995-1996': 'ESA CCI ERS-2 (1995-1996)',
     'ESA_CCI_ERS1_1991-1992': 'ESA CCI ERS-1 (1991-1992)',
 	'ESA_CCI_winter': 'ESA CCI (winter)',
-	'ESA_CCI_annual': 'ESA CCI (annual)',
+	'C3S_annual': 'C3S (annual)',
 	'SID_annual': 'SID (annual)',
 	'ITS_LIVE_annual': 'ITS_LIVE (annual)',
     'Mouginot_annual': 'Mouginot (annual)',
