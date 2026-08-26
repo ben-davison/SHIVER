@@ -105,7 +105,7 @@ const closeMenu = () => { isMenuOpen.value = false; };
     <header>
       <div class="wrapper">
         <RouterLink to="/" class="brand-link" @click="closeMenu">
-          <img src="/logo/SHIVER_logo_horizontal_v1_white_on_transparent_background_simplified.png" alt="SHIVER Logo" class="brand-logo" />
+          <img src="/logo/shiver_logo_v2_landscape_transparent_bg.png" alt="SHIVER Logo" class="brand-logo" />
         </RouterLink>
 
         <nav class="desktop-nav">
