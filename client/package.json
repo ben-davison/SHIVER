@@ -36,7 +36,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@unhead/vue": "^3.1.6",
+    "@unhead/vue": "^3.4.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "vite": "^7.2.4",
     "vite-plugin-sitemap": "^0.8.2",

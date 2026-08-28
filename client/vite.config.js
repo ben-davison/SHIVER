@@ -35,6 +35,6 @@ export default defineConfig({
     })
   ],
   ssr: {
-    noExternal: ['file-saver']
+    noExternal: ['file-saver', '@unhead/vue', 'unhead'] 
   }
 })
